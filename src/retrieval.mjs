@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { ensure, hash, text } from './primitives.mjs';
-import { classify, definitions, splitIdentifier, symbolTerms } from './analyze.mjs';
+import { classify, definitions, isStopword, plainWord, splitIdentifier, stemPrefix, symbolTerms } from './analyze.mjs';
+import { translate } from './glossary.mjs';
 
 const allowed = new Set(['.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
 const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
@@ -148,26 +149,41 @@ export function refreshFiles(store, project, paths, override) {
 const columnWeights='2.0, 1.0, 8.0, 1.5';
 const kindWeight={source:1,doc:.7,config:.6,test:.4,generated:.25};
 const asksForTests=/\b(?:tests?|testes?|specs?|fixtures?|mocks?)\b/i;
+// Peso do segundo estágio (radicais e glossário pt → en) em relação ao casamento exato.
+const LOOSE_WEIGHT=.5;
 /**
- * Busca lexical ordenada: BM25 por coluna, reforço quando o termo é um nome DECLARADO no trecho,
- * e desconto para teste, documentação e gerado (a menos que a consulta peça testes).
+ * Busca lexical ordenada, em dois estágios somados: (1) termos exatos, com BM25 por coluna; (2) os mesmos termos
+ * por radical e pela ponte pt → en, com metade do peso. Depois: reforço quando o termo é um nome DECLARADO no
+ * trecho e desconto para teste, documentação e gerado (a menos que a consulta peça testes).
+ * Palavras vazias saem da consulta sempre que sobra algum termo que discrimina.
  */
 export function search(store,project,query,limit=12){
   const meta=store.project(project);text(query,1000);ensure(Number.isInteger(limit)&&limit>=1&&limit<=50,'INVALID_LIMIT');
-  const words=query.match(/[\p{L}\p{N}_$]+/gu)?.slice(0,24)||[];
-  if(!words.length)return {project,snapshot:meta.snapshot,items:[],truncated:false};
+  const all=query.match(/[\p{L}\p{N}_$]+/gu)?.slice(0,24)||[];
+  if(!all.length)return {project,snapshot:meta.snapshot,items:[],truncated:false};
+  const content=all.filter(word=>!isStopword(word)), words=content.length?content:all;
   // Um identificador composto também casa, como frase, com suas partes nas colunas de nomes: eraseUserData ↔ erase_user_data.
-  const quote=value=>'"'+value.replaceAll('"','""')+'"', clauses=new Set(words.map(quote));
-  for(const word of words){const parts=splitIdentifier(word);if(parts.length)clauses.add('{defs symbols} : '+quote(parts.join(' ')));}
-  const expression=[...clauses].join(' OR '), pool=Math.min(400,limit*10);
-  const rows=store.stmt('SELECT c.id,c.project,c.path,c.file_hash,c.start_line,c.end_line,c.kind,c.body,c.defs, bm25(chunk_search,'+columnWeights+') AS rank FROM chunk_search JOIN chunks c ON c.seq=chunk_search.rowid WHERE chunk_search MATCH ? AND c.project=? ORDER BY rank LIMIT ?').all(expression,project,pool+1);
+  const quote=value=>'"'+value.replaceAll('"','""')+'"', exact=new Set(words.map(quote)), loose=new Set();
+  for(const word of words){const parts=splitIdentifier(word);if(parts.length)exact.add('{defs symbols} : '+quote(parts.join(' ')));}
+  for(const word of words){
+    const plain=plainWord(word);if(!plain)continue;
+    const stem=stemPrefix(plain);if(stem)loose.add(quote(stem)+' *');
+    for(const term of translate(plain))loose.add(quote(term)+' *');
+  }
+  const pool=Math.min(400,limit*10), found=new Map();let overflow=false;
+  const select=store.stmt('SELECT c.id,c.project,c.path,c.file_hash,c.start_line,c.end_line,c.kind,c.body,c.defs, bm25(chunk_search,'+columnWeights+') AS rank FROM chunk_search JOIN chunks c ON c.seq=chunk_search.rowid WHERE chunk_search MATCH ? AND c.project=? ORDER BY rank LIMIT ?');
+  for(const [clauses,weight] of [[exact,1],[loose,LOOSE_WEIGHT]]){
+    if(!clauses.size)continue;
+    const rows=select.all([...clauses].join(' OR '),project,pool+1);if(rows.length>pool)overflow=true;
+    for(const row of rows.slice(0,pool)){const known=found.get(row.id);if(known)known.rank+=row.rank*weight;else found.set(row.id,{...row,rank:row.rank*weight});}
+  }
   const lowered=[...new Set(words.flatMap(word=>[word,...splitIdentifier(word)]).map(x=>x.toLowerCase()))], keepTests=asksForTests.test(query);
-  const items=rows.slice(0,pool).map(({defs,...row})=>{
+  const items=[...found.values()].map(({defs,...row})=>{
     // Reforço proporcional à fração dos termos que o trecho DECLARA: um identificador sozinho triplica; uma palavra entre seis quase não pesa.
     const declared=new Set(defs.toLowerCase().split(' ')), share=lowered.filter(x=>declared.has(x)).length/lowered.length;
     return {...row,declares:share>0,score:-row.rank*(row.kind==='test'&&keepTests?1:kindWeight[row.kind]??1)*(1+2*share)};
   }).sort((a,b)=>b.score-a.score||byPath(a,b)||a.start_line-b.start_line);
-  return {project,snapshot:meta.snapshot,items:items.slice(0,limit),truncated:rows.length>pool||items.length>limit};
+  return {project,snapshot:meta.snapshot,items:items.slice(0,limit),truncated:overflow||items.length>limit};
 }
 export function verifyChunk(store, project, chunk){
   ensure(chunk.project===project,'FORBIDDEN');

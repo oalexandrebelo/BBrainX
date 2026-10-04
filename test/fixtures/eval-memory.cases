@@ -1,0 +1,38 @@
+{
+ "note": "Pares sintéticos escritos pelo integrador em 04/10/2026: a memória orienta como fazer a tarefa (true) ou trata de outro assunto (false). Há pares relevantes sem palavra em comum e pares irrelevantes com palavra em comum.",
+ "memories": {
+  "m1": "Migrations de banco só entram com teste de rollback.",
+  "m2": "Nunca imprimir segredos nem ler arquivos .env.",
+  "m4": "O painel web só escuta em 127.0.0.1; nunca expor em 0.0.0.0.",
+  "m5": "Dados de teste são sempre sintéticos, com e-mails @example.invalid.",
+  "m6": "Toda rota pública de API precisa de pelo menos um teste de handler.",
+  "m7": "Chamadas longas de IA são sempre assíncronas: enfileirar e consultar.",
+  "m8": "No Windows, caminhos usam barra invertida; normalize antes de comparar.",
+  "m9": "Não adicionar dependência nova sem pedir ao dono do projeto.",
+  "m10": "Use pnpm, not npm, in the mobile workspace.",
+  "m11": "The release tag is created by CI only after the verify workflow passes.",
+  "m12": "Rate limits live in Redis; never keep counters in process memory.",
+  "m13": "Textos da interface ficam em português do Brasil, nunca de Portugal.",
+  "m14": "Tokens de terceiros são cifrados com XChaCha20 antes de gravar.",
+  "m15": "Animações usam a biblioteca de movimento já instalada; sem CSS inline.",
+  "m16": "Erros em produção vão para o coletor de erros, nunca para console.log."
+ },
+ "cases": [
+  {"objective":"Adicionar a coluna last_seen_at na tabela de sessões","relevant":["m1"],"unrelated":["m12","m13","m14"]},
+  {"objective":"Criar o endpoint POST /api/consumer/feedback","relevant":["m6","m16"],"unrelated":["m15","m10"]},
+  {"objective":"Escrever o script que popula o banco de desenvolvimento com usuários de exemplo","relevant":["m5"],"unrelated":["m4","m11","m15"]},
+  {"objective":"Trocar o texto do botão de cadastro e das mensagens de erro do formulário","relevant":["m13"],"unrelated":["m15","m1","m7"]},
+  {"objective":"Add a fade-in transition to the onboarding cards","relevant":["m15"],"unrelated":["m13","m12","m6"]},
+  {"objective":"Guardar o refresh token do Strava do usuário","relevant":["m14","m2"],"unrelated":["m8","m15"]},
+  {"objective":"Gerar o plano de treino com o modelo de linguagem a partir do perfil","relevant":["m7"],"unrelated":["m4","m10","m8"]},
+  {"objective":"Limitar a 5 tentativas de login por minuto","relevant":["m12"],"unrelated":["m13","m14","m1"]},
+  {"objective":"Publicar a versão 1.4.0","relevant":["m11"],"unrelated":["m5","m7","m15"]},
+  {"objective":"Fix the path comparison that fails on the Windows CI runner","relevant":["m8"],"unrelated":["m11","m4","m14"]},
+  {"objective":"Instalar uma biblioteca de gráficos para o painel do treinador","relevant":["m9"],"unrelated":["m15","m2","m7"]},
+  {"objective":"Subir o painel local para um colega acessar pela rede do escritório","relevant":["m4"],"unrelated":["m13","m1","m12"]},
+  {"objective":"Add the Expo dependency to the mobile app","relevant":["m10","m9"],"unrelated":["m8","m16"]},
+  {"objective":"Depurar por que o worker engole a exceção ao gerar a dieta","relevant":["m16"],"unrelated":["m11","m13","m9"]},
+  {"objective":"Registrar no log o cabeçalho Authorization para investigar o 401","relevant":["m2"],"unrelated":["m5","m15","m10"]},
+  {"objective":"Renomear a tabela workout_logs para training_logs","relevant":["m1"],"unrelated":["m6","m4","m13"]}
+ ]
+}

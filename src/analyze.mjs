@@ -63,7 +63,12 @@ export function symbolTerms(body){
   return out.join(' · ');
 }
 
-const stopwords=new Set('a o e de da do das dos em no na nos nas um uma para por com sem que se ao aos como onde quando qual quais the of and to in on for with is are be by as at it this that from or an not how where what which'.split(' '));
+const stopwords=new Set('a o e de da do das dos em no na nos nas um uma para por com sem que se ao aos como onde quando qual quais quem é são foi ser está cada entre the of and to in on for with is are be by as at it this that from or an not how where what which who when does do can each its was were'.split(' '));
+export const isStopword=word=>stopwords.has(word.toLowerCase());
+/** Palavra sem acento e em minúsculas; null quando não é só letras (identificador, número, sigla com dígito). */
+export function plainWord(word){const plain=word.normalize('NFD').replace(/\p{M}/gu,'').toLowerCase();return /^[a-z]+$/.test(plain)?plain:null;}
+/** Radical para casar por prefixo: «rejeitar» e «rejeitada» encontram «rejeita»; «migração» encontra «migration». */
+export function stemPrefix(plain){return plain.length>=6?plain.slice(0,Math.max(4,plain.length-3)):null;}
 /** Termos de consulta que discriminam: sem palavras vazias, com as partes dos compostos. */
 export function queryTerms(query){
   const terms=new Set();
