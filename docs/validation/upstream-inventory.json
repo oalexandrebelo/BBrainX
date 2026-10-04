@@ -3,7 +3,7 @@
     "repository": "vinilana/invokta",
     "role": "runtime contract; npm packages used",
     "execution": "npm locked packages only",
-    "observedAt": "2026-10-04T06:02:45.956Z",
+    "observedAt": "2026-10-04T06:09:39.642Z",
     "sha": "f1e2f04f98c967ab4bb73bd02c3fa581f04ce0e5",
     "downloaded": true,
     "executed": false,
@@ -13,7 +13,7 @@
   {
     "repository": "xyflow/xyflow",
     "role": "interactive architecture; @xyflow/react used",
-    "observedAt": "2026-10-04T06:02:47.491Z",
+    "observedAt": "2026-10-04T06:09:40.386Z",
     "sha": "3d35b57317576b0916c0bfeaaedd573aaacc2839",
     "downloaded": true,
     "executed": false,
@@ -23,7 +23,7 @@
   {
     "repository": "niieani/gpt-tokenizer",
     "role": "payload token counting; npm package used",
-    "observedAt": "2026-10-04T06:02:48.559Z",
+    "observedAt": "2026-10-04T06:09:41.005Z",
     "sha": "9182f2e567355e0a8f81022b6c52bdc688250ac8",
     "downloaded": true,
     "executed": false,
@@ -33,7 +33,7 @@
   {
     "repository": "NandhaKishorM/laya",
     "role": "optional decision research",
-    "observedAt": "2026-10-04T06:02:50.274Z",
+    "observedAt": "2026-10-04T06:09:42.019Z",
     "sha": "2e4d9c87e8b1621deb344eac7de5c7258f32f849",
     "downloaded": true,
     "executed": false,
@@ -43,7 +43,7 @@
   {
     "repository": "HKUDS/LightRAG",
     "role": "optional documentary retrieval research",
-    "observedAt": "2026-10-04T06:02:52.317Z",
+    "observedAt": "2026-10-04T06:09:42.867Z",
     "sha": "453dce83d6d0354a06e46c8d4029a0895c4e054b",
     "downloaded": true,
     "executed": false,
@@ -53,7 +53,7 @@
   {
     "repository": "browser-use/jev-ultrafast",
     "role": "browser decision/execution separation research",
-    "observedAt": "2026-10-04T06:02:54.505Z",
+    "observedAt": "2026-10-04T06:09:44.241Z",
     "sha": "1231850a0bf1a0c0341fe408ef1668dbbfdfac46",
     "downloaded": true,
     "executed": false,
@@ -63,7 +63,7 @@
   {
     "repository": "tamaratran/fast-jev-compaction",
     "role": "compaction policy research",
-    "observedAt": "2026-10-04T06:02:56.016Z",
+    "observedAt": "2026-10-04T06:09:45.143Z",
     "sha": "e3f262a7f4d42bd8dd32ced30d26176f7cb545b0",
     "downloaded": true,
     "executed": false,
@@ -73,7 +73,7 @@
   {
     "repository": "jev-chat/jev-chat-jarvis",
     "role": "optional desktop interaction research",
-    "observedAt": "2026-10-04T06:02:56.810Z",
+    "observedAt": "2026-10-04T06:09:45.512Z",
     "sha": "31ee16199e90828abac6ff2b0e6d7da18694b237",
     "downloaded": true,
     "executed": false,
@@ -83,7 +83,7 @@
   {
     "repository": "TheoLeeCJ/SemIf-OpenJev",
     "role": "optional Apple Silicon decision research",
-    "observedAt": "2026-10-04T06:02:59.660Z",
+    "observedAt": "2026-10-04T06:09:47.511Z",
     "sha": "23cf1f39fc9534fe81437200959b6dfc7106e45a",
     "downloaded": true,
     "executed": false,
@@ -93,7 +93,7 @@
   {
     "repository": "ByteByteGoHq/system-design-101",
     "role": "design reference; not vendored in MIT code",
-    "observedAt": "2026-10-04T06:03:01.354Z",
+    "observedAt": "2026-10-04T06:09:48.494Z",
     "sha": "b28380a4710c5ec9638ec037d4168e288f334cba",
     "downloaded": true,
     "executed": false,
@@ -103,7 +103,7 @@
   {
     "repository": "ashishps1/awesome-system-design-resources",
     "role": "design reference; not vendored in MIT code",
-    "observedAt": "2026-10-04T06:03:02.501Z",
+    "observedAt": "2026-10-04T06:09:49.112Z",
     "sha": "25724090f7dd7746129b7194b55504f9d06f86ed",
     "downloaded": true,
     "executed": false,
@@ -113,7 +113,7 @@
   {
     "repository": "puncsky/system-design-and-architecture",
     "role": "design reference",
-    "observedAt": "2026-10-04T06:03:03.850Z",
+    "observedAt": "2026-10-04T06:09:50.004Z",
     "sha": "8a5fbc4165b721a29781e93fc6b050890f7a6290",
     "downloaded": true,
     "executed": false,
@@ -123,7 +123,7 @@
   {
     "repository": "arialdomartini/Back-End-Developer-Interview-Questions",
     "role": "review questions; not acceptance labels",
-    "observedAt": "2026-10-04T06:03:04.650Z",
+    "observedAt": "2026-10-04T06:09:50.427Z",
     "sha": "5bcf6e9a7eb9ac0390abc8507a93f563d0e5efee",
     "downloaded": true,
     "executed": false,
@@ -133,7 +133,7 @@
   {
     "repository": "KAANKIZILTUG/LOGO-DESIGN-SKILL",
     "role": "identity process; no third-party logo copied",
-    "observedAt": "2026-10-04T06:03:05.338Z",
+    "observedAt": "2026-10-04T06:09:50.755Z",
     "sha": "0ecf52e9a4b3ac92b714f7cc6e3148ab8c774134",
     "downloaded": true,
     "executed": false,
@@ -143,7 +143,7 @@
   {
     "repository": "remotion-dev/remotion",
     "role": "optional release video; separate license",
-    "observedAt": "2026-10-04T06:03:07.260Z",
+    "observedAt": "2026-10-04T06:09:51.746Z",
     "sha": "e385a83dbde54179c0457ad90b7d7c3a4b6ab44a",
     "downloaded": true,
     "executed": false,

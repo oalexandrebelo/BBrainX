@@ -2,39 +2,41 @@
 > bbrainx@0.2.0 test
 > node --test test/*.test.mjs
 
-✔ canonical order and identifier validation (0.855417ms)
-✔ excluded .env (0.229666ms)
-✔ excluded .env.local (0.191208ms)
-✔ excluded secret.json (0.052709ms)
-✔ excluded key.pem (0.198791ms)
-✔ excluded node_modules/x.ts (0.050833ms)
-✔ excluded ../a.ts (0.050291ms)
-✔ state location independent from caller working directory (0.093792ms)
-✔ durable schema and FTS search (53.301083ms)
-✔ changed, removed and renamed content invalidate occurrence (22.96225ms)
-✔ scoped retrieval never mixes projects (19.79ms)
-✔ FTS special syntax is treated as search data (11.207458ms)
-✔ file traversal rejected (3.892292ms)
-✔ symlink rejected without following target (3.2495ms)
-✔ context uses actual o200k token count and preserves code (17.098791ms)
-✔ stale source rejected before context is served (13.027917ms)
-✔ checkpoint transaction, retry, collision and outbox (13.126958ms)
-✔ two database handles reject a stale writer (12.532791ms)
-✔ memory requires explicit approval and supports revocation (11.684667ms)
-✔ mandatory memory cannot be silently truncated (12.573583ms)
-✔ no verified completion can be fabricated (11.704292ms)
-✔ backup is a valid independent sqlite database (13.3865ms)
-✔ Invokta enforces trusted project allowlist (24.396666ms)
-✔ single-flight coalesces only outstanding reads (22.795417ms)
-✔ HTTP loopback host, origin and CSRF boundaries (65.359584ms)
-✔ Git ignores remain effective in an explicitly registered nested root (39.281ms)
-✔ changing ignore policy removes previously indexed files (58.164375ms)
-✔ real MCP stdio: two independently started clients share a durable checkpoint (623.76525ms)
-ℹ tests 28
+✔ canonical order and identifier validation (0.798917ms)
+✔ excluded .env (0.245208ms)
+✔ excluded .env.local (0.429416ms)
+✔ excluded secret.json (0.0555ms)
+✔ excluded key.pem (0.083875ms)
+✔ excluded node_modules/x.ts (0.064875ms)
+✔ excluded ../a.ts (0.05675ms)
+✔ state location independent from caller working directory (0.083292ms)
+✔ durable schema and FTS search (44.326292ms)
+✔ changed, removed and renamed content invalidate occurrence (24.563666ms)
+✔ scoped retrieval never mixes projects (19.355041ms)
+✔ FTS special syntax is treated as search data (11.719542ms)
+✔ file traversal rejected (3.551208ms)
+✔ symlink rejected without following target (3.179042ms)
+✔ context uses actual o200k token count and preserves code (17.679666ms)
+✔ stale source rejected before context is served (11.632292ms)
+✔ checkpoint transaction, retry, collision and outbox (13.775625ms)
+✔ two database handles reject a stale writer (39.071667ms)
+✔ memory requires explicit approval and supports revocation (12.663667ms)
+✔ mandatory memory cannot be silently truncated (16.758916ms)
+✔ no verified completion can be fabricated (11.02725ms)
+✔ backup is a valid independent sqlite database (13.868834ms)
+✔ Invokta enforces trusted project allowlist (22.25125ms)
+✔ single-flight coalesces only outstanding reads (26.224208ms)
+✔ HTTP loopback host, origin and CSRF boundaries (51.741166ms)
+✔ Git ignores remain effective in an explicitly registered nested root (73.538541ms)
+✔ changing ignore policy removes previously indexed files (55.483375ms)
+✔ real MCP stdio: two independently started clients share a durable checkpoint (735.833667ms)
+✔ approved memory cannot disappear because a listing is paginated (69.488209ms)
+✔ backup restores a consistent checkpoint and its outbox event (14.435584ms)
+ℹ tests 30
 ℹ suites 0
-ℹ pass 28
+ℹ pass 30
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
-ℹ duration_ms 1209.92825
+ℹ duration_ms 1345.90175
