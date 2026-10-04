@@ -1,0 +1,37 @@
+{
+  "name": "bbrainx",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first context, memory and verified handoffs across coding harnesses.",
+  "license": "MIT",
+  "engines": { "node": ">=22.20.0" },
+  "bin": { "bbrainx": "bin/bbrainx.mjs" },
+  "scripts": {
+    "setup": "node scripts/setup.mjs",
+    "doctor": "node bin/bbrainx.mjs doctor",
+    "start": "node bin/bbrainx.mjs serve",
+    "mcp": "node bin/bbrainx.mjs mcp",
+    "demo": "node bin/bbrainx.mjs demo",
+    "build": "vite build",
+    "test": "node --test test/*.test.mjs",
+    "test:e2e": "playwright test",
+    "check": "npm test && npm run build",
+    "sources": "node scripts/sources.mjs",
+    "package:source": "node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@invokta/core": "0.9.0",
+    "@invokta/mcp": "0.9.0",
+    "@xyflow/react": "^12.10.0",
+    "gpt-tokenizer": "4.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@playwright/test": "^1.55.0",
+    "vite": "8.3.2"
+  }
+}

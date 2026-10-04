@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.bbrainx/
+.env
+.env.*
+!.env.example
+*.sqlite*
+artifacts/
+playwright-report/
+test-results/
+.DS_Store
+vendor/
