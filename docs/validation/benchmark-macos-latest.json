@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "kind": "synthetic-local-retrieval-only",
-  "testedRevision": "337ff85c9a0acee49705c568ce22a0fb14430ec6",
-  "observedAt": "2026-10-04T12:06:47.531Z",
+  "testedRevision": "7d6e721416cbbd7b9d370ce0e8dd894349f6cb4a",
+  "observedAt": "2026-10-04T12:37:38.376Z",
   "platform": "darwin",
   "architecture": "arm64",
   "node": "24.20.0",
@@ -13,86 +13,86 @@
     "generated": true
   },
   "indexing": {
-    "initialMs": 19.488540999999998,
-    "unchangedMs": 9.374250000000018,
+    "initialMs": 22.360541999999995,
+    "unchangedMs": 8.245499999999993,
     "unchangedFilesReused": 60,
-    "singleChangeMs": 14.968625000000003,
+    "singleChangeMs": 8.435625000000016,
     "singleChangeFilesReindexed": 1
   },
   "retrieval": {
     "samples": 10,
-    "p50Ms": 1.2794170000000236,
-    "p95Ms": 7.090582999999981,
+    "p50Ms": 1.0263750000000016,
+    "p95Ms": 7.742417000000017,
     "meanPayloadTokens": 556.9,
     "expectedMarkersFound": 10
   },
   "queries": [
     {
       "query": "VERIFY_MODULE_000",
-      "milliseconds": 7.090582999999981,
+      "milliseconds": 7.742417000000017,
       "payloadTokens": 564,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_001",
-      "milliseconds": 1.3572079999999858,
+      "milliseconds": 1.2194159999999954,
       "payloadTokens": 558,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_002",
-      "milliseconds": 2.8637500000000102,
+      "milliseconds": 3.334875000000011,
       "payloadTokens": 554,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_003",
-      "milliseconds": 1.2378329999999949,
+      "milliseconds": 1.0263750000000016,
       "payloadTokens": 557,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_004",
-      "milliseconds": 1.031833000000006,
+      "milliseconds": 0.9692090000000064,
       "payloadTokens": 554,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_005",
-      "milliseconds": 5.751666999999998,
+      "milliseconds": 0.8030410000000074,
       "payloadTokens": 555,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_006",
-      "milliseconds": 0.8321660000000008,
+      "milliseconds": 5.670832999999988,
       "payloadTokens": 557,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_007",
-      "milliseconds": 0.8530830000000265,
+      "milliseconds": 1.0143329999999935,
       "payloadTokens": 559,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_008",
-      "milliseconds": 1.0426249999999868,
+      "milliseconds": 1.0117079999999987,
       "payloadTokens": 555,
       "sources": 1,
       "expectedMarkerFound": true
     },
     {
       "query": "VERIFY_MODULE_009",
-      "milliseconds": 1.2794170000000236,
+      "milliseconds": 0.7600830000000087,
       "payloadTokens": 556,
       "sources": 1,
       "expectedMarkerFound": true
