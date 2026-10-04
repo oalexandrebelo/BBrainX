@@ -30,7 +30,7 @@ jobs:
           echo "RELEASE_TARGET=$TARGET" >> "$GITHUB_ENV"
       - name: Publish an immutable preview without replacing an existing tag
         run: |
-          if gh release view v0.2.0-preview >/dev/null 2>&1; then
+          if gh release view v0.3.0-preview >/dev/null 2>&1; then
             echo 'Preview already exists; a later release requires a new explicit version.'
             exit 0
           fi
@@ -46,4 +46,4 @@ jobs:
 
           Original core is MIT; dependencies and Remotion retain their own terms. No credentials, installed node_modules, reference-repository copies or font files are included.
           NOTES
-          gh release create v0.2.0-preview artifacts/BBrainX-v0.2.0-source.zip artifacts/SHA256SUMS.txt artifacts/source-manifest.json --target "$RELEASE_TARGET" --title 'BBrainX 0.2.0 — GODMODCODE Developer Preview' --notes-file notes.md --prerelease
+          gh release create v0.3.0-preview artifacts/BBrainX-v0.3.0-source.zip artifacts/SHA256SUMS.txt artifacts/source-manifest.json --target "$RELEASE_TARGET" --title 'BBrainX 0.2.0 — GODMODCODE Developer Preview' --notes-file notes.md --prerelease

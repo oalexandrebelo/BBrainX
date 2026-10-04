@@ -1,4 +1,4 @@
-# Modelo de segurança — prévia 0.2
+# Modelo de segurança — prévia 0.3
 
 ## Fronteira de confiança
 
@@ -10,7 +10,9 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 - MCP stdio com projeto fixado no host. A entrada da ferramenta não altera a allowlist, não registra raízes e não aprova memórias.
 - Nenhuma ferramenta de shell, browser, desktop, implantação ou execução de código externo.
 - Indexação textual limitada; rejeição de traversal, symlinks e alguns padrões de segredo. Arquivos executáveis são lidos como texto, nunca executados.
-- Fontes selecionadas verificadas por hash antes de compilar contexto. Referências antigas provocam erro explícito.
+- Fontes selecionadas verificadas por hash antes de compilar contexto. Trecho de arquivo alterado nunca é servido: o arquivo é relido e reindexado antes (ou, no modo estrito, o pacote é recusado). Arquivo que passou a casar com um padrão de segredo sai do índice.
+- Tetos de indexação e política de arquivo alterado vêm de quem inicia o processo (variáveis de ambiente ou chamada local). Argumento de ferramenta não os muda.
+- No checkpoint, o que o agente declara (feito, decisões, evidências) fica separado do que o host observa (snapshot do índice, commit e ramo do Git). O agente não consegue enviar os campos do host. O Git é consultado só com `rev-parse` e `ls-files`: `git status` e `git diff` executariam filtros `clean` configurados no próprio repositório.
 - Checkpoints em transação com histórico, idempotência e outbox. Escrita antiga não é silenciosamente promovida.
 - Memória candidata separada de aprovação humana. Estado aprovado/revogado versionado.
 - SQLite em pasta privada e arquivo com modo 0600 em sistemas POSIX. O sistema operacional e a criptografia de disco, quando configurada, são responsáveis pela proteção física.
@@ -24,6 +26,10 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 **TOCTOU:** a verificação de arquivos reduz erro de fonte obsoleta, mas não fornece uma snapshot atômica de todo o filesystem. Uma mudança concorrente após leitura pode exigir nova verificação antes de edição pelo agente. Não tratar o hash como lock de arquivos.
 
 **Indexação:** sem daemon watcher. Uma pesquisa pode não refletir um novo arquivo até reindexar. A snapshot representa arquivos textuais elegíveis. Índices derivados não são a fonte exclusiva de verdade.
+
+**Declaração não é prova:** `done` e `evidence` de um checkpoint registram o que o agente afirma. Nenhum teste é reexecutado pelo serviço. Por isso o estado final continua sendo `review_needed`, nunca concluído.
+
+**Cópia da migração:** `brain.v1-backup.sqlite` contém tudo o que o banco continha, inclusive os trechos indexados. Fica na mesma pasta privada e deve ser apagada quando o retorno à 0.2 não for mais necessário.
 
 **Retenção:** revogar memória remove sua elegibilidade em novas recuperações, não executa apagamento físico garantido de páginas SQLite, WAL, históricos, outputs já exportados ou backups. Eventos evitam armazenar corpos completos de prompts, mas contêm identificadores de projeto e tarefa. Proteja os backups.
 
@@ -41,7 +47,9 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 | DNS rebinding / site externo | Host literal, Origin, Fetch Metadata e CSRF |
 | Caminho sai da raiz | `readSafe` valida caminho relativo e componentes |
 | Symlink aponta para home | Recusa sem seguir o destino |
-| Arquivo indexado mudou | `STALE_INDEX` antes de servir pacote |
+| Arquivo indexado mudou | Relido antes de servir; `STALE_INDEX` no modo estrito |
+| Agente forja estado do Git ou campo extra no checkpoint | Campos do host são carimbados pelo serviço; campo desconhecido é recusado |
+| Migração de schema corrompe estado | Cópia íntegra antes, troca numa transação, versão desconhecida é recusada |
 | Duas gravações da mesma versão | CAS + transação SQLite |
 | Retry repete efeito | Idempotency key e fingerprint |
 | Agente transforma hipótese em política | Só proposta via MCP; aprovação CLI humana |

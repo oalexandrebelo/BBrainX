@@ -4,7 +4,7 @@
 
 [Português](README.md) · [Research dossier](docs/DOSSIER.md) · [Validation evidence](docs/validation/ci-report.json)
 
-BBrainX 0.2 is a runnable developer preview, not a universal model gateway. It keeps project-scoped text indexes, checkpoints and approved memories on your machine. Invokta exposes six typed MCP capabilities; React Flow explains their responsibilities and a local workbench invokes the same real domain operations.
+BBrainX 0.3 is a runnable developer preview, not a universal model gateway. It keeps project-scoped text indexes, checkpoints and approved memories on your machine; search ranks the declaration of a name above its usages and tests, and files changed after indexing are re-read before being served. Invokta exposes six typed MCP capabilities; React Flow explains their responsibilities and a local workbench invokes the same real domain operations.
 
 ## Start
 

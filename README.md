@@ -2,11 +2,11 @@
 
 <p align="center"><strong>Continue o trabalho. Não reconstrua a conversa inteira.</strong><br/>Contexto local, memória governada e handoffs verificáveis entre agentes de programação.</p>
 
-<p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: consulte a execução e a revisão testada" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Começar</a> · <a href="docs/DOSSIER.md">Dossiê</a> · <a href="docs/SECURITY_MODEL.md">Segurança</a> · <a href="docs/EVALUATION.md">Avaliação</a></p>
+<p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: consulte a execução e a revisão testada" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Começar</a> · <a href="docs/DOSSIER.md">Dossiê</a> · <a href="docs/SECURITY_MODEL.md">Segurança</a> · <a href="docs/EVALUATION.md">Avaliação</a> · <a href="docs/FEASIBILITY.md">Viabilidade</a></p>
 
 ## O que funciona nesta versão
 
-BBrainX **0.2.0 é uma prévia de desenvolvimento** com um núcleo local executável: SQLite/FTS5 persistente, indexação incremental de arquivos textuais, contexto com fontes e orçamento, memória proposta/aprovada/revogada e checkpoints com concorrência otimista. O servidor **Invokta MCP stdio** expõe seis capacidades; o painel React Flow explica a arquitetura e inclui um laboratório que consulta os mesmos dados reais.
+BBrainX **0.3.0 é uma prévia de desenvolvimento** com um núcleo local executável: SQLite/FTS5 persistente, indexação incremental de arquivos textuais, busca que põe a declaração de um nome antes dos usos e dos testes, contexto com fontes e orçamento, memória proposta/aprovada/revogada e checkpoints com concorrência otimista que registram o que foi feito e o estado do Git visto pelo host. O servidor **Invokta MCP stdio** expõe seis capacidades; o painel React Flow explica a arquitetura e inclui um laboratório que consulta os mesmos dados reais.
 
 O projeto não é um novo modelo, não intercepta todas as APIs das IDEs e não compartilha KV cache entre fornecedores. Não substitui seus testes nem concede shell ao serviço de memória. Laya, LightRAG, execução de navegador e OpenHands são expansões documentadas, **não requisitos instalados nem capacidades ativas**.
 
@@ -82,7 +82,9 @@ npm run test:e2e
 node scripts/benchmark.mjs
 ```
 
-Os testes cobrem escopo, fontes obsoletas, idempotência, versão conflitante, aprovação, backup, HTTP e MCP real. A matriz inclui macOS, Linux e Windows; **o resultado autoritativo é a execução vinculada à revisão**, não o número de testes de uma versão anterior. Evidências geradas pela CI ficam em `docs/validation/` quando publicadas.
+Os testes cobrem escopo, arquivo alterado depois do índice, ordenação, limites, migração de schema, idempotência, versão conflitante, aprovação, backup, HTTP e MCP real. A matriz inclui macOS, Linux e Windows; **o resultado autoritativo é a execução vinculada à revisão**, não o número de testes de uma versão anterior. Evidências geradas pela CI ficam em `docs/validation/` quando publicadas.
+
+A recuperação é medida com casos rotulados (`node scripts/eval-retrieval.mjs`, ver [avaliação](docs/EVALUATION.md)); ela mede a posição do trecho esperado, não tarefa aceita. Consulta em linguagem natural ainda é o ponto fraco de uma busca lexical.
 
 Sem watcher contínuo, LSP semântico, sincronização multi-host, criptografia própria, autenticação multi-tenant, captura de tela ou execução de shell. Não use o banco ativo em iCloud/NFS. Revogar memória evita recuperação futura, mas não apaga cópias históricas e backups. Consulte [modelo de segurança](docs/SECURITY_MODEL.md).
 

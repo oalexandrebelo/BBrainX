@@ -26,7 +26,7 @@ export async function startServer(store,{port=4317}={}){
       ensure(!req.headers.origin||req.headers.origin==='http://'+expected,'ORIGIN_REJECTED');
       ensure(!['cross-site','same-site'].includes(req.headers['sec-fetch-site']),'ORIGIN_REJECTED');
       const url=new URL(req.url,'http://'+expected);
-      if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:'0.2.0',csrf,projects:store.projects(),doctor:doctor(),mode:'local'});
+      if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:'0.3.0',csrf,projects:store.projects(),doctor:doctor(),mode:'local'});
       if(req.method==='GET'&&url.pathname==='/api/project'){
         const project=url.searchParams.get('project');return json(res,200,{project:store.project(project),tasks:store.tasks(project),memories:store.memories(project),events:store.events(project)});
       }

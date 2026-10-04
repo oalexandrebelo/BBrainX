@@ -6,12 +6,12 @@ import { parseArgs } from 'node:util';
 import { ensure, newId } from '../src/primitives.mjs';
 import { doctor, stateHome } from '../src/host.mjs';
 
-const {values,args}=(()=>{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};})();
+const {values,args}=(()=>{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},strict:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};})();
 const command=args[0]||'help';let store;
 const print=value=>console.log(JSON.stringify(value,null,2));
 try{
   if(command==='doctor'){const report=doctor();print(report);process.exitCode=report.ready?0:1;}
-  else if(command==='help'||values.help){console.log(`BBrainX — GODMODCODE 0.2\n\nnode bin/bbrainx.mjs doctor\nnode bin/bbrainx.mjs init --project meu-projeto --root /caminho/absoluto\nnode bin/bbrainx.mjs index --project meu-projeto\nnode bin/bbrainx.mjs search --project meu-projeto --query autenticação\nnode bin/bbrainx.mjs context --project meu-projeto --query autenticação --budget 4000\nnode bin/bbrainx.mjs checkpoint --project meu-projeto --task T1 --file checkpoint.json --version 0 --key tentativa-1\nnode bin/bbrainx.mjs memory --project meu-projeto\nnode bin/bbrainx.mjs approve --project meu-projeto --id ID --version 1\nnode bin/bbrainx.mjs revoke --project meu-projeto --id ID --version 2\nnode bin/bbrainx.mjs config --project meu-projeto --client claude\nnode bin/bbrainx.mjs mcp --project meu-projeto\nnode bin/bbrainx.mjs serve\nnode bin/bbrainx.mjs demo\nnode bin/bbrainx.mjs backup --file /destino/backup.sqlite\n\nSem alterações automáticas nas configurações dos harnesses. Mais: docs/QUICKSTART.md`);}
+  else if(command==='help'||values.help){console.log(`BBrainX — GODMODCODE 0.3\n\nnode bin/bbrainx.mjs doctor\nnode bin/bbrainx.mjs init --project meu-projeto --root /caminho/absoluto\nnode bin/bbrainx.mjs index --project meu-projeto\nnode bin/bbrainx.mjs search --project meu-projeto --query autenticação\nnode bin/bbrainx.mjs context --project meu-projeto --query autenticação --budget 4000 [--strict]\nnode bin/bbrainx.mjs checkpoint --project meu-projeto --task T1 --file checkpoint.json --version 0 --key tentativa-1\nnode bin/bbrainx.mjs memory --project meu-projeto\nnode bin/bbrainx.mjs propose --project meu-projeto --statement TEXTO --source ORIGEM [--mode always|relevant]\nnode bin/bbrainx.mjs approve --project meu-projeto --id ID --version 1 [--mode always|relevant]\nnode bin/bbrainx.mjs revoke --project meu-projeto --id ID --version 2\nnode bin/bbrainx.mjs config --project meu-projeto --client claude\nnode bin/bbrainx.mjs mcp --project meu-projeto\nnode bin/bbrainx.mjs serve\nnode bin/bbrainx.mjs demo\nnode bin/bbrainx.mjs backup --file /destino/backup.sqlite\n\nSem alterações automáticas nas configurações dos harnesses. Mais: docs/QUICKSTART.md`);}
   else if(command==='config'){
     ensure(values.project,'PROJECT_REQUIRED');
     const entry=fileURLToPath(import.meta.url),cliArgs=[entry,'mcp','--project',values.project];
@@ -30,11 +30,11 @@ try{
     }
     else if(command==='index'){const {indexProject}=await import('../src/retrieval.mjs');print(indexProject(store,values.project));}
     else if(command==='search'){const {search}=await import('../src/retrieval.mjs');print(search(store,values.project,values.query));}
-    else if(command==='context'){const {compileContext}=await import('../src/context.mjs');print(compileContext(store,{project:values.project,query:values.query,budget:Number(values.budget||4000),...(values.task?{task:values.task}:{})}));}
-    else if(command==='checkpoint'){ensure(values.file,'FILE_REQUIRED');print(store.checkpoint(values.project,values.task,JSON.parse(fs.readFileSync(values.file,'utf8')),Number(values.version||0),values.key||newId()));}
+    else if(command==='context'){const {compileContext}=await import('../src/context.mjs');print(compileContext(store,{project:values.project,query:values.query,budget:Number(values.budget||4000),...(values.task?{task:values.task}:{}),onStale:values.strict?'fail':'refresh'}));}
+    else if(command==='checkpoint'){ensure(values.file,'FILE_REQUIRED');const {saveCheckpoint}=await import('../src/session.mjs');print(saveCheckpoint(store,{project:values.project,task:values.task,content:JSON.parse(fs.readFileSync(values.file,'utf8')),expectedVersion:Number(values.version||0),idempotencyKey:values.key||newId()}));}
     else if(command==='memory')print(store.memories(values.project));
-    else if(command==='propose')print(store.proposeMemory(values.project,values.statement,values.source));
-    else if(command==='approve'||command==='revoke')print(store.reviewMemory(values.project,values.id,command==='approve'?'approved':'revoked',Number(values.version)));
+    else if(command==='propose')print(store.proposeMemory(values.project,values.statement,values.source,values.mode));
+    else if(command==='approve'||command==='revoke')print(store.reviewMemory(values.project,values.id,command==='approve'?'approved':'revoked',Number(values.version),values.mode));
     else if(command==='backup'){ensure(values.file,'FILE_REQUIRED');print(store.backup(values.file));}
     else if(command==='mcp'){
       ensure(values.project,'PROJECT_REQUIRED');store.project(values.project);

@@ -175,6 +175,6 @@ jobs:
         with:
           name: BBrainX-source-distribution
           path: |
-            artifacts/BBrainX-v0.2.0-source.zip
+            artifacts/BBrainX-v0.3.0-source.zip
             artifacts/SHA256SUMS.txt
             artifacts/source-manifest.json

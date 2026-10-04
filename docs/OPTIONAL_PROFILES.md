@@ -1,5 +1,7 @@
 # Perfis opcionais: instalar só o que demonstra utilidade
 
+> A análise de viabilidade de 4 de outubro de 2026, com o veredito de cada projeto externo e o contrato proposto para o Decision Broker, está em [FEASIBILITY.md](FEASIBILITY.md). Nenhum perfil abaixo foi ativado por ela.
+
 ## Perfil entregue: local-deterministic
 
 Node, SQLite/FTS5, Invokta, MCP, React Flow e tokenizer do payload. Sem Python, GPU, Docker ou chamadas LLM. `npm run setup` não liga modelos ou gateways. Todas as seis capacidades usam o mesmo domínio local.
@@ -8,7 +10,7 @@ Node, SQLite/FTS5, Invokta, MCP, React Flow e tokenizer do payload. Sem Python, 
 
 Use apenas decisões curtas com opções delimitadas. Primeiro aplique regras determinísticas. Estado truncado, tokenizer desconhecido, modelo indisponível, distribuição nova ou limiar não calibrado levam a abstenção. Confiança não é autorização. Um limiar JEV não deve ser transferido automaticamente para Laya.
 
-Alternativas a avaliar: Laya Python/MPS em Apple Silicon, laya-ts/ONNX CPU e SemIf MLX. O doctor não prova qual é mais rápido. Compare qualidade, cobertura, latência p50/p95, memória, cold start e energia no mesmo conjunto de decisões. Não carregue todos os backends simultaneamente.
+Alternativas a avaliar: Laya Python/MPS em Apple Silicon, laya-ts/ONNX CPU e SemIf MLX. Em 04/10/2026 o `laya-ts` existia no repositório do Laya, mas não estava publicado no npm, e o ONNX precisava ser exportado localmente com Python. O doctor não prova qual é mais rápido. Compare qualidade, cobertura, latência p50/p95, memória, cold start e energia no mesmo conjunto de decisões. Não carregue todos os backends simultaneamente.
 
 Conversão JEV deve preservar o contrato de ação, respostas estruturadas e metadados de truncamento. `jev-ultrafast` pode inspirar separação entre escolha de operação/alvo e geração de texto; nenhuma ação de navegador deve ser executada antes de validar o alvo atual. `fast-jev-compaction` inspira uma proposta de descarte seguida de uma política determinística de preservação. Jarvis/captura de desktop ficam fora do núcleo, com consentimento específico por aplicativo se forem implementados.
 

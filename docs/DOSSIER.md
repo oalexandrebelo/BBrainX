@@ -1,7 +1,7 @@
 # BBrainX — GODMODCODE
 ## Dossiê de engenharia, pesquisa aplicada e decisões de produto
 
-**Revisão:** 0.2 · **Pesquisa:** 4 de outubro de 2026 · **Status:** prévia implementada com evidências vinculadas à CI, não certificação de produção.
+**Revisão:** 0.3 · **Pesquisa:** 4 de outubro de 2026 · **Status:** prévia implementada com evidências vinculadas à CI, não certificação de produção.
 
 Este documento distingue quatro categorias: capacidade documentada de upstream, achado de pesquisa em condições específicas, relato de engenharia de um autor e decisão proposta/implementada no BBrainX. Nenhum número de velocidade ou economia de outra ferramenta é atribuído a este produto.
 
@@ -178,6 +178,14 @@ O próximo ganho provável de precisão deve ser comparado entre busca estrutura
 Uma feature deve explicar seu problema, reduzir ou justificar dependências, oferecer teste reproduzível, declarar riscos e não anunciar uma capacidade que só existe em mocks. Bugs encontrados em teste são parte da evidência; não apagar logs negativos para manter narrativa de perfeição.
 
 O caminho para ser útil à comunidade é instalação clara, limites honestos, issues reproduzíveis, documentação ligada ao código e manutenção contínua. Ranking no GitHub depende de adoção; não é um resultado técnico garantido pelo uso de mais frameworks ou pela autoria assistida por IA.
+
+## 12. O que mudou na revisão 0.3
+
+A 0.2 foi medida num repositório real de 3.662 arquivos e mostrou quatro fraquezas: a declaração de um nome ficava atrás dos testes que o usam; um único arquivo alterado derrubava o pacote inteiro; o teto de 32 MiB era rígido; e o checkpoint só carregava objetivo e próxima ação. A 0.3 trata as quatro e passa a medir a recuperação com casos rotulados.
+
+As seções 5.3 a 5.6 continuam valendo com estas diferenças: os tetos de indexação são configuráveis pelo host; um arquivo alterado é relido antes de ser servido; a ordenação soma o BM25 por coluna a um reforço para nomes declarados e a um desconto para teste, documentação e código gerado; e o checkpoint separa o que o agente declara do que o host observa.
+
+A análise de viabilidade das integrações externas, com o contrato do Decision Broker e a ordem das próximas entregas, está em [FEASIBILITY.md](FEASIBILITY.md).
 
 ## Referências primárias
 

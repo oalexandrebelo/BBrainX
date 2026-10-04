@@ -25,6 +25,17 @@ Use tarefas estratificadas: localização de símbolo, bug local, refatoração 
 
 Separe cold start, índice aquecido e cache do provedor. Uma comparação com contexto já resolvido não é um ganho causado pelo sistema. Registre versões do harness, modelo, endpoint, ferramenta, índice, prompt e critérios de aceitação.
 
+## Recuperação com casos rotulados (desde a 0.3)
+
+```sh
+node scripts/make-definition-cases.mjs --project meu-app --out casos.json --sample 300
+node scripts/eval-retrieval.mjs --project meu-app --cases casos.json
+```
+
+O primeiro comando gera casos sem julgamento humano: cada nome declarado em um único arquivo-fonte vira a consulta, e esse arquivo é a resposta esperada. O segundo informa MRR e acerto entre os 1, 3 e 10 primeiros, por fatia. Também aceita casos escritos à mão, como `test/fixtures/eval-self.cases`, que a suíte usa como portão de regressão sobre este repositório. Guarde arquivos de casos com uma extensão que não é indexada: um `.json` com as consultas escritas vira o primeiro resultado delas.
+
+Limites: mede a posição do trecho esperado, não tarefa aceita. Os padrões que geram os casos são mais estreitos que os do indexador, mas da mesma família, então o conjunto favorece nomes que o indexador reconhece. Os números de 4 de outubro de 2026 e suas ressalvas estão em [FEASIBILITY.md](FEASIBILITY.md).
+
 ## Custos
 
 ```text
