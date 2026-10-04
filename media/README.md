@@ -1,6 +1,6 @@
 # Filme de apresentação BBrainX
 
-Composição original em React/Remotion, 1280×720, 30 fps, 18 segundos. Sem áudio, fontes distribuídas ou imagens de terceiros. É uma explicação de produto, não uma gravação de execução real nem um benchmark.
+Composição original em React/Remotion, 1280×720, 30 fps, 25 segundos. Sem áudio, fontes distribuídas ou imagens de terceiros. É uma explicação de produto, não uma gravação de execução real. Os três números da cena «Medido, não prometido» vêm de `docs/EVALUATION.md` e `docs/RELEASE_NOTES.md`.
 
 ```sh
 cd media

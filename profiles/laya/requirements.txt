@@ -1,0 +1,9 @@
+# Versões medidas em 04/10/2026 num MacBook M5 Pro (macOS 26, arm64, Python 3.12.13, GPU via MPS).
+# Em outro sistema o instalador resolve as mesmas versões; o resultado ali ainda não foi medido.
+laya==0.3.26
+torch==2.14.1
+transformers==5.18.0
+safetensors==0.8.0
+huggingface_hub==1.33.0
+numpy==2.5.3
+tokenizers==0.23.2

@@ -1,0 +1,292 @@
+[
+ {
+  "kind": "natural",
+  "query": "Embedder fictício com vetor fixo",
+  "expect": [
+   "mem0/embeddings/mock.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o modelo spaCy é carregado uma única vez e baixado automaticamente quando falta?",
+  "expect": [
+   "mem0/utils/spacy_models.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Em que ordem as credenciais do Google Cloud são procuradas: dicionário, arquivo, variável de ambiente e padrão?",
+  "expect": [
+   "mem0/utils/gcp_auth.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde um wrapper de chat injeta memórias relevantes na pergunta e grava a conversa em segundo plano?",
+  "expect": [
+   "mem0/proxy/main.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o carregamento de dados serializados legados só aceita tipos básicos para impedir execução de código?",
+  "expect": [
+   "mem0/vector_stores/faiss.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Why are vectors L2-normalized before indexing when the distance metric is cosine?",
+  "expect": [
+   "mem0/vector_stores/faiss.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o erro 429 guarda o tempo de espera sugerido e os limites de taxa dentro da exceção?",
+  "expect": [
+   "mem0/client/utils.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Which code validates the provider name, picks its config class and defaults the path to /tmp?",
+  "expect": [
+   "mem0/vector_stores/configs.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o par identificador anônimo e e-mail vira hash para não gravar o e-mail no arquivo de configuração local?",
+  "expect": [
+   "mem0/memory/setup.py",
+   "mem0-ts/src/client/config.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "How is the word json guaranteed to appear in the prompt when the provider demands it for JSON mode?",
+  "expect": [
+   "mem0/memory/utils.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "How are facts returned as objects instead of plain strings by small models normalized?",
+  "expect": [
+   "mem0/memory/utils.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a tabela de histórico antiga é renomeada, recriada e preenchida só com as colunas em comum?",
+  "expect": [
+   "mem0/memory/storage.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "How many recent messages per session are kept before older ones are deleted?",
+  "expect": [
+   "mem0/memory/storage.py",
+   "mem0-ts/src/oss/src/storage/SQLiteManager.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como eventos frequentes são amostrados por uma taxa configurável enquanto os de ciclo de vida sempre são enviados?",
+  "expect": [
+   "mem0/memory/telemetry.py",
+   "mem0-ts/src/oss/src/utils/telemetry.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o código decide se um modelo é de raciocínio e descarta parâmetros que ele não aceita?",
+  "expect": [
+   "mem0/llms/base.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Para quais famílias e versões do Claude os parâmetros de amostragem são enviados?",
+  "expect": [
+   "mem0/llms/anthropic.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o formato das mensagens muda conforme a família do modelo no Bedrock, como Cohere ou Meta?",
+  "expect": [
+   "mem0/llms/aws_bedrock.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como as notas brutas do reranqueador cross-encoder são convertidas individualmente para o intervalo de 0 a 1?",
+  "expect": [
+   "mem0/reranker/huggingface_reranker.py",
+   "mem0-ts/src/oss/src/rerankers/cross_encoder.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a nota de palavra-chave é normalizada para 0–1 com parâmetros que mudam conforme o tamanho da consulta?",
+  "expect": [
+   "mem0/utils/scoring.py",
+   "mem0-ts/src/oss/src/utils/scoring.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "How are words reduced to their base form for keyword matching while keeping the original -ing words?",
+  "expect": [
+   "mem0/utils/lemmatization.py",
+   "mem0-ts/src/oss/src/utils/lemmatization.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como nomes próprios, trechos entre aspas e expressões compostas são extraídos de um texto como entidades?",
+  "expect": [
+   "mem0/utils/entity_extraction.py",
+   "mem0-ts/src/oss/src/utils/entity_extraction.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Validação da data de expiração das memórias",
+  "expect": [
+   "mem0/memory/main.py",
+   "mem0-ts/src/oss/src/utils/expiration.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a fábrica converte a configuração genérica para a do provedor, repassando campos de raciocínio só quando aceitos?",
+  "expect": [
+   "mem0/utils/factory.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a pilha de clientes enviada nos cabeçalhos é limitada sem cortar nenhum nome ao meio?",
+  "expect": [
+   "mem0/client/main.py",
+   "mem0-ts/src/client/mem0.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Quando a cópia profunda da configuração falha, como segredos são ocultados mantendo objetos de autenticação em tempo de execução?",
+  "expect": [
+   "mem0/memory/main.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde está a fórmula de relevância por frequência de termos com saturação e normalização pelo tamanho do documento?",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/bm25.ts",
+   "mem0-ts/src/oss/src/vector_stores/memory.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Chaves em camelCase poupando identificadores de sessão",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/casing.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Aviso para instalar dependência opcional com npm",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/load_peer.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where is the default path of the local vector database in the home directory defined?",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/sqlite.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Histórico em memória limitado a cem entradas",
+  "expect": [
+   "mem0-ts/src/oss/src/storage/MemoryHistoryManager.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Histórico que descarta tudo sem guardar nada",
+  "expect": [
+   "mem0-ts/src/oss/src/storage/DummyHistoryManager.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o código imprime o SQL de criação da tabela de histórico quando ela não existe no Supabase?",
+  "expect": [
+   "mem0-ts/src/oss/src/storage/SupabaseHistoryManager.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a configuração do usuário é mesclada aos padrões sem herdar modelo e URL do OpenAI em outros provedores?",
+  "expect": [
+   "mem0-ts/src/oss/src/config/manager.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Which vector store creates metadata indexes for user, agent and run ids on Cloudflare?",
+  "expect": [
+   "mem0-ts/src/oss/src/vector_stores/vectorize.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Which LLM wrapper defaults to a tiny latest Mistral model and flattens content chunks into text?",
+  "expect": [
+   "mem0-ts/src/oss/src/llms/mistral.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde a memória de conversa do LangChain carrega memórias por busca ou listagem e salva cada troca?",
+  "expect": [
+   "mem0-ts/src/community/src/integrations/langchain/mem0.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como chaves de objetos são convertidas entre camelCase e snake_case sem mexer nos metadados do usuário?",
+  "expect": [
+   "mem0-ts/src/client/utils.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where does the provider name pick the history manager: SQLite, Supabase or in-memory?",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/factory.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a dimensão dos vetores é descoberta automaticamente com um embedding de teste quando não é informada?",
+  "expect": [
+   "mem0-ts/src/oss/src/memory/index.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o cliente evita repetir a validação da mesma chave de API, com um cache de tamanho limitado?",
+  "expect": [
+   "mem0-ts/src/client/mem0.ts"
+  ]
+ }
+]

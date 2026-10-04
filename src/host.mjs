@@ -20,6 +20,17 @@ export function commandVersion(command, args = ['--version']) {
   const result = spawnSync(command, args, { encoding: 'utf8', timeout: 2500, maxBuffer: 65536, windowsHide: true, shell: false });
   return { available: !result.error && result.status === 0, version: result.status === 0 ? result.stdout.trim().split('\n')[0].slice(0, 180) : null };
 }
+/**
+ * Commit e ramo vistos pelo host; nunca vêm de argumento de ferramenta. null fora de um repositório com commit.
+ * Só `rev-parse`: `git status` e `git diff` executam os filtros `clean` configurados no repositório.
+ */
+export function gitState(root) {
+  const options = { encoding: 'utf8', timeout: 5000, maxBuffer: 65536, windowsHide: true, shell: false, stdio: ['ignore', 'pipe', 'ignore'] };
+  const head = spawnSync('git', ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null', '-C', root, 'rev-parse', 'HEAD', '--abbrev-ref', 'HEAD'], options);
+  if (head.error || head.status !== 0) return null;
+  const [commit, branch] = head.stdout.trim().split('\n');
+  return { head: commit, branch: branch || null };
+}
 /** Observa o host; não instala software, acessa Keychain ou executa arquivos do projeto. */
 export function doctor() {
   const [major, minor] = process.versions.node.split('.').map(Number);

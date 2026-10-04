@@ -6,7 +6,7 @@ import zipfile
 
 root=Path.cwd()
 files=subprocess.check_output(['git','ls-files','-z']).decode('utf-8').split('\0')
-output=root/'artifacts'/'BBrainX-v0.2.0-source.zip'
+output=root/'artifacts'/'BBrainX-v0.4.0-source.zip'
 output.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(output,'w',zipfile.ZIP_DEFLATED,compresslevel=7) as archive:
     for name in sorted(filter(None,files)):

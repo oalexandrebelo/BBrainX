@@ -1,6 +1,6 @@
 {
   "name": "bbrainx",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "Local-first context, memory and verified handoffs across coding harnesses.",
@@ -18,11 +18,11 @@
     "test:e2e": "playwright test",
     "check": "npm test && npm run build",
     "sources": "node scripts/sources.mjs",
-    "package:source": "node scripts/package.mjs"
+    "package:source": "node scripts/package.mjs",
+    "study:doc": "node scripts/study-doc.mjs",
+    "laya:bench": "node scripts/laya-bench.mjs"
   },
   "dependencies": {
-    "@invokta/core": "0.9.0",
-    "@invokta/mcp": "0.9.0",
     "@xyflow/react": "^12.10.0",
     "gpt-tokenizer": "4.0.0",
     "react": "^19.2.0",

@@ -2,95 +2,103 @@
 
 <p align="center"><strong>Continue o trabalho. Não reconstrua a conversa inteira.</strong><br/>Contexto local, memória governada e handoffs verificáveis entre agentes de programação.</p>
 
-<p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: consulte a execução e a revisão testada" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Começar</a> · <a href="docs/DOSSIER.md">Dossiê</a> · <a href="docs/SECURITY_MODEL.md">Segurança</a> · <a href="docs/EVALUATION.md">Avaliação</a></p>
+<p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: consulte a execução e a revisão testada" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Começar</a> · <a href="docs/STUDY_MAP.md">Mapa do estudo</a> · <a href="docs/DOSSIER.md">Dossiê</a> · <a href="docs/SECURITY_MODEL.md">Segurança</a> · <a href="docs/EVALUATION.md">Avaliação</a> · <a href="README.en.md">English</a></p>
 
-## O que funciona nesta versão
+## O que é
 
-BBrainX **0.2.0 é uma prévia de desenvolvimento** com um núcleo local executável: SQLite/FTS5 persistente, indexação incremental de arquivos textuais, contexto com fontes e orçamento, memória proposta/aprovada/revogada e checkpoints com concorrência otimista. O servidor **Invokta MCP stdio** expõe seis capacidades; o painel React Flow explica a arquitetura e inclui um laboratório que consulta os mesmos dados reais.
+O BBrainX roda na sua máquina e entrega ao agente de programação o que ele precisa para continuar uma tarefa: os trechos certos do repositório, o checkpoint da sessão anterior e as memórias que você aprovou. Fala MCP com Claude Code, Codex, Cursor, VS Code e Gemini CLI. Não usa modelo, rede, conta, Docker nem Python no núcleo.
 
-O projeto não é um novo modelo, não intercepta todas as APIs das IDEs e não compartilha KV cache entre fornecedores. Não substitui seus testes nem concede shell ao serviço de memória. Laya, LightRAG, execução de navegador e OpenHands são expansões documentadas, **não requisitos instalados nem capacidades ativas**.
+A versão **0.4.0 é uma prévia de desenvolvimento**. Tudo o que está descrito aqui roda e é testado a cada revisão; o que não foi medido está dito como não medido.
 
-## Comece no macOS
+## Comece em três comandos
 
-Requisitos: **Node 24 LTS e Git**. Node 22.20+ atende ao contrato do núcleo, mas a matriz inicial usa Node 24. Nenhum Docker, GPU, chave de API, Python ou conta de IA é necessário para experimentar o fluxo básico.
+Requisitos: **Node 24 LTS e Git** (Node 22.20 ou mais novo também atende). O foco desta fase é o macOS; Linux e Windows passam na mesma suíte de testes.
 
 ```sh
-git clone https://github.com/oalexandrebelo/BBrainX.git
-cd BBrainX
+git clone https://github.com/oalexandrebelo/BBrainX.git && cd BBrainX
 npm run setup
-npm run demo
-npm start
+node bin/bbrainx.mjs up --root /caminho/do/seu/projeto
 ```
 
-Abra **http://127.0.0.1:4317**. O setup verifica o host, instala exatamente o lockfile sem lifecycle scripts de dependências, executa os testes e compila a interface. Não instala Node via sudo e não altera seus editores. O lockfile é publicado após uma execução de CI bem-sucedida; uma revisão ainda sem lockfile falha explicitamente no setup.
+- `npm run setup` confere a máquina, instala exatamente o que está no lockfile (sem scripts de pós-instalação), roda os testes e compila o painel.
+- `up` registra a pasta, indexa e mostra o próximo passo para cada harness. Rodar de novo só atualiza o que mudou.
+- `node bin/bbrainx.mjs doctor` diz qual é o melhor cenário para esta máquina e o comando de cada passo. Ele só observa: não instala nada e não executa as ferramentas que encontra.
 
-No Mac, `Start-BBrainX.command` também inicia a experiência depois que Node/Git estiverem disponíveis. Consulte o quickstart para ambientes sem essas dependências e caminhos com espaços.
-
-## Use com seu projeto
+Para ligar ao seu harness:
 
 ```sh
-node bin/bbrainx.mjs init --project meu-app --root /caminho/absoluto/meu-app
-node bin/bbrainx.mjs index --project meu-app
-node bin/bbrainx.mjs context --project meu-app --query "validação de sessão" --budget 4000
-node bin/bbrainx.mjs config --project meu-app --client codex
-node bin/bbrainx.mjs config --project meu-app --client claude
+node bin/bbrainx.mjs config --project meu-projeto --client claude   # ou codex, cursor, vscode, gemini
 ```
 
-`config` **imprime** um fragmento para revisão. Não sobrescreve `config.toml`, `.mcp.json`, `CLAUDE.md`, credenciais ou gates de aprovação. Para clientes com formato diferente, use comando/argumentos/ambiente fornecidos e a documentação da versão instalada.
+O comando **imprime** a configuração. Quem cola no arquivo ou roda o `claude mcp add` é você: nenhum comando do BBrainX altera `config.toml`, `.mcp.json`, credenciais ou aprovações. `npm start` abre o painel em **http://127.0.0.1:4317**; no Mac, `Start-BBrainX.command` faz o mesmo com dois cliques.
 
-### Seis ferramentas, um escopo
+## O que foi medido
+
+| Medida | 0.3 | 0.4 | Como foi medido |
+|---|---|---|---|
+| Arquivo certo entre os 10 primeiros, pergunta em linguagem natural | 54 % | **84 %** | 79 perguntas cegas, escritas por outro autor que não viu o buscador, sobre dois repositórios de terceiros |
+| Arquivo certo em 1.º lugar, mesmas perguntas | 33 % | **46 %** | Os intervalos de 95 % se cruzam (24–44 % e 35–57 %); na comparação caso a caso a posição melhorou em 40 e piorou em 7 |
+| Definição de um identificador em 1.º lugar | 12 de 12 | 12 de 12 | Casos rotulados sobre este repositório, usados como portão de regressão |
+| Pacotes de produção no lockfile | 121 | **25** | Motor de capacidades e servidor MCP próprios |
+
+Esses números medem a posição do arquivo esperado, não tarefa concluída nem economia de tokens faturada. O método, os intervalos e os comandos para repetir estão em [docs/EVALUATION.md](docs/EVALUATION.md).
+
+## Seis ferramentas, um escopo
 
 | MCP | Responsabilidade |
 |---|---|
-| `context_index` | Atualizar o índice da raiz já autorizada. |
-| `context_search` | Recuperar evidências pelo índice lexical. |
-| `context_bootstrap` | Montar um pacote com orçamento e verificar os arquivos selecionados. |
-| `session_get` | Recuperar o checkpoint portável de uma tarefa. |
-| `session_checkpoint` | Salvar versão esperada + chave de idempotência. |
-| `memory_propose` | Propor aprendizado com origem; não aprovar automaticamente. |
+| `context_bootstrap` | Montar um pacote com orçamento de tokens, com caminho, linhas e hash de cada trecho. |
+| `context_search` | Buscar no índice; a declaração de um nome vem antes dos usos e dos testes. |
+| `context_index` | Atualizar o índice da pasta registrada. |
+| `session_checkpoint` | Salvar o estado da tarefa: o que foi feito, decisões, arquivos tocados, evidências. |
+| `session_get` | Recuperar o checkpoint, em outro harness ou em outra sessão. |
+| `memory_propose` | Propor um aprendizado. Só você aprova, pelo terminal. |
 
-Um cliente MCP de teste real grava e encerra a sessão; outro processo inicia e recupera o mesmo checkpoint. Isso valida o protocolo e a persistência. **Não equivale a homologação de cada versão de Codex, Claude Code ou Antigravity.**
+O servidor é próprio e fala as **duas eras do protocolo MCP** no mesmo processo: a revisão corrente (2026-07-28, sem handshake) e as anteriores (com `initialize`). O cliente oficial do protocolo conversa com ele nos testes. Isso valida o protocolo; **não é homologação de cada versão de cada IDE**.
 
-## Explore a arquitetura
+O servidor só enxerga o projeto com que foi iniciado, não executa comandos e não aprova memória. Texto recuperado é evidência, nunca instrução.
 
-No painel, clique em qualquer nó para ver: propósito, entradas, saídas, invariantes, trade-offs, código, testes e fontes do estudo. O percurso guiado é uma explicação, não uma simulação apresentada como execução. O Laboratório indexa, busca, compila contexto e salva checkpoints de revisão. Eventos locais exibidos são persistidos pelo domínio.
+## Perfil opcional: Laya
 
-Screenshots e vídeo, quando a execução correspondente terminar, ficam nos artefatos do GitHub Actions. A composição Remotion é opcional e tem licença própria: [media/README.md](media/README.md).
+O [Laya](https://github.com/NandhaKishorM/laya) é um modelo local de decisão: escolhe entre opções, dá nota ou responde sim/não, sem gerar texto. O BBrainX o instala **só por comando seu**, num ambiente Python isolado, com os pesos conferidos por SHA-256:
+
+```sh
+node bin/bbrainx.mjs laya install     # cerca de 0,7 GB de ambiente e 0,68 GB de pesos
+node bin/bbrainx.mjs laya ask --state "O login quebrou em produção." --file perguntas.json
+node bin/bbrainx.mjs laya remove
+```
+
+Medido num MacBook M5 Pro pela GPU: carga em 4 a 18 s, cerca de 8 ms por decisão curta, 1,8 GB de RAM. **Sem ajuste fino ele acerta menos que o caminho lexical** nas duas decisões testadas (reordenar a busca e escolher memórias relevantes), então ele **não altera o pacote de contexto**. Fica disponível para perguntar e para você repetir a medição com `node scripts/laya-bench.mjs`. Nenhuma linha do BBrainX chama o JEV ou outro serviço hospedado.
+
+## Mapa do estudo
+
+Trinta e sete ferramentas foram estudadas. Cada uma está numa de cinco situações: **núcleo**, **perfil ativável**, **só técnica**, **referência** ou **fora**, com o porquê, a evidência e o que mudaria o veredito. O mapa é interativo no painel (aba **Mapa do estudo**) e está por extenso em [docs/STUDY_MAP.md](docs/STUDY_MAP.md).
+
+![Mapa do estudo](public/demo/bbrainx-study-map-desktop.png)
 
 ## Decisões que evitam desperdício
 
-**Lexical antes de generativo.** FTS5 permanece em disco; não há LLM na indexação básica. Arquivos inalterados reutilizam seus chunks. **Contexto é seleção, não despejo.** Trechos têm hash e localização; restrições obrigatórias não são cortadas para caber. **Memória não é verdade automática.** O agente propõe, o usuário aprova. **Continuidade não é transcript infinito.** Checkpoints carregam o que foi feito, o que falta e qual revisão sustenta o estado.
+**Lexical antes de generativo.** O índice é o FTS5 do SQLite; não há LLM na indexação. A busca roda em dois estágios: termos exatos, depois radicais e um glossário de programação português → inglês. **Contexto é seleção, não despejo.** Cada trecho tem hash e localização; arquivo alterado é relido antes de ser servido; restrição obrigatória não é cortada para caber. **Memória não é verdade automática.** O agente propõe, você aprova. **Continuidade não é transcrição infinita.** O checkpoint carrega o que foi feito, o que falta e qual revisão sustenta o estado.
 
-`payloadTokens` usa **o200k_base** somente sobre o pacote textual. Tokens totais do cliente, tokenizer de outro modelo, cache do provedor e economia financeira não são inferidos. Esses valores aparecem como desconhecidos, não como zero.
-
-## Dependências e origem
-
-As dependências de runtime são instaladas pelo npm e fixadas no lockfile. O script abaixo baixa cópias separadas dos upstreams **para estudo**, sem executar instaladores, treinar modelos ou copiar licenças para o código MIT:
-
-```sh
-npm run sources -- --download
-```
-
-A saída inclui commits observados e hashes de licenças em `artifacts/upstream-inventory.json`; fontes ficam em `vendor/`, ignorado pelo Git. Modelos e todos os frameworks Python não são baixados compulsoriamente: isso aumentaria risco, disco e consumo sem benefício demonstrado. Veja [perfis opcionais](docs/OPTIONAL_PROFILES.md).
+`payloadTokens` usa **o200k_base** só sobre o pacote. Tokens totais do cliente, tokenizador de outro modelo, cache do provedor e economia financeira não são inferidos: aparecem como desconhecidos, não como zero.
 
 ## Qualidade e limites
 
 ```sh
-npm test
+npm test            # domínio, protocolo com processos reais, perfis, mapa do estudo
 npm run build
-npm run test:e2e
-node scripts/benchmark.mjs
+npm run test:e2e    # painel no navegador
 ```
 
-Os testes cobrem escopo, fontes obsoletas, idempotência, versão conflitante, aprovação, backup, HTTP e MCP real. A matriz inclui macOS, Linux e Windows; **o resultado autoritativo é a execução vinculada à revisão**, não o número de testes de uma versão anterior. Evidências geradas pela CI ficam em `docs/validation/` quando publicadas.
+A matriz da CI inclui macOS, Linux e Windows; **o resultado que vale é o da execução ligada à revisão**, em `docs/validation/`. Os testes novos de cada rodada foram provados por sabotagem: um defeito é injetado de propósito e o teste precisa reprovar.
 
-Sem watcher contínuo, LSP semântico, sincronização multi-host, criptografia própria, autenticação multi-tenant, captura de tela ou execução de shell. Não use o banco ativo em iCloud/NFS. Revogar memória evita recuperação futura, mas não apaga cópias históricas e backups. Consulte [modelo de segurança](docs/SECURITY_MODEL.md).
+O que não existe: observador contínuo de arquivos, análise semântica por servidor de linguagem, sincronização entre máquinas, criptografia própria, autenticação multiusuário, captura de tela e execução de shell. O prazo de uma chamada não interrompe trabalho síncrono, como a indexação. Não use o banco ativo em iCloud ou em disco de rede. Revogar uma memória impede o uso futuro, mas não apaga cópias históricas nem backups. Veja o [modelo de segurança](docs/SECURITY_MODEL.md).
 
 ## Comunidade
 
-Projeto de Alexandre Belo (**AB**), desenvolvido com assistência de IA e revisão orientada a evidências. Não implica endosso de OpenAI, Anthropic, Google ou dos upstreams. Queremos contribuições reproduzíveis, não promessas de ranking: [CONTRIBUTING.md](CONTRIBUTING.md).
+Projeto de Alexandre Belo (**AB**), desenvolvido com assistência de IA e revisão orientada a evidências. Não implica endosso de OpenAI, Anthropic, Google ou dos projetos estudados. Queremos contribuições reproduzíveis: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-O código original BBrainX é MIT. Nomes, marcas, bibliotecas e referências mantêm seus respectivos direitos. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+O código original do BBrainX é MIT. O contrato do motor segue o modelo do Invokta, cujo aviso MIT completo está em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Nomes, marcas, bibliotecas e referências mantêm seus direitos.
 
 <!-- verified-preview -->
 ## Interface verificada na CI

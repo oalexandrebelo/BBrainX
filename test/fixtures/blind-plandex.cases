@@ -1,0 +1,275 @@
+[
+ {
+  "kind": "natural",
+  "query": "Onde se descobre, pelo cabeçalho ou texto do erro, quanto esperar antes de repetir a chamada ao modelo?",
+  "expect": [
+   "app/server/model/model_error.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Qual a ordem de modelos substitutos quando o principal falha: contexto maior, depois erro, depois outro provedor?",
+  "expect": [
+   "app/shared/ai_models_errors.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a fila de operações no repositório do plano serializa escritas e agrupa leituras da mesma branch?",
+  "expect": [
+   "app/server/db/queue.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where does a repo lock count as expired when its heartbeat is older than sixty seconds?",
+  "expect": [
+   "app/server/db/locks.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o servidor remove arquivos de trava obsoletos do git e repete a operação com espera crescente?",
+  "expect": [
+   "app/server/db/git.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Aparar linhas vazias acrescentadas pelo modelo",
+  "expect": [
+   "app/server/utils/whitespace.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where is text escaped so the closing sequence of a CDATA section cannot appear inside the content?",
+  "expect": [
+   "app/server/utils/xml.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como localizar um trecho único no arquivo comparando só o começo e o fim quando o meio tem erros?",
+  "expect": [
+   "app/server/syntax/unique_replacement.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Comment delimiters for each programming language",
+  "expect": [
+   "app/server/syntax/comments.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a sintaxe de um arquivo é validada com limite de tempo, parser reserva e lista de linhas inválidas?",
+  "expect": [
+   "app/server/syntax/validate.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde as faixas de linhas a substituir ou remover são extraídas por regex da descrição da mudança?",
+  "expect": [
+   "app/server/syntax/structured_edits_apply.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Descobrir o IP do contêiner na AWS",
+  "expect": [
+   "app/server/host/ip.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Qual serviço intermediário trata o token OAuth da Anthropic trocando cabeçalhos e retransmite respostas em streaming?",
+  "expect": [
+   "app/server/litellm_proxy.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "How does the server start the Python proxy subprocess and wait until its health check passes?",
+  "expect": [
+   "app/server/model/litellm.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o build de um arquivo disputa em paralelo validação, aplicação rápida e reescrita completa?",
+  "expect": [
+   "app/server/model/plan/build_race.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Prazo para o primeiro token do modelo crescendo com o tamanho do prompt",
+  "expect": [
+   "app/server/model/plan/tell_stream_main.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Qual fila em memória limita quantos trabalhos de mapeamento de arquivos ficam esperando e rejeita quando enche?",
+  "expect": [
+   "app/server/handlers/file_maps_queue.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a requisição é encaminhada para outra instância do servidor que mantém o fluxo ativo do plano?",
+  "expect": [
+   "app/server/handlers/proxy_helper.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o servidor encerra com elegância ao receber SIGTERM, esperando planos ativos e limpando bloqueios?",
+  "expect": [
+   "app/server/setup/setup.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como se escolhe um modelo de janela maior quando o prompt estimado, com margem, excede o limite?",
+  "expect": [
+   "app/shared/ai_models_large_context.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where is an email sent over SMTP with multipart text and HTML parts built by hand?",
+  "expect": [
+   "app/server/email/email.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "How is the token cost of an image estimated by taking the largest of several providers' formulas?",
+  "expect": [
+   "app/shared/images.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Qual utilitário cria o esqueleto de um diretório de avaliação de prompts com arquivos de configuração e testes?",
+  "expect": [
+   "app/scripts/cmd/gen/gen.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Qual programa gera arquivos de provedor YAML a partir de propriedades e de um modelo de template?",
+  "expect": [
+   "app/scripts/cmd/provider/gen_provider.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Recuperar commit do reflog aplicando patch",
+  "expect": [
+   "scripts/merge_from_reflog.sh"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Which workflow builds and pushes the multi-arch server Docker image only for releases tagged server?",
+  "expect": [
+   ".github/workflows/docker-publish.yml"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Definição dos contêineres locais do banco Postgres e do servidor",
+  "expect": [
+   "app/docker-compose.yml"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o instalador renomeia uma instalação antiga da versão 1 e cria o atalho curto do comando?",
+  "expect": [
+   "app/cli/install.sh"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como os arquivos ativos do projeto são listados combinando o git com um arquivo próprio de ignorados?",
+  "expect": [
+   "app/cli/fs/paths.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Migração de arquivos JSON de formato antigo",
+  "expect": [
+   "app/cli/lib/legacy_files.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Which code isolates a child process in a transient systemd scope to kill it as a group?",
+  "expect": [
+   "app/cli/lib/apply_cgroup_linux.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o fluxo OAuth com PKCE conecta a assinatura e o token é renovado uma hora antes de expirar?",
+  "expect": [
+   "app/cli/lib/claude_max.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a CLI detecta quais editores estão instalados no PATH e limita as opções, priorizando o preferido?",
+  "expect": [
+   "app/cli/lib/editor.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a CLI verifica se há versão nova, baixa o pacote e reinicia o programa após atualizar?",
+  "expect": [
+   "app/cli/upgrade.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Format a past date as relative time",
+  "expect": [
+   "app/cli/format/time.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Quais códigos de status o cliente HTTP da CLI repete automaticamente, e com que espera crescente?",
+  "expect": [
+   "app/cli/api/clients.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "How is a web page downloaded with a size cap and its text extracted from the HTML?",
+  "expect": [
+   "app/cli/url/url.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a aplicação dos arquivos guarda o conteúdo e as permissões anteriores para desfazer tudo se algo falhar depois?",
+  "expect": [
+   "app/cli/lib/apply.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Quando o usuário interrompe a geração, onde a resposta parcial do assistente é gravada como mensagem marcada como interrompida?",
+  "expect": [
+   "app/server/model/plan/stop.go"
+  ]
+ }
+]
