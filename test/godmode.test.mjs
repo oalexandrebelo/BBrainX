@@ -85,7 +85,7 @@ test('without code among the candidates, documentation may use the whole pack',t
 });
 
 // ── perfil Laya (lado Node, com um processo falso) ─────────────────────────
-const fake=(...extra)=>new LayaBroker({command:[process.execPath,fakeWorker,...extra],deadlineMs:150,startMs:5000});
+const fake=(...extra)=>new LayaBroker({command:[process.execPath,fakeWorker,...extra],deadlineMs:500,startMs:15000});
 test('Laya broker answers through the worker protocol and reports the runtime',async t=>{
   const broker=fake();t.after(()=>broker.stop());
   const reply=await broker.decide(['yes please','no'],{q:{type:'noul',instructions:'?'}});

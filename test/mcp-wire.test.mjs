@@ -16,6 +16,8 @@ function start(home,env={}){
   const lines=[],waiting=[];let buffer='',stderr='';
   child.stdout.setEncoding('utf8').on('data',chunk=>{buffer+=chunk;for(let at=buffer.indexOf('\n');at!==-1;at=buffer.indexOf('\n')){const line=buffer.slice(0,at);buffer=buffer.slice(at+1);lines.push(line);waiting.shift()?.(line);}});
   child.stderr.setEncoding('utf8').on('data',chunk=>{stderr+=chunk;});
+  // O servidor pode fechar a entrada enquanto o teste ainda escreve (linha acima do limite): isso não é falha do teste.
+  child.stdin.on('error',()=>{});
   // Sem o limite de espera, um servidor que não encerra travaria a suíte em vez de reprovar.
   const exited=new Promise((resolve,reject)=>{const timer=setTimeout(()=>{child.kill('SIGKILL');reject(new Error('the server did not exit'));},8000);child.once('exit',code=>{clearTimeout(timer);resolve(code);});});exited.catch(()=>{});
   return {

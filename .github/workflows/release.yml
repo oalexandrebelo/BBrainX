@@ -30,7 +30,7 @@ jobs:
           echo "RELEASE_TARGET=$TARGET" >> "$GITHUB_ENV"
       - name: Publish an immutable preview without replacing an existing tag
         run: |
-          if gh release view v0.3.0-preview >/dev/null 2>&1; then
+          if gh release view v0.4.0-preview >/dev/null 2>&1; then
             echo 'Preview already exists; a later release requires a new explicit version.'
             exit 0
           fi
@@ -38,12 +38,12 @@ jobs:
           ## BBrainX — GODMODCODE / Developer Preview
           Local context, governed memory and verified handoffs across coding agents.
 
-          Includes the React Flow architecture explorer, working local context lab, Invokta MCP, SQLite/FTS5, versioned checkpoints, macOS launcher, dependency doctor, research dossier and original Remotion media.
+          Includes: own capability engine and MCP stdio server (both protocol eras: 2026-07-28 without handshake, and the initialize-based revisions), SQLite/FTS5 search in two stages with a Portuguese-to-English bridge, versioned checkpoints, governed memory, the React Flow architecture explorer and study map, a scenario doctor and the optional Laya profile.
 
-          Start: extract the ZIP, install Node 24 LTS and Git, run `npm run setup`, `npm run demo`, then `npm start`.
+          Start: extract the ZIP, install Node 24 LTS and Git, run `npm run setup`, then `node bin/bbrainx.mjs up --root /path/to/your/project`.
 
-          CI evidence for the exact tested revision is included in `docs/validation/ci-report.json`. Native platform and protocol tests are not a certification of every IDE or the maintainer's Mac. No measured provider-cache savings or model-inference result is claimed. Laya/LightRAG and desktop automation remain optional research profiles.
+          Measured, not promised: on 79 blind natural-language questions over two third-party repositories the expected file is among the first 10 results in 84% of the cases (54% before). Details, intervals and limits are in docs/EVALUATION.md. CI evidence for the exact tested revision is in docs/validation/ci-report.json. Native platform and protocol tests are not a certification of every IDE. The Laya profile is installed only by an explicit command and does not change the context pack: without fine-tuning it ranked below the lexical path.
 
-          Original core is MIT; dependencies and Remotion retain their own terms. No credentials, installed node_modules, reference-repository copies or font files are included.
+          Original core is MIT; the engine contract follows Invokta 0.9 (MIT notice in THIRD_PARTY_NOTICES.md). Remotion and the Laya profile retain their own terms. No credentials, installed node_modules, model weights, reference-repository copies or font files are included.
           NOTES
-          gh release create v0.3.0-preview artifacts/BBrainX-v0.3.0-source.zip artifacts/SHA256SUMS.txt artifacts/source-manifest.json --target "$RELEASE_TARGET" --title 'BBrainX 0.2.0 — GODMODCODE Developer Preview' --notes-file notes.md --prerelease
+          gh release create v0.4.0-preview artifacts/BBrainX-v0.4.0-source.zip artifacts/SHA256SUMS.txt artifacts/source-manifest.json --target "$RELEASE_TARGET" --title 'BBrainX 0.4.0 — GODMODCODE Developer Preview' --notes-file notes.md --prerelease

@@ -1,18 +1,22 @@
 # Perfis opcionais: instalar só o que demonstra utilidade
 
-> A análise de viabilidade de 4 de outubro de 2026, com o veredito de cada projeto externo e o contrato proposto para o Decision Broker, está em [FEASIBILITY.md](FEASIBILITY.md). Nenhum perfil abaixo foi ativado por ela.
+> O veredito de cada projeto externo está em [STUDY_MAP.md](STUDY_MAP.md) (por extenso) e em [FEASIBILITY.md](FEASIBILITY.md) (o histórico da análise). Um perfil só entra por comando explícito seu.
 
 ## Perfil entregue: local-deterministic
 
-Node, SQLite/FTS5, Invokta, MCP, React Flow e tokenizer do payload. Sem Python, GPU, Docker ou chamadas LLM. `npm run setup` não liga modelos ou gateways. Todas as seis capacidades usam o mesmo domínio local.
+Node, SQLite/FTS5, motor de capacidades e servidor MCP próprios, React Flow e tokenizador do pacote. Sem Python, GPU, Docker ou chamadas a LLM. `npm run setup` não liga modelos nem gateways. As seis capacidades usam o mesmo domínio local.
 
-## Laya / Decision Broker — contrato candidato, não ativo
+## Perfil Laya — instalável, medido, fora do pacote
 
-Use apenas decisões curtas com opções delimitadas. Primeiro aplique regras determinísticas. Estado truncado, tokenizer desconhecido, modelo indisponível, distribuição nova ou limiar não calibrado levam a abstenção. Confiança não é autorização. Um limiar JEV não deve ser transferido automaticamente para Laya.
+`node bin/bbrainx.mjs laya install` cria um ambiente Python isolado na pasta de estado, instala `laya` 0.3.26 com as versões fixadas em `profiles/laya/requirements.txt` e baixa o checkpoint `multilingual` na revisão `1c5edc17…`, conferindo o SHA-256 de cada arquivo antes de dar o nome definitivo. Um arquivo adulterado depois é baixado de novo.
 
-Alternativas a avaliar: Laya Python/MPS em Apple Silicon, laya-ts/ONNX CPU e SemIf MLX. Em 04/10/2026 o `laya-ts` existia no repositório do Laya, mas não estava publicado no npm, e o ONNX precisava ser exportado localmente com Python. O doctor não prova qual é mais rápido. Compare qualidade, cobertura, latência p50/p95, memória, cold start e energia no mesmo conjunto de decisões. Não carregue todos os backends simultaneamente.
+O modelo roda num processo filho (`profiles/laya/worker.py`) que fala JSON por linha: sem porta aberta, sem rede (`HF_HUB_OFFLINE=1`), sem caminho de arquivo, só texto. O lado Node (`LayaBroker`) nunca lança: prazo estourado, recusa e queda viram um motivo, e três falhas seguidas abrem um disjuntor por cinco minutos.
 
-Conversão JEV deve preservar o contrato de ação, respostas estruturadas e metadados de truncamento. `jev-ultrafast` pode inspirar separação entre escolha de operação/alvo e geração de texto; nenhuma ação de navegador deve ser executada antes de validar o alvo atual. `fast-jev-compaction` inspira uma proposta de descarte seguida de uma política determinística de preservação. Jarvis/captura de desktop ficam fora do núcleo, com consentimento específico por aplicativo se forem implementados.
+Medido num MacBook M5 Pro, 24 GB, pela GPU (MPS), em 4 de outubro de 2026: carga em 4 a 18 s, cerca de 8 ms por decisão curta, 720 ms para julgar 10 trechos longos, pico de 1,8 GB de RAM. **Sem ajuste fino ele acertou menos que o caminho determinístico** nas duas decisões testadas (números em [EVALUATION.md](EVALUATION.md)). Por isso o perfil serve a `laya ask` e à medição, e **não altera o pacote de contexto**. O `doctor` diz isso em vez de sugerir que o modelo ajuda.
+
+O caminho para ele influir no pacote é um checkpoint ajustado com rótulos do próprio uso, medido no mesmo conjunto, com limiar de abstenção calibrado. Um limiar ajustado no JEV não se transfere. Em outras máquinas (Linux, Windows, Mac Intel) o instalador resolve as mesmas versões, mas nada foi medido ali.
+
+As técnicas dos produtos construídos sobre o JEV foram estudadas e ficaram como técnica: de `fast-jev-compaction`, a política determinística do que nunca pode ser descartado; de `jev-ultrafast`, validar o alvo antes de agir e consumir cada decisão uma vez; de `SemIf-OpenJev`, dar erro em vez de truncar. O Jarvis (captura de tela e de conversa no celular) fica fora. O porquê de cada um está em [STUDY_MAP.md](STUDY_MAP.md).
 
 ## LightRAG — candidato de recuperação documental
 

@@ -1,4 +1,4 @@
-# Modelo de segurança — prévia 0.3
+# Modelo de segurança — prévia 0.4
 
 ## Fronteira de confiança
 
@@ -16,6 +16,22 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 - Checkpoints em transação com histórico, idempotência e outbox. Escrita antiga não é silenciosamente promovida.
 - Memória candidata separada de aprovação humana. Estado aprovado/revogado versionado.
 - SQLite em pasta privada e arquivo com modo 0600 em sistemas POSIX. O sistema operacional e a criptografia de disco, quando configurada, são responsáveis pela proteção física.
+
+## Servidor MCP próprio (desde a 0.4)
+
+- Só a superfície de ferramentas: sem recursos, prompts, amostragem ou execução. O processo atende um único projeto, fixado por quem o iniciou.
+- Uma linha de entrada acima de 1 MiB encerra o servidor com erro; requisição cancelada não recebe mais nenhuma mensagem; chamada já cancelada não começa a executar.
+- Mais de 300 chamadas de ferramenta por minuto são recusadas com `RATE_LIMITED`. É um freio contra um agente em laço, não um controle de acesso.
+- Erro inesperado chega ao cliente como `EXECUTION_FAILED`, sem a mensagem interna. O rastro opcional (`BBRAINX_TRACE=1`) registra capacidade, duração e código; nunca argumentos nem resultados.
+- O prazo de uma chamada não interrompe trabalho síncrono. Durante uma indexação longa o servidor não lê a entrada.
+
+## Perfil Laya
+
+- Nada é baixado sem o comando `laya install`. O pacote vem do PyPI com versões fixadas; os pesos, do Hugging Face numa revisão fixada, conferidos por SHA-256 antes de serem usados e de novo a cada carga dos dois arquivos grandes.
+- O formato dos pesos é `safetensors` (sem execução de código na carga). O processo roda com a rede do Hugging Face desligada e não recebe caminho de arquivo nem acesso ao banco.
+- O que o BBrainX envia ao modelo é texto do seu repositório. Ele fica na sua máquina, mas passa a existir na memória de um segundo processo.
+- O resultado do modelo não altera o pacote de contexto nesta versão. Confiança do modelo não é autorização para nada.
+- Instalar pacotes Python executa código de terceiros no seu usuário, dentro de um ambiente isolado. É uma decisão sua, e é por isso que o núcleo não depende dela.
 
 ## Limites importantes
 
@@ -43,7 +59,7 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 
 | Caso | Controle/teste |
 |---|---|
-| Agente pede projeto não autorizado | Invokta access + teste MCP com escopo diferente |
+| Agente pede projeto não autorizado | Regra de acesso do motor + teste MCP com escopo diferente |
 | DNS rebinding / site externo | Host literal, Origin, Fetch Metadata e CSRF |
 | Caminho sai da raiz | `readSafe` valida caminho relativo e componentes |
 | Symlink aponta para home | Recusa sem seguir o destino |

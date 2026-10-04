@@ -16,7 +16,7 @@ for(const platform of ['ubuntu-latest','macos-latest','windows-latest']){
  copy(logPath,path.join(output,'tests-'+platform+'.log'));
  copy(path.join(base,'benchmark.json'),path.join(output,'benchmark-'+platform+'.json'));
 }
-const screenshots=['bbrainx-architecture-desktop.png','bbrainx-workbench-desktop.png','bbrainx-mobile.png'];
+const screenshots=['bbrainx-architecture-desktop.png','bbrainx-study-map-desktop.png','bbrainx-workbench-desktop.png','bbrainx-mobile.png'];
 for(const name of screenshots)if(!copy(path.join('.ci-browser','artifacts',name),path.join('public/demo',name)))throw new Error('Missing browser evidence '+name);
 copy(path.join('.ci-media','media','package-lock.json'),'media/package-lock.json');
 const video=copy(path.join('.ci-media','artifacts','bbrainx-intro.mp4'),'public/demo/bbrainx-intro.mp4');

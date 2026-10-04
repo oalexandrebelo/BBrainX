@@ -29,11 +29,12 @@ Na aba Laboratório, selecione `demo`, busque autenticação/sessão, compile o 
 ## 3. Seu repositório real
 
 ```sh
-node bin/bbrainx.mjs init --project meu-app --root "/Users/seu-usuario/Projetos/meu-app"
-node bin/bbrainx.mjs index --project meu-app
-node bin/bbrainx.mjs search --project meu-app --query "authenticate session"
-node bin/bbrainx.mjs context --project meu-app --query "authenticate session" --budget 4000
+node bin/bbrainx.mjs up --root "/Users/seu-usuario/Projetos/meu-app"
+node bin/bbrainx.mjs search --project meu-app --query "onde a sessão expirada é rejeitada"
+node bin/bbrainx.mjs context --project meu-app --query "validação de sessão" --budget 4000
 ```
+
+`up` registra a pasta com o nome dela (ou o de `--project`), indexa e imprime os próximos comandos. Rodar de novo reaproveita o registro e só reindexa o que mudou. `init` e `index` continuam existindo para quem prefere os dois passos. A pergunta pode vir em português mesmo com o código em inglês: a busca casa por radical e por um glossário de programação.
 
 Registre uma raiz pequena e intencional, não o diretório home. O escopo padrão aceita até 20.000 arquivos textuais elegíveis, 256 KiB por arquivo e 256 MiB somados. Quem inicia o processo pode ajustar esses tetos por `BBRAINX_MAX_FILES`, `BBRAINX_MAX_BYTES` e `BBRAINX_MAX_FILE_BYTES`; argumento de ferramenta não os altera. Medido num Mac M5 Pro: 3.662 arquivos (28 MiB) indexam em cerca de 3 s e ocupam 61 MB no banco. Arquivos ignorados, muito grandes, binários e padrões de segredo aparecem no diagnóstico quando pertinentes. Esses limites são limites de segurança iniciais, **não metas de escalabilidade comprovadas**.
 
@@ -42,11 +43,14 @@ A snapshot é do conjunto textual indexado, não uma prova de revisão completa 
 ## 4. Conectar harnesses
 
 ```sh
-node bin/bbrainx.mjs config --project meu-app --client codex
 node bin/bbrainx.mjs config --project meu-app --client claude
+node bin/bbrainx.mjs config --project meu-app --client codex
+node bin/bbrainx.mjs config --project meu-app --client cursor    # também: vscode, gemini
 ```
 
-O primeiro gera um fragmento TOML; o segundo gera JSON `mcpServers`. Revise e mescle no local indicado pela versão do seu cliente. Para VS Code, Antigravity ou outro cliente, use os mesmos `command`, `args` e `env`, adaptando somente o schema oficial. O projeto não garante que todos os clientes usem a mesma chave raiz.
+Cada cliente recebe o seu formato: o comando `claude mcp add` e o JSON de `.mcp.json`; o bloco TOML de `~/.codex/config.toml`; o JSON de `.cursor/mcp.json`, de `.vscode/mcp.json` ou de `~/.gemini/settings.json`. Os formatos foram conferidos na documentação oficial de cada cliente em 4 de outubro de 2026. O comando só imprime: revise e cole no arquivo indicado. Para outro cliente MCP, use os mesmos `command`, `args` e `env`.
+
+O servidor fala as duas eras do protocolo: a revisão corrente (2026-07-28, sem handshake) e as anteriores (com `initialize`). Para ver o que o harness está chamando, inicie com `BBRAINX_TRACE=1`: cada chamada vira uma linha na saída de erro, sem argumentos nem resultados.
 
 O transporte é stdio, e o comando aponta para o `node` instalado e o script com caminho absoluto. Logs ficam em stderr; stdout pertence ao protocolo. Cada processo recebe um único `--project`, que não pode ser ampliado por argumentos de ferramenta.
 
@@ -54,7 +58,7 @@ No agente:
 
 > Consulte `session_get` para a tarefa atual. Atualize `context_index` quando a worktree mudar. Use `context_bootstrap` com objetivo e orçamento. Ao encerrar, grave `session_checkpoint` com versão esperada e pendências reais. Proponha memórias, mas não assuma aprovação.
 
-Não é necessário alterar `ANTHROPIC_BASE_URL`, configuração OpenAI, OmniRoute, JEV-Gateway ou autenticação nativa.
+Não é necessário alterar `ANTHROPIC_BASE_URL`, a configuração da OpenAI, gateways ou a autenticação nativa do cliente. O BBrainX não chama nenhum serviço hospedado.
 
 ## 5. Checkpoint manual
 
@@ -113,9 +117,24 @@ O backup utiliza `VACUUM INTO`, não cópia parcial de um arquivo WAL em ativida
 
 Para remover, encerre servidor e clientes MCP, retire apenas o fragmento que você adicionou ao cliente e arquive ou exclua a pasta BBrainX depois de decidir a retenção. Nenhum daemon de sistema ou serviço autostart é instalado nesta versão.
 
-## 8. Atualizar da 0.2 para a 0.3
+## 8. Perfil opcional: Laya
 
-Na primeira abertura, o serviço migra o banco sozinho, numa transação:
+O Laya é um modelo local de decisão (Apache-2.0). O núcleo não depende dele. Instale só se quiser experimentar ou medir:
+
+```sh
+node bin/bbrainx.mjs laya install    # ambiente Python isolado (cerca de 0,7 GB) e pesos (0,68 GB), conferidos por SHA-256
+node bin/bbrainx.mjs laya status
+node bin/bbrainx.mjs laya ask --state "O login quebrou em produção depois do deploy." --file perguntas.json
+node bin/bbrainx.mjs laya remove     # apaga só a pasta do perfil
+```
+
+`perguntas.json` segue o contrato do Laya. Exemplo: `{"tipo":{"type":"choice","instructions":"Que tipo de tarefa é esta?","criteria":{"correcao":"corrigir um defeito","funcionalidade":"construir algo novo"}},"urgente":{"type":"noul","instructions":"O texto diz que é urgente?"}}`.
+
+A instalação precisa do `uv` ou de um Python de 3.10 a 3.13; não usa `sudo` nem mexe no Python do sistema. O processo do modelo não acessa a rede e não recebe caminho de arquivo, só texto. **O perfil não altera o pacote de contexto**: medido em 4 de outubro de 2026, sem ajuste fino ele acertou menos que o caminho lexical. Para repetir a medição na sua máquina: `node scripts/laya-bench.mjs --project <id> --cases test/fixtures/eval-natural.cases --memory test/fixtures/eval-memory.cases`.
+
+## 9. Atualizar da 0.2 para a 0.3 ou a 0.4
+
+Da 0.3 para a 0.4 não há migração: o esquema do banco é o mesmo. Vindo da 0.2, na primeira abertura o serviço migra o banco sozinho, numa transação:
 
 1. Grava antes uma cópia íntegra em `brain.v1-backup.sqlite`, na pasta de estado.
 2. Preserva projetos, checkpoints, histórico, memórias e eventos.
@@ -132,7 +151,7 @@ Para voltar à 0.2:
 
 Não copie a cópia por cima do `brain.sqlite` em uso: os arquivos `brain.sqlite-wal` e `brain.sqlite-shm` que sobram ao lado dele pertencem ao banco novo e corrompem o restaurado. O que foi gravado depois da migração não volta junto. A cópia tem o mesmo conteúdo sensível do banco; apague-a quando não precisar mais dela.
 
-## 9. Solução de problemas
+## 10. Solução de problemas
 
 | Código / sintoma | Ação |
 |---|---|

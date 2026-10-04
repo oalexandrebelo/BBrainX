@@ -1,5 +1,5 @@
 {
- "name":"bbrainx-release-film","version":"0.2.0","private":true,"type":"module",
+ "name":"bbrainx-release-film","version":"0.4.0","private":true,"type":"module",
  "scripts":{"render":"remotion render src/index.jsx BBrainX ../artifacts/bbrainx-intro.mp4 --codec h264 --concurrency 2"},
  "dependencies":{"remotion":"^4.0.0","@remotion/cli":"^4.0.0","react":"^19.2.0","react-dom":"^19.2.0"}
 }

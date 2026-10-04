@@ -61,6 +61,7 @@ Nenhum comando altera a configuração dos harnesses. Mais: docs/QUICKSTART.md`)
     }
     else if(action==='ask'){
       ensure(values.state&&values.file,'STATE_AND_FILE_REQUIRED','Use --state "texto" --file perguntas.json');
+      ensure(laya.layaStatus().installed,'LAYA_NOT_INSTALLED','Execute antes: node bin/bbrainx.mjs laya install');
       const broker=new laya.LayaBroker({deadlineMs:120000});
       try{const reply=await broker.decide([values.state],JSON.parse(fs.readFileSync(values.file,'utf8')));print(reply.ok?{...reply.results[0],ms:reply.ms,runtime:broker.info}:reply);if(!reply.ok)process.exitCode=1;}
       finally{broker.stop();}

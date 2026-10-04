@@ -12,6 +12,14 @@ test('architecture explorer, real context, checkpoint and mobile layout',async({
  await readyGraph(page);
  await page.getByRole('button',{name:'Percorrer fluxo'}).click();await expect(page.locator('.inspector h2')).toHaveText('Seu harness');
  fs.mkdirSync('artifacts',{recursive:true});await page.screenshot({path:'artifacts/bbrainx-architecture-desktop.png',fullPage:true});
+ await page.getByRole('button',{name:'Mapa do estudo',exact:true}).click();
+ await expect(page.locator('.tool-node')).toHaveCount(37);await expect(page.locator('.situation-node')).toHaveCount(5);
+ await expect(page.locator('.inspector h2')).toHaveText('Busca em dois estágios, pt → en');
+ await page.locator('.tool-node',{hasText:'Laya 0.3.26'}).click();
+ await expect(page.locator('.inspector h2')).toHaveText('Laya 0.3.26');await expect(page.locator('.inspector')).toContainText('Apache-2.0');await expect(page.locator('.inspector code.activate')).toHaveText('node bin/bbrainx.mjs laya install');
+ await page.locator('.tool-node',{hasText:'Dossiê X99'}).click();await expect(page.locator('.inspector')).toContainText('O QUE MUDARIA O VEREDITO');
+ await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+ await page.screenshot({path:'artifacts/bbrainx-study-map-desktop.png',fullPage:true});
  await page.getByRole('button',{name:'Laboratório',exact:true}).click();
  await page.getByRole('button',{name:'Compilar contexto'}).click();await expect(page.locator('.output-pre')).toContainText('BBrainX context pack');
  await expect(page.locator('.output-pre')).toContainText('README.md');

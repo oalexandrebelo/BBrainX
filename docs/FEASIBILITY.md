@@ -1,5 +1,17 @@
 # Viabilidade das integrações e rota da versão 0.3 em diante
 
+> **Atualização da 0.4 (4 de outubro de 2026, 2.ª rodada).** Este documento registra a análise que levou à 0.3. A 2.ª rodada mudou quatro vereditos e mediu o que aqui estava como lacuna. O estado atual de cada ferramenta, com o porquê, está em [STUDY_MAP.md](STUDY_MAP.md).
+>
+> | O que mudou | Antes (este documento) | Agora |
+> |---|---|---|
+> | Invokta | Núcleo, como dependência fixada | **Só técnica**: motor e servidor MCP próprios, com o Invokta como modelo. Pacotes de produção: 121 → 25 |
+> | Laya | Só técnica; perfil depois de medido | **Perfil instalável**, medido no M5 Pro. Sem ajuste fino acerta menos que o caminho lexical; não altera o pacote |
+> | Consulta em linguagem natural | Fraca: 29 % em 1.º em 7 casos | Busca em dois estágios com ponte pt → en. Em 79 perguntas cegas: entre os 10 primeiros, 54 % → 84 % |
+> | Busca híbrida (item 6 da seção 5) | A fazer, faltava um modelo com avaliação | Medida com `multilingual-e5-small`: resultado inconclusivo, não entrou |
+> | Protocolo MCP | Só a era com handshake, pelo SDK | As duas eras, em código próprio |
+>
+> Três correções a este texto. (1) Os números da tabela da seção 4 para «este repositório» mudam com o corpus: os mesmos 24 casos deram 79 %, 75 % e 71 % em três revisões seguidas, sem a busca mudar. Valem como portão de regressão, não como placar. (2) O `@receptron/laya` existe no npm, segundo a 2.ª leitura do ecossistema; a frase «`laya-ts` fora do npm» vale só para o pacote do próprio repositório. (3) O «Decision Broker» da seção 3.2 foi implementado como o intermediário do perfil Laya (`src/laya.mjs`), sem o modo sombra: como o modelo não melhorou nenhuma decisão, não há o que registrar em sombra.
+
 **Data:** 4 de outubro de 2026 · **Revisão avaliada dos upstreams:** o HEAD de cada repositório nessa data.
 
 Este documento responde a uma pergunta: o que vale introduzir no BBrainX, ou permitir ativar, a partir de dez projetos externos, tendo **Invokta** e **Laya** como bases e o **OmniRoute** como fonte de técnicas.
