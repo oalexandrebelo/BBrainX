@@ -99,7 +99,7 @@ Nenhum comando altera a configuração dos harnesses. Mais: docs/QUICKSTART.md`)
       const {makeEngine,INSTRUCTIONS}=await import('../src/engine.mjs'),{serveMcpStdio}=await import('../src/mcp.mjs');
       // A saída padrão é do protocolo; o rastro opcional vai para a saída de erro, sem argumentos nem resultados.
       const onEvent=process.env.BBRAINX_TRACE==='1'?event=>console.error(JSON.stringify(event)):undefined;
-      await serveMcpStdio(makeEngine(store,[values.project],{onEvent}),{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS});
+      await serveMcpStdio(makeEngine(store,[values.project],{onEvent}),{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS,isFailure:output=>output?.ok===false});
     }
     else if(command==='serve'){
       const {startServer}=await import('../src/server.mjs'),server=await startServer(store,{port:Number(values.port||4317)});

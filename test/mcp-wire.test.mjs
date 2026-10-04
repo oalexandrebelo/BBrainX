@@ -81,3 +81,37 @@ test('wire: a line above the limit stops the server, and the trace never reaches
     assert.equal(events[0].capabilityId,'context.search');assert.ok(!traced.stderr().includes('verifySession'));
   }finally{fs.rmSync(home,{recursive:true,force:true});}
 });
+
+const modernMeta={'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{},'io.modelcontextprotocol/clientInfo':{name:'raw-modern',version:'1'}};
+test('wire: a modern client needs no handshake, and both eras share one process',async()=>{
+  const home=fixture(), server=start(home);
+  try{
+    const discovered=await server.ask({jsonrpc:'2.0',id:'probe',method:'server/discover',params:{_meta:modernMeta}});
+    assert.equal(discovered.result.resultType,'complete');assert.deepEqual(discovered.result.supportedVersions,['2026-07-28','2025-11-25','2025-06-18','2025-03-26','2024-11-05']);
+    assert.deepEqual(discovered.result.capabilities,{tools:{}});assert.match(discovered.result.instructions,/context_bootstrap/);
+    assert.equal(discovered.result._meta['io.modelcontextprotocol/serverInfo'].name,'bbrainx');assert.equal(discovered.result.cacheScope,'public');assert.ok(discovered.result.ttlMs>=0);
+    const listed=await server.ask({jsonrpc:'2.0',id:1,method:'tools/list',params:{_meta:modernMeta}});
+    assert.equal(listed.result.resultType,'complete');assert.equal(listed.result.tools.length,6);assert.equal(listed.result.cacheScope,'public');
+    const found=await server.ask({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'context_search',arguments:{project:'wire',query:'verifySession'},_meta:modernMeta}});
+    assert.equal(found.result.resultType,'complete');assert.equal(found.result.structuredContent.data.items[0].path,'auth.js');assert.equal(found.result.isError,undefined);
+    const future=await server.ask({jsonrpc:'2.0',id:3,method:'tools/list',params:{_meta:{...modernMeta,'io.modelcontextprotocol/protocolVersion':'2031-01-01'}}});
+    assert.equal(future.error.code,-32022);assert.equal(future.error.data.requested,'2031-01-01');assert.ok(future.error.data.supported.includes('2026-07-28'));
+    // Um cliente legado no mesmo processo continua sendo atendido pela semântica do handshake.
+    const hello=await server.ask({jsonrpc:'2.0',id:4,method:'initialize',params:{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'raw',version:'1'}}});
+    assert.equal(hello.result.protocolVersion,'2025-11-25');assert.equal(hello.result.resultType,undefined);
+    assert.equal(await server.end(),0);assert.equal(server.stderr(),'');
+  }finally{fs.rmSync(home,{recursive:true,force:true});}
+});
+
+test('wire: a call cancelled in the same write gets no answer and the server stays up; a domain refusal is a tool error',async()=>{
+  const home=fixture(), server=start(home);
+  try{
+    const call={jsonrpc:'2.0',id:5,method:'tools/call',params:{name:'context_search',arguments:{project:'wire',query:'verifySession'}}};
+    server.write(JSON.stringify(call)+'\n'+JSON.stringify({jsonrpc:'2.0',method:'notifications/cancelled',params:{requestId:5}})+'\n');
+    assert.deepEqual(await server.ask({jsonrpc:'2.0',id:6,method:'ping'}),{jsonrpc:'2.0',id:6,result:{}});
+    assert.equal(server.lines.length,1,'the cancelled call must not be answered');
+    const conflict=await server.ask({jsonrpc:'2.0',id:7,method:'tools/call',params:{name:'session_checkpoint',arguments:{project:'wire',task:'T1',expectedVersion:9,idempotencyKey:'k1',content:{objective:'o',nextAction:'n',status:'paused'}}}});
+    assert.equal(conflict.result.isError,true);assert.equal(conflict.result.structuredContent.ok,false);assert.equal(typeof conflict.result.structuredContent.error,'string');
+    assert.equal(await server.end(),0);assert.equal(server.stderr(),'');
+  }finally{fs.rmSync(home,{recursive:true,force:true});}
+});

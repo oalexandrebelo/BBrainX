@@ -144,7 +144,7 @@ test('the scenario finds tools on PATH without running them',t=>{
 test('each client gets its own configuration shape, with paths that survive spaces',()=>{
   const options={node:'/opt/node',entry:'/Users/me/My Apps/bbrainx.mjs',project:'app',home:'/Users/me/Library/Application Support/BBrainX'};
   const jsonOf=textValue=>JSON.parse(textValue.slice(textValue.indexOf('{')));
-  assert.deepEqual(jsonOf(clientConfig('cursor',options)).mcpServers.bbrainx,{command:'/opt/node',args:[options.entry,'mcp','--project','app'],env:{BBRAINX_HOME:options.home}});
+  assert.deepEqual(jsonOf(clientConfig('cursor',options)).mcpServers.bbrainx,{type:'stdio',command:'/opt/node',args:[options.entry,'mcp','--project','app'],env:{BBRAINX_HOME:options.home}});
   assert.equal(jsonOf(clientConfig('vscode',options)).servers.bbrainx.type,'stdio');
   assert.deepEqual(jsonOf(clientConfig('gemini',options)).mcpServers.bbrainx.args,[options.entry,'mcp','--project','app']);
   const claude=clientConfig('claude',options);

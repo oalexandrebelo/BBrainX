@@ -61,6 +61,8 @@ function interrupted(signal){
   return signal.reason===timedOut?new EngineError('TIMEOUT','Capability invocation timed out.'):new EngineError('CANCELLED','Capability invocation was cancelled.',{cause:signal.reason});
 }
 function race(work,signal){
+  // O trabalho abandonado por prazo ou cancelamento ainda pode rejeitar depois: sem dono, essa rejeição derrubaria o processo.
+  work.catch(()=>{});
   if(signal.aborted)return Promise.reject(interrupted(signal));
   return new Promise((resolve,reject)=>{
     const onAbort=()=>reject(interrupted(signal));
@@ -96,6 +98,8 @@ export function createEngine({name,version,capabilities,onEvent}){
         const who=snapshotPrincipal(principal);
         await enforceAccess(id,capability,structuredClone(input),Object.freeze({requestId,source,principal:who,signal:signal??new AbortController().signal}));
         limit=deadline(signal,capability.timeoutMs);
+        // Chamada já cancelada não começa: `run` pode ter efeito colateral.
+        if(limit.signal.aborted)throw interrupted(limit.signal);
         const context=Object.freeze({requestId,source,principal:who,signal:limit.signal});
         const raw=await race(Promise.resolve().then(()=>capability.run({input,context})),limit.signal);
         const output=await race(validate(capability.output,raw,'OUTPUT_INVALID','Capability output validation failed.'),limit.signal);
