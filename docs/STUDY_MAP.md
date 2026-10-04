@@ -348,7 +348,7 @@ Fonte: <https://github.com/oalexandrebelo/BBrainX/blob/main/docs/EVALUATION.md>
 
 **Evidência.** Cada opção é um SVG de menos de 300 bytes, em uma cor.
 
-**Próximo passo.** Escolher uma e validar com usuários; nada aqui é parecer de marca.
+**Próximo passo.** O monograma BX está em uso por escolha do dono, de forma provisória. Falta validar com usuários; nada aqui é parecer de marca.
 
 Fonte: <https://github.com/KAANKIZILTUG/LOGO-DESIGN-SKILL>
 
