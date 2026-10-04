@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
-  "testedRevision": "0a45553a6cd1affb9e6e0ffdcb4b401b9553102d",
-  "runUrl": "https://github.com/oalexandrebelo/BBrainX/actions/runs/37181984086",
-  "generatedAt": "2026-10-04T06:11:03.937Z",
-  "dependencyLockSha256": "7ccb518fc1688622cf52a85dda47a3eb58116371ed9183f5e4611db8d0628dcd",
+  "testedRevision": "337ff85c9a0acee49705c568ce22a0fb14430ec6",
+  "runUrl": "https://github.com/oalexandrebelo/BBrainX/actions/runs/37200960511",
+  "generatedAt": "2026-10-04T12:07:43.163Z",
+  "dependencyLockSha256": "b3226cef26d1447853eb0526f0bcacb03900b8028103d087518dda842b48477c",
   "platforms": {
     "ubuntu-latest": {
-      "tests": 30,
-      "passed": 30,
+      "tests": 95,
+      "passed": 95,
       "failed": 0,
       "doctor": {
         "node": "24.21.0",
@@ -21,8 +21,8 @@
         "hardware": {
           "platform": "linux",
           "architecture": "x64",
-          "memoryGiB": 16,
-          "cpuCount": 4
+          "memoryGiB": 8,
+          "cpuCount": 2
         },
         "stateDirectory": "/home/runner/.local/share/bbrainx",
         "profile": "local-deterministic",
@@ -34,13 +34,69 @@
           "Diagnóstico não mede inferência.",
           "GPU, clientes e modelos não são requisitos do núcleo.",
           "Não altera autenticação dos harnesses."
-        ]
+        ],
+        "scenario": {
+          "core": {
+            "ready": true,
+            "node": "24.21.0",
+            "platform": "linux x64",
+            "memoryGiB": 8
+          },
+          "tools": {
+            "uv": false,
+            "python": [
+              "python3.12"
+            ],
+            "docker": true,
+            "ffmpeg": false
+          },
+          "harnesses": {
+            "claude": false,
+            "codex": false,
+            "cursor-agent": false,
+            "gemini": false,
+            "opencode": false
+          },
+          "profiles": {
+            "laya": {
+              "installed": false,
+              "runtime": false,
+              "weights": false,
+              "changesContextPack": false
+            }
+          },
+          "steps": [
+            {
+              "area": "núcleo",
+              "state": "pronto",
+              "detail": "Busca, pacote de contexto, checkpoints e memórias funcionam sem modelo, rede ou conta.",
+              "command": "node bin/bbrainx.mjs up --root /caminho/do/projeto"
+            },
+            {
+              "area": "harness",
+              "state": "não encontrado",
+              "detail": "Nenhum CLI de harness no PATH. Editores com MCP (VS Code, Cursor) usam o mesmo servidor.",
+              "command": "node bin/bbrainx.mjs config --project <id> --client vscode"
+            },
+            {
+              "area": "perfil laya",
+              "state": "disponível",
+              "detail": "Opcional. Baixa cerca de 0,7 GB de ambiente Python e 0,68 GB de pesos, conferidos por SHA-256. Ainda não medido neste tipo de máquina.",
+              "command": "node bin/bbrainx.mjs laya install"
+            },
+            {
+              "area": "sandbox",
+              "state": "possível",
+              "detail": "Docker encontrado. O BBrainX não executa código: um executor isolado (ex.: OpenHands) consome o contexto por MCP."
+            }
+          ]
+        }
       },
       "benchmark": {
         "schemaVersion": 1,
         "kind": "synthetic-local-retrieval-only",
-        "testedRevision": "0a45553a6cd1affb9e6e0ffdcb4b401b9553102d",
-        "observedAt": "2026-10-04T06:10:07.003Z",
+        "testedRevision": "337ff85c9a0acee49705c568ce22a0fb14430ec6",
+        "observedAt": "2026-10-04T12:06:49.466Z",
         "platform": "linux",
         "architecture": "x64",
         "node": "24.21.0",
@@ -51,86 +107,86 @@
           "generated": true
         },
         "indexing": {
-          "initialMs": 23.096672000000012,
-          "unchangedMs": 8.122103999999979,
+          "initialMs": 27.441186000000002,
+          "unchangedMs": 8.71992400000002,
           "unchangedFilesReused": 60,
-          "singleChangeMs": 8.223242999999997,
+          "singleChangeMs": 8.935113000000001,
           "singleChangeFilesReindexed": 1
         },
         "retrieval": {
           "samples": 10,
-          "p50Ms": 1.4460379999999873,
-          "p95Ms": 10.275525999999985,
+          "p50Ms": 3.3895530000000065,
+          "p95Ms": 11.413796999999988,
           "meanPayloadTokens": 556.9,
           "expectedMarkersFound": 10
         },
         "queries": [
           {
             "query": "VERIFY_MODULE_000",
-            "milliseconds": 10.275525999999985,
+            "milliseconds": 11.413796999999988,
             "payloadTokens": 564,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_001",
-            "milliseconds": 2.2771049999999775,
+            "milliseconds": 4.363421999999986,
             "payloadTokens": 558,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_002",
-            "milliseconds": 1.4682200000000023,
+            "milliseconds": 1.717160000000007,
             "payloadTokens": 554,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_003",
-            "milliseconds": 1.4318919999999764,
+            "milliseconds": 6.808989999999994,
             "payloadTokens": 557,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_004",
-            "milliseconds": 1.413156999999984,
+            "milliseconds": 3.3895530000000065,
             "payloadTokens": 554,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_005",
-            "milliseconds": 1.4935570000000098,
+            "milliseconds": 2.991252000000003,
             "payloadTokens": 555,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_006",
-            "milliseconds": 1.4460379999999873,
+            "milliseconds": 8.263107999999988,
             "payloadTokens": 557,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_007",
-            "milliseconds": 1.422885000000008,
+            "milliseconds": 1.9945590000000095,
             "payloadTokens": 559,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_008",
-            "milliseconds": 1.3576130000000148,
+            "milliseconds": 1.0938899999999876,
             "payloadTokens": 555,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_009",
-            "milliseconds": 1.3667599999999993,
+            "milliseconds": 0.9797069999999906,
             "payloadTokens": 556,
             "sources": 1,
             "expectedMarkerFound": true
@@ -148,8 +204,8 @@
       }
     },
     "macos-latest": {
-      "tests": 30,
-      "passed": 30,
+      "tests": 95,
+      "passed": 95,
       "failed": 0,
       "doctor": {
         "node": "24.20.0",
@@ -163,8 +219,8 @@
         "hardware": {
           "platform": "darwin",
           "architecture": "arm64",
-          "memoryGiB": 7,
-          "cpuCount": 3
+          "memoryGiB": 14,
+          "cpuCount": 5
         },
         "stateDirectory": "/Users/runner/Library/Application Support/BBrainX",
         "profile": "local-deterministic",
@@ -176,13 +232,71 @@
           "Diagnóstico não mede inferência.",
           "GPU, clientes e modelos não são requisitos do núcleo.",
           "Não altera autenticação dos harnesses."
-        ]
+        ],
+        "scenario": {
+          "core": {
+            "ready": true,
+            "node": "24.20.0",
+            "platform": "darwin arm64",
+            "memoryGiB": 14
+          },
+          "tools": {
+            "uv": false,
+            "python": [
+              "python3.12",
+              "python3.13",
+              "python3.11"
+            ],
+            "docker": false,
+            "ffmpeg": false
+          },
+          "harnesses": {
+            "claude": false,
+            "codex": false,
+            "cursor-agent": false,
+            "gemini": false,
+            "opencode": false
+          },
+          "profiles": {
+            "laya": {
+              "installed": false,
+              "runtime": false,
+              "weights": false,
+              "changesContextPack": false
+            }
+          },
+          "steps": [
+            {
+              "area": "núcleo",
+              "state": "pronto",
+              "detail": "Busca, pacote de contexto, checkpoints e memórias funcionam sem modelo, rede ou conta.",
+              "command": "node bin/bbrainx.mjs up --root /caminho/do/projeto"
+            },
+            {
+              "area": "harness",
+              "state": "não encontrado",
+              "detail": "Nenhum CLI de harness no PATH. Editores com MCP (VS Code, Cursor) usam o mesmo servidor.",
+              "command": "node bin/bbrainx.mjs config --project <id> --client vscode"
+            },
+            {
+              "area": "perfil laya",
+              "state": "disponível",
+              "detail": "Opcional. Baixa cerca de 0,7 GB de ambiente Python e 0,68 GB de pesos, conferidos por SHA-256. Medido em Apple Silicon (GPU via MPS).",
+              "command": "node bin/bbrainx.mjs laya install"
+            },
+            {
+              "area": "sandbox",
+              "state": "indisponível",
+              "detail": "Sem Docker. Executores isolados como o OpenHands ficam fora; o núcleo não precisa deles."
+            }
+          ]
+        }
       },
       "benchmark": {
         "schemaVersion": 1,
         "kind": "synthetic-local-retrieval-only",
-        "testedRevision": "0a45553a6cd1affb9e6e0ffdcb4b401b9553102d",
-        "observedAt": "2026-10-04T06:10:11.656Z",
+        "testedRevision": "337ff85c9a0acee49705c568ce22a0fb14430ec6",
+        "observedAt": "2026-10-04T12:06:47.531Z",
         "platform": "darwin",
         "architecture": "arm64",
         "node": "24.20.0",
@@ -193,86 +307,86 @@
           "generated": true
         },
         "indexing": {
-          "initialMs": 17.79416599999999,
-          "unchangedMs": 10.718958000000015,
+          "initialMs": 19.488540999999998,
+          "unchangedMs": 9.374250000000018,
           "unchangedFilesReused": 60,
-          "singleChangeMs": 20.893332999999984,
+          "singleChangeMs": 14.968625000000003,
           "singleChangeFilesReindexed": 1
         },
         "retrieval": {
           "samples": 10,
-          "p50Ms": 0.7297089999999855,
-          "p95Ms": 14.707750000000004,
+          "p50Ms": 1.2794170000000236,
+          "p95Ms": 7.090582999999981,
           "meanPayloadTokens": 556.9,
           "expectedMarkersFound": 10
         },
         "queries": [
           {
             "query": "VERIFY_MODULE_000",
-            "milliseconds": 12.050583000000017,
+            "milliseconds": 7.090582999999981,
             "payloadTokens": 564,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_001",
-            "milliseconds": 14.707750000000004,
+            "milliseconds": 1.3572079999999858,
             "payloadTokens": 558,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_002",
-            "milliseconds": 6.914958000000013,
+            "milliseconds": 2.8637500000000102,
             "payloadTokens": 554,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_003",
-            "milliseconds": 1.190041000000008,
+            "milliseconds": 1.2378329999999949,
             "payloadTokens": 557,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_004",
-            "milliseconds": 0.7220419999999876,
+            "milliseconds": 1.031833000000006,
             "payloadTokens": 554,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_005",
-            "milliseconds": 0.7081670000000031,
+            "milliseconds": 5.751666999999998,
             "payloadTokens": 555,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_006",
-            "milliseconds": 0.653125000000017,
+            "milliseconds": 0.8321660000000008,
             "payloadTokens": 557,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_007",
-            "milliseconds": 0.7099160000000211,
+            "milliseconds": 0.8530830000000265,
             "payloadTokens": 559,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_008",
-            "milliseconds": 0.7297089999999855,
+            "milliseconds": 1.0426249999999868,
             "payloadTokens": 555,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_009",
-            "milliseconds": 0.6931249999999807,
+            "milliseconds": 1.2794170000000236,
             "payloadTokens": 556,
             "sources": 1,
             "expectedMarkerFound": true
@@ -290,8 +404,8 @@
       }
     },
     "windows-latest": {
-      "tests": 30,
-      "passed": 30,
+      "tests": 95,
+      "passed": 95,
       "failed": 0,
       "doctor": {
         "node": "24.21.0",
@@ -305,8 +419,8 @@
         "hardware": {
           "platform": "win32",
           "architecture": "x64",
-          "memoryGiB": 16,
-          "cpuCount": 4
+          "memoryGiB": 8,
+          "cpuCount": 2
         },
         "stateDirectory": "C:\\Users\\runneradmin\\AppData\\Local\\BBrainX",
         "profile": "local-deterministic",
@@ -318,13 +432,66 @@
           "Diagnóstico não mede inferência.",
           "GPU, clientes e modelos não são requisitos do núcleo.",
           "Não altera autenticação dos harnesses."
-        ]
+        ],
+        "scenario": {
+          "core": {
+            "ready": true,
+            "node": "24.21.0",
+            "platform": "win32 x64",
+            "memoryGiB": 8
+          },
+          "tools": {
+            "uv": false,
+            "python": [],
+            "docker": true,
+            "ffmpeg": false
+          },
+          "harnesses": {
+            "claude": false,
+            "codex": false,
+            "cursor-agent": false,
+            "gemini": false,
+            "opencode": false
+          },
+          "profiles": {
+            "laya": {
+              "installed": false,
+              "runtime": false,
+              "weights": false,
+              "changesContextPack": false
+            }
+          },
+          "steps": [
+            {
+              "area": "núcleo",
+              "state": "pronto",
+              "detail": "Busca, pacote de contexto, checkpoints e memórias funcionam sem modelo, rede ou conta.",
+              "command": "node bin/bbrainx.mjs up --root /caminho/do/projeto"
+            },
+            {
+              "area": "harness",
+              "state": "não encontrado",
+              "detail": "Nenhum CLI de harness no PATH. Editores com MCP (VS Code, Cursor) usam o mesmo servidor.",
+              "command": "node bin/bbrainx.mjs config --project <id> --client vscode"
+            },
+            {
+              "area": "perfil laya",
+              "state": "indisponível",
+              "detail": "Falta o uv ou um Python de 3.10 a 3.13. O núcleo não depende disso."
+            },
+            {
+              "area": "sandbox",
+              "state": "possível",
+              "detail": "Docker encontrado. O BBrainX não executa código: um executor isolado (ex.: OpenHands) consome o contexto por MCP."
+            }
+          ]
+        }
       },
       "benchmark": {
         "schemaVersion": 1,
         "kind": "synthetic-local-retrieval-only",
-        "testedRevision": "0a45553a6cd1affb9e6e0ffdcb4b401b9553102d",
-        "observedAt": "2026-10-04T06:10:31.472Z",
+        "testedRevision": "337ff85c9a0acee49705c568ce22a0fb14430ec6",
+        "observedAt": "2026-10-04T12:07:25.398Z",
         "platform": "win32",
         "architecture": "x64",
         "node": "24.21.0",
@@ -335,86 +502,86 @@
           "generated": true
         },
         "indexing": {
-          "initialMs": 68.56479999999999,
-          "unchangedMs": 31.97539999999998,
+          "initialMs": 65.46809999999999,
+          "unchangedMs": 34.0831,
           "unchangedFilesReused": 60,
-          "singleChangeMs": 34.23790000000008,
+          "singleChangeMs": 41.40120000000002,
           "singleChangeFilesReindexed": 1
         },
         "retrieval": {
           "samples": 10,
-          "p50Ms": 28.98249999999996,
-          "p95Ms": 33.65840000000003,
+          "p50Ms": 5.150899999999979,
+          "p95Ms": 22.16560000000004,
           "meanPayloadTokens": 556.9,
           "expectedMarkersFound": 10
         },
         "queries": [
           {
             "query": "VERIFY_MODULE_000",
-            "milliseconds": 33.65840000000003,
+            "milliseconds": 22.16560000000004,
             "payloadTokens": 564,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_001",
-            "milliseconds": 21.330499999999915,
+            "milliseconds": 6.022700000000043,
             "payloadTokens": 558,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_002",
-            "milliseconds": 22.83330000000001,
+            "milliseconds": 5.467800000000011,
             "payloadTokens": 554,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_003",
-            "milliseconds": 28.98249999999996,
+            "milliseconds": 13.811500000000024,
             "payloadTokens": 557,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_004",
-            "milliseconds": 19.152500000000032,
+            "milliseconds": 4.765800000000013,
             "payloadTokens": 554,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_005",
-            "milliseconds": 29.959799999999973,
+            "milliseconds": 4.162800000000004,
             "payloadTokens": 555,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_006",
-            "milliseconds": 19.073600000000056,
+            "milliseconds": 4.319099999999992,
             "payloadTokens": 557,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_007",
-            "milliseconds": 27.24459999999999,
+            "milliseconds": 4.585899999999981,
             "payloadTokens": 559,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_008",
-            "milliseconds": 32.01599999999996,
+            "milliseconds": 4.238599999999963,
             "payloadTokens": 555,
             "sources": 1,
             "expectedMarkerFound": true
           },
           {
             "query": "VERIFY_MODULE_009",
-            "milliseconds": 30.337300000000027,
+            "milliseconds": 5.150899999999979,
             "payloadTokens": 556,
             "sources": 1,
             "expectedMarkerFound": true
@@ -436,6 +603,7 @@
     "engine": "Chromium",
     "evidence": [
       "bbrainx-architecture-desktop.png",
+      "bbrainx-study-map-desktop.png",
       "bbrainx-workbench-desktop.png",
       "bbrainx-mobile.png"
     ],
