@@ -91,3 +91,10 @@ Sem watcher contínuo, LSP semântico, sincronização multi-host, criptografia 
 Projeto de Alexandre Belo (**AB**), desenvolvido com assistência de IA e revisão orientada a evidências. Não implica endosso de OpenAI, Anthropic, Google ou dos upstreams. Queremos contribuições reproduzíveis, não promessas de ranking: [CONTRIBUTING.md](CONTRIBUTING.md).
 
 O código original BBrainX é MIT. Nomes, marcas, bibliotecas e referências mantêm seus respectivos direitos. [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
+<!-- verified-preview -->
+## Interface verificada na CI
+
+![Arquitetura interativa BBrainX](public/demo/bbrainx-architecture-desktop.png)
+
+[Relatório por revisão](docs/validation/ci-report.json) · [Vídeo explicativo](public/demo/bbrainx-intro.mp4)

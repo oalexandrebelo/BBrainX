@@ -1,0 +1,451 @@
+{
+  "schemaVersion": 1,
+  "testedRevision": "9ebf55ee4691c452837e88385f393bb7130a73a0",
+  "runUrl": "https://github.com/oalexandrebelo/BBrainX/actions/runs/37181637640",
+  "generatedAt": "2026-10-04T06:04:00.575Z",
+  "dependencyLockSha256": "7ccb518fc1688622cf52a85dda47a3eb58116371ed9183f5e4611db8d0628dcd",
+  "platforms": {
+    "ubuntu-latest": {
+      "tests": 28,
+      "passed": 28,
+      "failed": 0,
+      "doctor": {
+        "node": "24.21.0",
+        "supportedNode": true,
+        "sqlite": true,
+        "fts5": true,
+        "git": {
+          "available": true,
+          "version": "git version 2.55.0"
+        },
+        "hardware": {
+          "platform": "linux",
+          "architecture": "x64",
+          "memoryGiB": 16,
+          "cpuCount": 4
+        },
+        "stateDirectory": "/home/runner/.local/share/bbrainx",
+        "profile": "local-deterministic",
+        "optionalCandidate": "CPU: avaliar Laya ONNX, não ativado",
+        "backendBenchmarked": false,
+        "remoteProvidersEnabled": false,
+        "ready": true,
+        "limits": [
+          "Diagnóstico não mede inferência.",
+          "GPU, clientes e modelos não são requisitos do núcleo.",
+          "Não altera autenticação dos harnesses."
+        ]
+      },
+      "benchmark": {
+        "schemaVersion": 1,
+        "kind": "synthetic-local-retrieval-only",
+        "testedRevision": "9ebf55ee4691c452837e88385f393bb7130a73a0",
+        "observedAt": "2026-10-04T06:03:11.759Z",
+        "platform": "linux",
+        "architecture": "x64",
+        "node": "24.21.0",
+        "corpus": {
+          "files": 60,
+          "tokens": 26280,
+          "encoding": "o200k_base",
+          "generated": true
+        },
+        "indexing": {
+          "initialMs": 20.35832499999998,
+          "unchangedMs": 7.539939000000004,
+          "unchangedFilesReused": 60,
+          "singleChangeMs": 10.426067000000018,
+          "singleChangeFilesReindexed": 1
+        },
+        "retrieval": {
+          "samples": 10,
+          "p50Ms": 1.515751000000023,
+          "p95Ms": 8.21163199999998,
+          "meanPayloadTokens": 556.9,
+          "expectedMarkersFound": 10
+        },
+        "queries": [
+          {
+            "query": "VERIFY_MODULE_000",
+            "milliseconds": 8.21163199999998,
+            "payloadTokens": 564,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_001",
+            "milliseconds": 2.328138000000024,
+            "payloadTokens": 558,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_002",
+            "milliseconds": 1.495112000000006,
+            "payloadTokens": 554,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_003",
+            "milliseconds": 1.5197679999999991,
+            "payloadTokens": 557,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_004",
+            "milliseconds": 1.4842310000000225,
+            "payloadTokens": 554,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_005",
+            "milliseconds": 1.3681829999999877,
+            "payloadTokens": 555,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_006",
+            "milliseconds": 1.4910539999999912,
+            "payloadTokens": 557,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_007",
+            "milliseconds": 1.5801510000000007,
+            "payloadTokens": 559,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_008",
+            "milliseconds": 1.515751000000023,
+            "payloadTokens": 555,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_009",
+            "milliseconds": 1.4604160000000093,
+            "payloadTokens": 556,
+            "sources": 1,
+            "expectedMarkerFound": true
+          }
+        ],
+        "providerCalls": 0,
+        "providerBillingSavings": null,
+        "harnessTaskSuccess": null,
+        "caveats": [
+          "Synthetic corpus, no model inference.",
+          "Payload reduction is not provider billing reduction.",
+          "Small exploratory sample; no significance claim.",
+          "The full corpus is not a realistic optimal baseline for an agent."
+        ]
+      }
+    },
+    "macos-latest": {
+      "tests": 28,
+      "passed": 28,
+      "failed": 0,
+      "doctor": {
+        "node": "24.20.0",
+        "supportedNode": true,
+        "sqlite": true,
+        "fts5": true,
+        "git": {
+          "available": true,
+          "version": "git version 2.55.0"
+        },
+        "hardware": {
+          "platform": "darwin",
+          "architecture": "arm64",
+          "memoryGiB": 7,
+          "cpuCount": 3
+        },
+        "stateDirectory": "/Users/runner/Library/Application Support/BBrainX",
+        "profile": "local-deterministic",
+        "optionalCandidate": "Apple Silicon: avaliar Laya MPS ou SemIf MLX, não ativados",
+        "backendBenchmarked": false,
+        "remoteProvidersEnabled": false,
+        "ready": true,
+        "limits": [
+          "Diagnóstico não mede inferência.",
+          "GPU, clientes e modelos não são requisitos do núcleo.",
+          "Não altera autenticação dos harnesses."
+        ]
+      },
+      "benchmark": {
+        "schemaVersion": 1,
+        "kind": "synthetic-local-retrieval-only",
+        "testedRevision": "9ebf55ee4691c452837e88385f393bb7130a73a0",
+        "observedAt": "2026-10-04T06:03:15.432Z",
+        "platform": "darwin",
+        "architecture": "arm64",
+        "node": "24.20.0",
+        "corpus": {
+          "files": 60,
+          "tokens": 26280,
+          "encoding": "o200k_base",
+          "generated": true
+        },
+        "indexing": {
+          "initialMs": 17.56816699999999,
+          "unchangedMs": 9.499457999999976,
+          "unchangedFilesReused": 60,
+          "singleChangeMs": 9.572792000000021,
+          "singleChangeFilesReindexed": 1
+        },
+        "retrieval": {
+          "samples": 10,
+          "p50Ms": 0.8637090000000001,
+          "p95Ms": 6.584000000000003,
+          "meanPayloadTokens": 556.9,
+          "expectedMarkersFound": 10
+        },
+        "queries": [
+          {
+            "query": "VERIFY_MODULE_000",
+            "milliseconds": 6.584000000000003,
+            "payloadTokens": 564,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_001",
+            "milliseconds": 1.1667500000000075,
+            "payloadTokens": 558,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_002",
+            "milliseconds": 1.1419580000000167,
+            "payloadTokens": 554,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_003",
+            "milliseconds": 0.8637090000000001,
+            "payloadTokens": 557,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_004",
+            "milliseconds": 0.8251250000000141,
+            "payloadTokens": 554,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_005",
+            "milliseconds": 0.7603330000000028,
+            "payloadTokens": 555,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_006",
+            "milliseconds": 0.7937090000000069,
+            "payloadTokens": 557,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_007",
+            "milliseconds": 0.8725000000000023,
+            "payloadTokens": 559,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_008",
+            "milliseconds": 0.7279589999999985,
+            "payloadTokens": 555,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_009",
+            "milliseconds": 0.7240409999999997,
+            "payloadTokens": 556,
+            "sources": 1,
+            "expectedMarkerFound": true
+          }
+        ],
+        "providerCalls": 0,
+        "providerBillingSavings": null,
+        "harnessTaskSuccess": null,
+        "caveats": [
+          "Synthetic corpus, no model inference.",
+          "Payload reduction is not provider billing reduction.",
+          "Small exploratory sample; no significance claim.",
+          "The full corpus is not a realistic optimal baseline for an agent."
+        ]
+      }
+    },
+    "windows-latest": {
+      "tests": 28,
+      "passed": 28,
+      "failed": 0,
+      "doctor": {
+        "node": "24.21.0",
+        "supportedNode": true,
+        "sqlite": true,
+        "fts5": true,
+        "git": {
+          "available": true,
+          "version": "git version 2.55.0.windows.5"
+        },
+        "hardware": {
+          "platform": "win32",
+          "architecture": "x64",
+          "memoryGiB": 16,
+          "cpuCount": 4
+        },
+        "stateDirectory": "C:\\Users\\runneradmin\\AppData\\Local\\BBrainX",
+        "profile": "local-deterministic",
+        "optionalCandidate": "CPU: avaliar Laya ONNX, não ativado",
+        "backendBenchmarked": false,
+        "remoteProvidersEnabled": false,
+        "ready": true,
+        "limits": [
+          "Diagnóstico não mede inferência.",
+          "GPU, clientes e modelos não são requisitos do núcleo.",
+          "Não altera autenticação dos harnesses."
+        ]
+      },
+      "benchmark": {
+        "schemaVersion": 1,
+        "kind": "synthetic-local-retrieval-only",
+        "testedRevision": "9ebf55ee4691c452837e88385f393bb7130a73a0",
+        "observedAt": "2026-10-04T06:03:28.869Z",
+        "platform": "win32",
+        "architecture": "x64",
+        "node": "24.21.0",
+        "corpus": {
+          "files": 60,
+          "tokens": 26280,
+          "encoding": "o200k_base",
+          "generated": true
+        },
+        "indexing": {
+          "initialMs": 64.00529999999998,
+          "unchangedMs": 39.81469999999996,
+          "unchangedFilesReused": 60,
+          "singleChangeMs": 36.97710000000001,
+          "singleChangeFilesReindexed": 1
+        },
+        "retrieval": {
+          "samples": 10,
+          "p50Ms": 5.579999999999984,
+          "p95Ms": 13.497700000000009,
+          "meanPayloadTokens": 556.9,
+          "expectedMarkersFound": 10
+        },
+        "queries": [
+          {
+            "query": "VERIFY_MODULE_000",
+            "milliseconds": 12.286599999999964,
+            "payloadTokens": 564,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_001",
+            "milliseconds": 5.381500000000017,
+            "payloadTokens": 558,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_002",
+            "milliseconds": 5.579999999999984,
+            "payloadTokens": 554,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_003",
+            "milliseconds": 4.630399999999952,
+            "payloadTokens": 557,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_004",
+            "milliseconds": 4.759300000000053,
+            "payloadTokens": 554,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_005",
+            "milliseconds": 4.489799999999946,
+            "payloadTokens": 555,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_006",
+            "milliseconds": 4.925799999999981,
+            "payloadTokens": 557,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_007",
+            "milliseconds": 7.716899999999953,
+            "payloadTokens": 559,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_008",
+            "milliseconds": 7.912200000000041,
+            "payloadTokens": 555,
+            "sources": 1,
+            "expectedMarkerFound": true
+          },
+          {
+            "query": "VERIFY_MODULE_009",
+            "milliseconds": 13.497700000000009,
+            "payloadTokens": 556,
+            "sources": 1,
+            "expectedMarkerFound": true
+          }
+        ],
+        "providerCalls": 0,
+        "providerBillingSavings": null,
+        "harnessTaskSuccess": null,
+        "caveats": [
+          "Synthetic corpus, no model inference.",
+          "Payload reduction is not provider billing reduction.",
+          "Small exploratory sample; no significance claim.",
+          "The full corpus is not a realistic optimal baseline for an agent."
+        ]
+      }
+    }
+  },
+  "browser": {
+    "engine": "Chromium",
+    "evidence": [
+      "bbrainx-architecture-desktop.png",
+      "bbrainx-workbench-desktop.png",
+      "bbrainx-mobile.png"
+    ],
+    "realLocalApi": true
+  },
+  "video": {
+    "rendered": true,
+    "kind": "explanatory-composition-not-product-benchmark"
+  },
+  "nativeHarnessApplicationsTested": false,
+  "maintainerMacTested": false,
+  "modelInferenceTested": false
+}

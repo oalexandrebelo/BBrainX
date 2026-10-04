@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic-local-retrieval-only",
+  "testedRevision": "9ebf55ee4691c452837e88385f393bb7130a73a0",
+  "observedAt": "2026-10-04T06:03:28.869Z",
+  "platform": "win32",
+  "architecture": "x64",
+  "node": "24.21.0",
+  "corpus": {
+    "files": 60,
+    "tokens": 26280,
+    "encoding": "o200k_base",
+    "generated": true
+  },
+  "indexing": {
+    "initialMs": 64.00529999999998,
+    "unchangedMs": 39.81469999999996,
+    "unchangedFilesReused": 60,
+    "singleChangeMs": 36.97710000000001,
+    "singleChangeFilesReindexed": 1
+  },
+  "retrieval": {
+    "samples": 10,
+    "p50Ms": 5.579999999999984,
+    "p95Ms": 13.497700000000009,
+    "meanPayloadTokens": 556.9,
+    "expectedMarkersFound": 10
+  },
+  "queries": [
+    {
+      "query": "VERIFY_MODULE_000",
+      "milliseconds": 12.286599999999964,
+      "payloadTokens": 564,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_001",
+      "milliseconds": 5.381500000000017,
+      "payloadTokens": 558,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_002",
+      "milliseconds": 5.579999999999984,
+      "payloadTokens": 554,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_003",
+      "milliseconds": 4.630399999999952,
+      "payloadTokens": 557,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_004",
+      "milliseconds": 4.759300000000053,
+      "payloadTokens": 554,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_005",
+      "milliseconds": 4.489799999999946,
+      "payloadTokens": 555,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_006",
+      "milliseconds": 4.925799999999981,
+      "payloadTokens": 557,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_007",
+      "milliseconds": 7.716899999999953,
+      "payloadTokens": 559,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_008",
+      "milliseconds": 7.912200000000041,
+      "payloadTokens": 555,
+      "sources": 1,
+      "expectedMarkerFound": true
+    },
+    {
+      "query": "VERIFY_MODULE_009",
+      "milliseconds": 13.497700000000009,
+      "payloadTokens": 556,
+      "sources": 1,
+      "expectedMarkerFound": true
+    }
+  ],
+  "providerCalls": 0,
+  "providerBillingSavings": null,
+  "harnessTaskSuccess": null,
+  "caveats": [
+    "Synthetic corpus, no model inference.",
+    "Payload reduction is not provider billing reduction.",
+    "Small exploratory sample; no significance claim.",
+    "The full corpus is not a realistic optimal baseline for an agent."
+  ]
+}
