@@ -1,0 +1,6 @@
+/* Ajustes dimensionais sem alterar os contratos ou o estado do grafo. */
+.react-flow__minimap svg { width: 130px !important; height: 90px !important; }
+.work-controls textarea, .work-controls select { font-size: 12px; line-height: 1.7; }
+@media (max-width: 780px) {
+  .canvas > .react-flow { min-height: 490px; }
+}

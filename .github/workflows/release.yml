@@ -1,0 +1,49 @@
+name: Publish verified developer preview
+on:
+  workflow_run:
+    workflows: [Verify BBrainX]
+    types: [completed]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  preview:
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main' && github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      RUN_ID: ${{ github.event.workflow_run.id }}
+      TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+    steps:
+      - name: Download the already verified source distribution
+        run: gh run download "$RUN_ID" --name BBrainX-source-distribution --dir artifacts
+      - name: Verify archive integrity and target ancestry
+        run: |
+          cd artifacts
+          sha256sum --check SHA256SUMS.txt
+          TARGET=$(node -e "const fs=require('node:fs');const x=JSON.parse(fs.readFileSync('source-manifest.json'));if(!/^[a-f0-9]{40}$/.test(x.commit))process.exit(1);console.log(x.commit)")
+          if [ "$TARGET" != "$TESTED_SHA" ]; then
+            PARENT=$(gh api "repos/$GH_REPO/commits/$TARGET" --jq '.parents[0].sha')
+            test "$PARENT" = "$TESTED_SHA"
+          fi
+          echo "RELEASE_TARGET=$TARGET" >> "$GITHUB_ENV"
+      - name: Publish an immutable preview without replacing an existing tag
+        run: |
+          if gh release view v0.2.0-preview >/dev/null 2>&1; then
+            echo 'Preview already exists; a later release requires a new explicit version.'
+            exit 0
+          fi
+          cat > notes.md <<'NOTES'
+          ## BBrainX — GODMODCODE / Developer Preview
+          Local context, governed memory and verified handoffs across coding agents.
+
+          Includes the React Flow architecture explorer, working local context lab, Invokta MCP, SQLite/FTS5, versioned checkpoints, macOS launcher, dependency doctor, research dossier and original Remotion media.
+
+          Start: extract the ZIP, install Node 24 LTS and Git, run `npm run setup`, `npm run demo`, then `npm start`.
+
+          CI evidence for the exact tested revision is included in `docs/validation/ci-report.json`. Native platform and protocol tests are not a certification of every IDE or the maintainer's Mac. No measured provider-cache savings or model-inference result is claimed. Laya/LightRAG and desktop automation remain optional research profiles.
+
+          Original core is MIT; dependencies and Remotion retain their own terms. No credentials, installed node_modules, reference-repository copies or font files are included.
+          NOTES
+          gh release create v0.2.0-preview artifacts/BBrainX-v0.2.0-source.zip artifacts/SHA256SUMS.txt artifacts/source-manifest.json --target "$RELEASE_TARGET" --title 'BBrainX 0.2.0 — GODMODCODE Developer Preview' --notes-file notes.md --prerelease
