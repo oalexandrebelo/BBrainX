@@ -7,7 +7,7 @@ import { ensure } from './primitives.mjs';
 import { makeEngine } from './engine.mjs';
 import { doctor } from './host.mjs';
 
-const dist=fileURLToPath(new URL('../dist/',import.meta.url));
+const dist=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url)));
 const contentTypes={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.json':'application/json; charset=utf-8','.png':'image/png','.webm':'video/webm','.mp4':'video/mp4'};
 function equal(a,b){const x=Buffer.from(a||''),y=Buffer.from(b);return x.length===y.length&&timingSafeEqual(x,y);}
 function json(res,status,payload){res.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});res.end(JSON.stringify(payload));}
@@ -39,7 +39,7 @@ export async function startServer(store,{port=4317}={}){
       }
       if(req.method!=='GET'&&req.method!=='HEAD')return json(res,405,{error:'METHOD_NOT_ALLOWED'});
       const relative=decodeURIComponent(url.pathname).replace(/^\/+/,''), target=path.resolve(dist,relative||'index.html');
-      ensure(target.startsWith(dist+path.sep)||target===path.join(dist,'index.html'),'UNSAFE_PATH');
+      ensure(target.startsWith(dist+path.sep),'UNSAFE_PATH');
       if(!fs.existsSync(target)||!fs.statSync(target).isFile())return json(res,404,{error:'NOT_FOUND',hint:'Execute npm run build antes de iniciar o painel.'});
       res.writeHead(200,{'Content-Type':contentTypes[path.extname(target)]||'application/octet-stream','Cache-Control':'no-cache'});
       if(req.method==='HEAD')res.end();else fs.createReadStream(target).on('error',()=>res.destroy()).pipe(res);

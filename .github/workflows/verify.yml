@@ -53,7 +53,11 @@ jobs:
           set -o pipefail
           npm test 2>&1 | tee artifacts/tests-${{ matrix.os }}.log
       - run: npm run build
-      - run: npm run doctor
+      - name: Host and synthetic benchmark
+        shell: bash
+        run: |
+          node bin/bbrainx.mjs doctor > artifacts/doctor-${{ matrix.os }}.json
+          node scripts/benchmark.mjs > artifacts/benchmark-console.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -81,3 +85,96 @@ jobs:
           path: |
             artifacts/
             test-results/
+  media:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install isolated Remotion dependencies
+        working-directory: media
+        run: |
+          if [ -f package-lock.json ]; then npm ci --ignore-scripts --no-fund; else npm install --ignore-scripts --no-fund; fi
+      - name: Render original presentation
+        working-directory: media
+        run: npm run render
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: media-evidence
+          path: |
+            media/package-lock.json
+            artifacts/bbrainx-intro.mp4
+  upstreams:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Download upstream sources for inspection, not execution
+        run: node scripts/sources.mjs --download
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: upstream-inventory
+          path: artifacts/upstream-inventory.json
+  publish-evidence:
+    needs: [verify, browser, media, upstreams]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
+      - name: Refuse to overwrite a newer revision
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - uses: actions/download-artifact@v4
+        with:
+          name: dependency-lock
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: evidence-*
+          path: .ci-evidence
+      - uses: actions/download-artifact@v4
+        with:
+          name: browser-evidence
+          path: .ci-browser
+      - uses: actions/download-artifact@v4
+        with:
+          name: media-evidence
+          path: .ci-media
+      - uses: actions/download-artifact@v4
+        with:
+          name: upstream-inventory
+          path: .ci-upstreams
+      - name: Collect observed evidence and exact dependency locks
+        run: node scripts/collect-evidence.mjs
+      - name: Publish only generated evidence and lockfiles
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package-lock.json media/package-lock.json docs/validation public/demo README.md
+          if ! git diff --cached --quiet; then
+            git commit -m "docs: publish verified locks and evidence for ${GITHUB_SHA::8} [skip ci]"
+            git push origin HEAD:main
+          fi
+      - name: Create source distribution without secrets or installed modules
+        run: |
+          node scripts/package.mjs
+          python3 scripts/archive.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BBrainX-source-distribution
+          path: |
+            artifacts/BBrainX-v0.2.0-source.zip
+            artifacts/SHA256SUMS.txt
+            artifacts/source-manifest.json

@@ -1,15 +1,15 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { ensure, hash, text } from './primitives.mjs';
 
 const allowed = new Set(['.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
-const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
+const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
 const secretName = /(?:^\.env(?:\.|$)|credentials|secrets?|id_rsa|id_ed25519|\.pem$|\.key$|\.p12$|package-lock\.json$|yarn\.lock$)/i;
 const secretBody = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[a-zA-Z0-9_-]{20,}|gh[pousr]_[a-zA-Z0-9]{20,})\b/;
 export function included(relative) {
   const parts=relative.replaceAll('\\','/').split('/');
-  return parts.every(x=>x!=='.'&&x!=='..'&&!deniedPart.test(x))&&!secretName.test(parts.at(-1))&&allowed.has(path.extname(relative).toLowerCase());
+  return parts.every(x=>x!=='.'&&x!=='..'&&!deniedPart.test(x)&&!x.startsWith('.ci-'))&&!secretName.test(parts.at(-1))&&allowed.has(path.extname(relative).toLowerCase());
 }
 export function readSafe(root, relative, maxBytes=262144) {
   ensure(typeof relative==='string'&&!path.isAbsolute(relative),'UNSAFE_PATH');
@@ -24,17 +24,25 @@ export function readSafe(root, relative, maxBytes=262144) {
   return {body,hash:hash(bytes),bytes:bytes.length};
 }
 function candidates(root) {
-  try {
-    const top=execFileSync('git',['-C',root,'rev-parse','--show-toplevel'],{encoding:'utf8',timeout:5000}).trim();
-    if(fs.realpathSync(top)===fs.realpathSync(root)) return [...new Set(execFileSync('git',['-C',root,'ls-files','--cached','--others','--exclude-standard','-z'],{encoding:'utf8',timeout:15000,maxBuffer:8*1024*1024}).split('\0').filter(Boolean))];
-  } catch { /* Diretórios não Git usam walker limitado. */ }
-  const names=[];
-  function walk(dir,base='') {
-    ensure(names.length<=5000,'INDEX_FILE_LIMIT');
+  const base=['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',root];
+  const options={encoding:'utf8',timeout:5000,maxBuffer:65536,stdio:['ignore','pipe','pipe'],windowsHide:true,shell:false,env:{...process.env,LC_ALL:'C'}};
+  const probe=spawnSync('git',[...base,'rev-parse','--is-inside-work-tree'],options);
+  ensure(!probe.error,'GIT_UNAVAILABLE');
+  if(probe.status===0&&probe.stdout.trim()==='true'){
+    try{
+      // Caminhos relativos à raiz escolhida; preserva ignores também em subdiretórios.
+      return [...new Set(execFileSync('git',[...base,'ls-files','--cached','--others','--exclude-standard','-z','--','.'],{...options,timeout:15000,maxBuffer:8*1024*1024}).split('\0').filter(Boolean))];
+    }catch{ensure(false,'GIT_INDEX_READ_FAILED','Não será usado fallback que desconsidere as exclusões Git.');}
+  }
+  ensure(probe.status===128&&/not a git repository/i.test(probe.stderr),'GIT_SCOPE_UNVERIFIED');
+  const names=[];let visited=0;
+  function walk(dir,base='',depth=0) {
+    ensure(depth<=64&&visited<=12000&&names.length<=5000,'INDEX_FILE_LIMIT');
     for(const entry of fs.readdirSync(dir,{withFileTypes:true})){
-      if(entry.isSymbolicLink()||deniedPart.test(entry.name)||secretName.test(entry.name))continue;
+      visited++;ensure(visited<=12000,'INDEX_FILE_LIMIT');
+      if(entry.isSymbolicLink()||deniedPart.test(entry.name)||secretName.test(entry.name)||entry.name.startsWith('.ci-'))continue;
       const rel=path.join(base,entry.name);
-      if(entry.isDirectory())walk(path.join(dir,entry.name),rel); else if(entry.isFile())names.push(rel);
+      if(entry.isDirectory())walk(path.join(dir,entry.name),rel,depth+1); else if(entry.isFile())names.push(rel);
     }
   }
   walk(root); return names;

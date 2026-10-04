@@ -1,0 +1,28 @@
+name: Bug reproduzível
+description: Relate comportamento incorreto sem dados privados.
+body:
+  - type: textarea
+    id: environment
+    attributes:
+      label: Ambiente
+      description: SO, arquitetura, Node, revisão Git e harness.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reprodução mínima
+      description: Use fixture pública e comandos reproduzíveis, sem credenciais.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Esperado e observado
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidências sanitizadas
+      description: Logs mínimos e códigos de erro. Não anexe seu banco.

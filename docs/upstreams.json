@@ -1,0 +1,17 @@
+[
+ {"repository":"vinilana/invokta","role":"runtime contract; npm packages used","execution":"npm locked packages only"},
+ {"repository":"xyflow/xyflow","role":"interactive architecture; @xyflow/react used"},
+ {"repository":"niieani/gpt-tokenizer","role":"payload token counting; npm package used"},
+ {"repository":"NandhaKishorM/laya","role":"optional decision research"},
+ {"repository":"HKUDS/LightRAG","role":"optional documentary retrieval research"},
+ {"repository":"browser-use/jev-ultrafast","role":"browser decision/execution separation research"},
+ {"repository":"tamaratran/fast-jev-compaction","role":"compaction policy research"},
+ {"repository":"jev-chat/jev-chat-jarvis","role":"optional desktop interaction research"},
+ {"repository":"TheoLeeCJ/SemIf-OpenJev","role":"optional Apple Silicon decision research"},
+ {"repository":"ByteByteGoHq/system-design-101","role":"design reference; not vendored in MIT code"},
+ {"repository":"ashishps1/awesome-system-design-resources","role":"design reference; not vendored in MIT code"},
+ {"repository":"puncsky/system-design-and-architecture","role":"design reference"},
+ {"repository":"arialdomartini/Back-End-Developer-Interview-Questions","role":"review questions; not acceptance labels"},
+ {"repository":"KAANKIZILTUG/LOGO-DESIGN-SKILL","role":"identity process; no third-party logo copied"},
+ {"repository":"remotion-dev/remotion","role":"optional release video; separate license"}
+]
