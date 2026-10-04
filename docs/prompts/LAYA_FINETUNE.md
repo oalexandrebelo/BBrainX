@@ -126,7 +126,7 @@ Cada fase tem um portão. Não avance com o portão fechado: relate e pare.
 3. Reproduza a medição de memória: `node scripts/laya-bench.mjs --memory test/fixtures/eval-memory.cases --out "$LAB/base-memoria.json"`.
 4. Reproduza a de reordenação: registre este repositório (`node bin/bbrainx.mjs up --root "$REPO" --project self`) e rode `node scripts/laya-bench.mjs --project self --cases test/fixtures/eval-natural.cases --out "$LAB/base-rerank.json"`. O corpus mudou desde 4 de outubro: compare a ordem de grandeza, não o número exato.
 5. Monte o ambiente de treino em `LAB` (Python 3.12, as versões de `profiles/laya/requirements.txt` mais o que o script de treino pedir, tudo fixado) e copie o checkpoint `multilingual` para lá.
-6. Meça a vazão do treino em MPS com 200 itens curtos e 200 longos: itens por segundo, pico de memória, temperatura estável ou não. Projete as horas de cada plano da Fase 1.
+6. Meça a vazão do treino em MPS com 200 itens curtos e 200 longos: itens por segundo, pico de memória e se a velocidade cai quando a máquina aquece. Projete as horas de cada plano da Fase 1.
 
 **Portão 0.** A base reproduz a ordem de grandeza publicada, e você tem horas projetadas por plano. Se a projeção passar de `ORCAMENTO`, apresente as opções ao dono antes de seguir.
 
