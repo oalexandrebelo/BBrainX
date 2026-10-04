@@ -32,6 +32,8 @@ node bin/bbrainx.mjs config --project meu-projeto --client claude   # ou codex, 
 
 O comando **imprime** a configuração. Quem cola no arquivo ou roda o `claude mcp add` é você: nenhum comando do BBrainX altera `config.toml`, `.mcp.json`, credenciais ou aprovações. `npm start` abre o painel em **http://127.0.0.1:4317**; no Mac, `Start-BBrainX.command` faz o mesmo com dois cliques.
 
+Se preferir que o próprio agente faça a ligação, cole na sessão dele o prompt de [docs/prompts/ACTIVATE.md](docs/prompts/ACTIVATE.md). Quem assume o projeto começa por [docs/HANDOFF.md](docs/HANDOFF.md).
+
 ## O que foi medido
 
 | Medida | 0.3 | 0.4 | Como foi medido |
@@ -93,6 +95,12 @@ npm run test:e2e    # painel no navegador
 A matriz da CI inclui macOS, Linux e Windows; **o resultado que vale é o da execução ligada à revisão**, em `docs/validation/`. Os testes novos de cada rodada foram provados por sabotagem: um defeito é injetado de propósito e o teste precisa reprovar.
 
 O que não existe: observador contínuo de arquivos, análise semântica por servidor de linguagem, sincronização entre máquinas, criptografia própria, autenticação multiusuário, captura de tela e execução de shell. O prazo de uma chamada não interrompe trabalho síncrono, como a indexação. Não use o banco ativo em iCloud ou em disco de rede. Revogar uma memória impede o uso futuro, mas não apaga cópias históricas nem backups. Veja o [modelo de segurança](docs/SECURITY_MODEL.md).
+
+## Marca
+
+A marca em uso é o **monograma BX**, escolhida de forma provisória entre três opções originais que continuam em estudo. O porquê de cada uma e como trocar estão em [docs/BRAND.md](docs/BRAND.md).
+
+<p align="center"><img src="public/brand/options/opcoes.gif" width="480" alt="As três opções de marca do BBrainX alternando: A, duas camadas; B, facetada; C, monograma BX, em uso"/></p>
 
 ## Comunidade
 
