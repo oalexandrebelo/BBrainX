@@ -47,7 +47,7 @@ Projeto `NandhaKishorM/laya`, código e pesos sob Apache-2.0, pesos em `convaiin
 | Manifesto | `LAYA` em `src/laya.mjs` | Fixa pacote `laya` 0.3.26, revisão `1c5edc17a7acd8701df6fc341c0d179f1c62c982` dos pesos e o SHA-256 de cada um dos cinco arquivos |
 | Instalação | `node bin/bbrainx.mjs laya install` | Cria o ambiente Python em `<pasta de estado>/profiles/laya/venv` e baixa os pesos para `…/models/multilingual` |
 | Processo do modelo | `profiles/laya/worker.py` | Lê e escreve JSON por linha, sem rede (`HF_HUB_OFFLINE=1`), sem porta. Limites: 64 estados, 16 perguntas, 50.000 caracteres por estado |
-| Lado Node | `LayaBroker` em `src/laya.mjs` | `decide(states, questions, {deadlineMs, maxLen})`. Nunca lança: devolve `{ok:false, reason}` com `TIMEOUT`, `ERROR`, `UNAVAILABLE` ou `DEGRADED`. Três falhas seguidas abrem um disjuntor por cinco minutos |
+| Lado Node | `LayaBroker` em `src/laya.mjs` | `decide(states, questions, {deadlineMs, maxLen})`. Nunca lança: devolve `{ok:false, reason}` com `TIMEOUT`, `ERROR`, `UNAVAILABLE` ou `DEGRADED`. Três falhas seguidas abrem um disjuntor por cinco minutos. A opção `command` do construtor troca o processo iniciado: é o jeito de apontar para outro checkpoint |
 | Medição | `scripts/laya-bench.mjs` | Compara o modelo com o caminho determinístico nas duas decisões |
 | Estado | `layaStatus()` | Informa `changesContextPack: false`. Hoje o perfil só responde a `laya ask` e à medição |
 

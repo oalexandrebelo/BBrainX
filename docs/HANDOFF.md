@@ -19,7 +19,7 @@ O núcleo é Node 24 com o SQLite embutido (`node:sqlite`, FTS5). Não usa model
 | CI | `Verify BBrainX` verde em Ubuntu, macOS e Windows: 95 testes, nenhum pulado. A prova por revisão está em `docs/validation/ci-report.json` |
 | Marca | Monograma BX em uso, provisório. As três opções continuam em `public/brand/options/` |
 | Perfil Laya | Instalável e medido. Não altera o pacote de contexto |
-| Sem prova | Nenhum harness específico foi homologado, não há tarefa real com critério de aceite e não há rótulo de uso real |
+| Sem prova | Só o Claude Code 2.1.263 foi visto conectando ao servidor (`claude mcp get bbrainx`, em 04/10/2026); nenhum outro harness foi homologado. Não há tarefa real com critério de aceite nem rótulo de uso real |
 
 ## 3. Comandos
 
