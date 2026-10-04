@@ -2,7 +2,9 @@
 
 The root MIT license covers original BBrainX code, documentation and assets, not third-party packages, publications or trademarks.
 
-Invokta, React, React Flow, gpt-tokenizer and all installed packages retain their own licenses. The lockfile identifies exact versions and integrity hashes. The dependency inventory records the resolved graph; review package notices before redistribution.
+Since 0.4.0 the capability engine (`src/capability.mjs`) and the MCP stdio server (`src/mcp.mjs`) are original BBrainX code and no Invokta package is installed. Their contract — capability definition, access rule, deadline, input and output validation, stable error codes, and the mapping of capabilities to MCP tools — follows the design of Invokta 0.9 (https://github.com/vinilana/invokta), Copyright (c) 2026 Vini Lana, released under the MIT License; this notice preserves that attribution. The official MCP SDK is a development dependency used only by the interoperability test.
+
+React, React Flow, gpt-tokenizer, Zod and all installed packages retain their own licenses. The lockfile identifies exact versions and integrity hashes. The dependency inventory records the resolved graph; review package notices before redistribution.
 
 Remotion uses separate licensing and eligibility terms: https://www.remotion.dev/docs/license/pricing . The optional media package is not a mandatory core dependency. The original composition contains no third-party photographs, audio, logo library or distributed font files.
 

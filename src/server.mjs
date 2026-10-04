@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { ensure } from './primitives.mjs';
-import { makeEngine } from './engine.mjs';
+import { makeEngine, VERSION } from './engine.mjs';
 import { doctor } from './host.mjs';
 
 const dist=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url)));
@@ -26,7 +26,7 @@ export async function startServer(store,{port=4317}={}){
       ensure(!req.headers.origin||req.headers.origin==='http://'+expected,'ORIGIN_REJECTED');
       ensure(!['cross-site','same-site'].includes(req.headers['sec-fetch-site']),'ORIGIN_REJECTED');
       const url=new URL(req.url,'http://'+expected);
-      if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:'0.3.0',csrf,projects:store.projects(),doctor:doctor(),mode:'local'});
+      if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:VERSION,csrf,projects:store.projects(),doctor:doctor(),mode:'local'});
       if(req.method==='GET'&&url.pathname==='/api/project'){
         const project=url.searchParams.get('project');return json(res,200,{project:store.project(project),tasks:store.tasks(project),memories:store.memories(project),events:store.events(project)});
       }

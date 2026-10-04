@@ -38,8 +38,10 @@ try{
     else if(command==='backup'){ensure(values.file,'FILE_REQUIRED');print(store.backup(values.file));}
     else if(command==='mcp'){
       ensure(values.project,'PROJECT_REQUIRED');store.project(values.project);
-      const {makeEngine}=await import('../src/engine.mjs'),{serveMcpStdio}=await import('@invokta/mcp');
-      await serveMcpStdio(makeEngine(store,[values.project]),{principal:{id:'local-mcp-host'},maxReadBufferBytes:1048576});
+      const {makeEngine,INSTRUCTIONS}=await import('../src/engine.mjs'),{serveMcpStdio}=await import('../src/mcp.mjs');
+      // A saída padrão é do protocolo; o rastro opcional vai para a saída de erro, sem argumentos nem resultados.
+      const onEvent=process.env.BBRAINX_TRACE==='1'?event=>console.error(JSON.stringify(event)):undefined;
+      await serveMcpStdio(makeEngine(store,[values.project],{onEvent}),{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS});
     }
     else if(command==='serve'){
       const {startServer}=await import('../src/server.mjs'),server=await startServer(store,{port:Number(values.port||4317)});
