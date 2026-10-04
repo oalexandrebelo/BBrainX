@@ -105,6 +105,21 @@ test('wire: a modern client needs no handshake, and both eras share one process'
   }finally{fs.rmSync(home,{recursive:true,force:true});}
 });
 
+test('wire: the harness is told which project id to pass, in the tool schemas and in the instructions of both eras',async()=>{
+  const home=fixture(), server=start(home);
+  try{
+    // Sem isto, um agente numa sessão nova vê `project` obrigatório e não tem de onde tirar o valor.
+    const meta={_meta:{'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{}}};
+    assert.match((await server.ask({jsonrpc:'2.0',id:1,method:'server/discover',params:meta})).result.instructions,/Pass project "wire"/);
+    const listed=await server.ask({jsonrpc:'2.0',id:2,method:'tools/list',params:meta});
+    assert.equal(listed.result.tools.length,6);
+    for(const tool of listed.result.tools)assert.match(tool.inputSchema.properties.project.description,/serves: wire\./,tool.name);
+    const hello=await server.ask({jsonrpc:'2.0',id:3,method:'initialize',params:{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'raw',version:'1'}}});
+    assert.match(hello.result.instructions,/Pass project "wire"/);
+    assert.equal(await server.end(),0);
+  }finally{fs.rmSync(home,{recursive:true,force:true});}
+});
+
 test('wire: a call cancelled in the same write gets no answer and the server stays up; a domain refusal is a tool error',async()=>{
   const home=fixture(), server=start(home);
   try{

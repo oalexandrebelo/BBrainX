@@ -47,7 +47,7 @@ Projeto `NandhaKishorM/laya`, código e pesos sob Apache-2.0, pesos em `convaiin
 | Manifesto | `LAYA` em `src/laya.mjs` | Fixa pacote `laya` 0.3.26, revisão `1c5edc17a7acd8701df6fc341c0d179f1c62c982` dos pesos e o SHA-256 de cada um dos cinco arquivos |
 | Instalação | `node bin/bbrainx.mjs laya install` | Cria o ambiente Python em `<pasta de estado>/profiles/laya/venv` e baixa os pesos para `…/models/multilingual` |
 | Processo do modelo | `profiles/laya/worker.py` | Lê e escreve JSON por linha, sem rede (`HF_HUB_OFFLINE=1`), sem porta. Limites: 64 estados, 16 perguntas, 50.000 caracteres por estado |
-| Lado Node | `LayaBroker` em `src/laya.mjs` | `decide(states, questions, {deadlineMs, maxLen})`. Nunca lança: devolve `{ok:false, reason}` com `TIMEOUT`, `ERROR`, `UNAVAILABLE` ou `DEGRADED`. Três falhas seguidas abrem um disjuntor por cinco minutos |
+| Lado Node | `LayaBroker` em `src/laya.mjs` | `decide(states, questions, {deadlineMs, maxLen})`. Nunca lança: devolve `{ok:false, reason}` com `TIMEOUT`, `ERROR`, `UNAVAILABLE` ou `DEGRADED`. Três falhas seguidas abrem um disjuntor por cinco minutos. A opção `command` do construtor troca o processo iniciado: é o jeito de apontar para outro checkpoint |
 | Medição | `scripts/laya-bench.mjs` | Compara o modelo com o caminho determinístico nas duas decisões |
 | Estado | `layaStatus()` | Informa `changesContextPack: false`. Hoje o perfil só responde a `laya ask` e à medição |
 
@@ -126,7 +126,7 @@ Cada fase tem um portão. Não avance com o portão fechado: relate e pare.
 3. Reproduza a medição de memória: `node scripts/laya-bench.mjs --memory test/fixtures/eval-memory.cases --out "$LAB/base-memoria.json"`.
 4. Reproduza a de reordenação: registre este repositório (`node bin/bbrainx.mjs up --root "$REPO" --project self`) e rode `node scripts/laya-bench.mjs --project self --cases test/fixtures/eval-natural.cases --out "$LAB/base-rerank.json"`. O corpus mudou desde 4 de outubro: compare a ordem de grandeza, não o número exato.
 5. Monte o ambiente de treino em `LAB` (Python 3.12, as versões de `profiles/laya/requirements.txt` mais o que o script de treino pedir, tudo fixado) e copie o checkpoint `multilingual` para lá.
-6. Meça a vazão do treino em MPS com 200 itens curtos e 200 longos: itens por segundo, pico de memória, temperatura estável ou não. Projete as horas de cada plano da Fase 1.
+6. Meça a vazão do treino em MPS com 200 itens curtos e 200 longos: itens por segundo, pico de memória e se a velocidade cai quando a máquina aquece. Projete as horas de cada plano da Fase 1.
 
 **Portão 0.** A base reproduz a ordem de grandeza publicada, e você tem horas projetadas por plano. Se a projeção passar de `ORCAMENTO`, apresente as opções ao dono antes de seguir.
 

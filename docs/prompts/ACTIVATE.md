@@ -76,12 +76,13 @@ printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{
 
 A resposta precisa listar seis ferramentas: `context_bootstrap`, `context_search`, `context_index`, `session_get`, `session_checkpoint` e `memory_propose`.
 
-**6. Prove dentro do harness.** Recarregue os servidores MCP ou abra uma sessão nova. Liste as ferramentas do servidor `bbrainx` e chame `context_search` com uma pergunta sobre este projeto. Mostre os três primeiros caminhos devolvidos.
+**6. Prove dentro do harness.** Recarregue os servidores MCP ou abra uma sessão nova: um servidor registrado no meio de uma sessão pode não aparecer nela (no Claude Code 2.1.263 não apareceu). Liste as ferramentas do servidor `bbrainx` e chame `context_search` com uma pergunta sobre este projeto. Mostre os três primeiros caminhos devolvidos. No Claude Code, `claude mcp get bbrainx` precisa responder `Connected`.
 
 **7. Relate.** O arquivo de configuração alterado e o trecho gravado, os números da indexação, a saída dos passos 5 e 6 e qualquer passo que não rodou.
 
 ## Como usar o BBrainX depois de ligado
 
+- Toda chamada leva `project` com o id registrado. O servidor informa esse id nas instruções da sessão e na descrição do argumento.
 - Comece uma tarefa com `context_bootstrap`: o objetivo vai em `query`; passe `task` para retomar um checkpoint salvo.
 - Use `context_search` para achar código ou documentação. A declaração de um nome vem antes dos usos e dos testes.
 - Antes de parar ou de passar a tarefa adiante, chame `session_checkpoint` com o que foi feito, as decisões, os arquivos tocados e as evidências. Leia de volta com `session_get`, neste ou em outro harness.
