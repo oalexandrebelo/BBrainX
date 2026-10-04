@@ -42,7 +42,7 @@ Remotion uses separate licensing and eligibility terms: https://www.remotion.dev
 
 System-design repositories are research references, not copied into an MIT corpus. ByteByteGo declares CC BY-NC-ND 4.0; the ashishps1 collection declares GPL-3.0; the arialdomartini question list declares GPL-2.0; the puncsky notes declare no license, which means all rights reserved. The blind evaluation cases under `test/fixtures/blind-*.cases` are original questions that only name file paths of mem0 (Apache-2.0) and plandex (MIT); no content of those repositories is included. AkitaOnRails articles and scientific publications retain their original rights. The analysis and tests in this repository are original; full articles and third-party diagrams were not republished.
 
-LOGO-DESIGN-SKILL (MIT) informed a process of geometric simplicity, small-size legibility and avoiding look-alikes. Its gallery was not copied. B/X and the three alternatives under `public/brand/options/` are original provisional marks, not a trademark-clearance claim.
+LOGO-DESIGN-SKILL (MIT) informed a process of geometric simplicity, small-size legibility and avoiding look-alikes. Its gallery was not copied. The three alternatives under `public/brand/options/`, including the BX monogram in use, are original provisional marks, not a trademark-clearance claim.
 
 Optional shallow checkouts under vendor preserve upstream licenses and are excluded from source releases. Downloading source is not installing, executing or certifying an integration.
 

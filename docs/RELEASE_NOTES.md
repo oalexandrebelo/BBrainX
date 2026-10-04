@@ -42,6 +42,14 @@ O esquema do banco é o mesmo da 0.3 (versão 2): não há migração. As seis f
 - O glossário português → inglês foi escrito por quem viu os casos deste repositório; o ganho foi confirmado depois em perguntas cegas, mas o conjunto é pequeno.
 - Esta rodada não teve revisor independente. Os testes novos foram provados por sabotagem (28 defeitos injetados, todos detectados).
 
+## Em `main` depois da prévia
+
+A release `v0.4.0-preview` é imutável e não traz estes itens; o código das seis ferramentas é o mesmo.
+
+- **Marca.** O monograma BX passa a ser a marca em uso, de forma provisória: ícone, cabeçalho do README, painel e filme. As três opções continuam em `public/brand/options/`, agora com um GIF que as alterna (`docs/BRAND.md`).
+- **Prompts.** `docs/prompts/ACTIVATE.md` leva um agente, em qualquer harness, a ligar o BBrainX a um projeto e provar o resultado. `docs/prompts/LAYA_FINETUNE.md` dá a outro agente o contexto, as regras e os critérios de aceite para o ajuste fino do Laya.
+- **Handoff.** `docs/HANDOFF.md`: estado, mapa do repositório, contratos, armadilhas e próximos passos.
+
 ---
 
 # BBrainX 0.3.0 — Developer Preview

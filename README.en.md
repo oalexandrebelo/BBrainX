@@ -26,6 +26,8 @@ node bin/bbrainx.mjs config --project my-project --client claude   # or codex, c
 
 The command **prints** the configuration. No BBrainX command edits harness configuration, credentials or approval settings. `npm start` opens the panel at http://127.0.0.1:4317.
 
+To let the agent do the wiring itself, paste [docs/prompts/ACTIVATE.md](docs/prompts/ACTIVATE.md) into its session. Anyone taking over the project starts at [docs/HANDOFF.md](docs/HANDOFF.md). Both are in Brazilian Portuguese.
+
 ## What was measured
 
 | Measure | 0.3 | 0.4 | How |
@@ -56,6 +58,12 @@ Thirty-seven tools were studied. Each sits in one of five situations — core, a
 ## Limits
 
 No continuous file watcher, language-server analysis, multi-host sync, own encryption, multi-tenant authentication, screen capture or shell execution. A call deadline does not interrupt synchronous work such as indexing. Do not place the live database on iCloud or a network disk. See the [security model](docs/SECURITY_MODEL.md).
+
+## Brand
+
+The mark in use is the **BX monogram**, a provisional choice among three original options that are still under study. See [docs/BRAND.md](docs/BRAND.md).
+
+<p align="center"><img src="public/brand/options/opcoes.gif" width="480" alt="The three BBrainX brand options cycling: A, two layers; B, faceted; C, BX monogram, in use"/></p>
 
 ## License
 

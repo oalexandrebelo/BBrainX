@@ -136,7 +136,7 @@ export const tools=[
    what:'Método para chegar a uma marca simples e legível em tamanho pequeno.',
    why:'Foi usado o processo, não a galeria. As três opções em public/brand/options são geometria original.',
    evidence:'Cada opção é um SVG de menos de 300 bytes, em uma cor.',
-   next:'Escolher uma e validar com usuários; nada aqui é parecer de marca.'},
+   next:'O monograma BX está em uso por escolha do dono, de forma provisória. Falta validar com usuários; nada aqui é parecer de marca.'},
 
   // ── referência ──────────────────────────────────────────────────────────
   {id:'system-design-101',group:'reference',name:'system-design-101',kind:'guia visual de arquitetura',license:'CC BY-NC-ND 4.0',url:'https://github.com/ByteByteGoHq/system-design-101',basis:'leitura',

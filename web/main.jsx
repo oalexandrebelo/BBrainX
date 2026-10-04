@@ -8,7 +8,7 @@ import {situations,tools,measuredOn} from './study-map.js';
 import {layoutStudy} from './study-layout.js';
 
 const repo='https://github.com/oalexandrebelo/BBrainX';
-function Mark(){return <svg viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M9 7h12l9 7-10 6 10 6-9 7H9V7Z" stroke="currentColor" strokeWidth="3" strokeLinejoin="round"/><path d="M10 20h10M20 20l11-12M20 20l11 12" stroke="currentColor" strokeWidth="3" strokeLinecap="round"/></svg>;}
+function Mark(){return <svg viewBox="4 12 56 40" fill="currentColor" aria-hidden="true"><path d="M4 12H20A8 8 0 0 1 20 28H4Z"/><path d="M4 36H24A8 8 0 0 1 24 52H4Z"/><path d="M36 12H44L60 52H52Z"/><path d="M52 12H60L44 52H36Z"/></svg>;}
 const statusLabel={implemented:'IMPLEMENTADO',experimental:'EXPERIMENTAL',protocol:'INTERFACE'};
 function ArchitectureNode({data,selected}){return <div className={'arch-node '+(selected?'selected ':'')+data.status}>
  <Handle type="target" position={Position.Top}/><div className="node-meta"><span>{data.layer}</span><i/></div><div className="node-title"><b aria-hidden="true">{data.icon}</b><strong>{data.label}</strong></div><p>{data.subtitle}</p><Handle type="source" position={Position.Bottom}/></div>;}
