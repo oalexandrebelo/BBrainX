@@ -16,7 +16,7 @@ O núcleo é Node 24 com o SQLite embutido (`node:sqlite`, FTS5). Não usa model
 | Repositório | `github.com/oalexandrebelo/BBrainX`, **privado** por decisão do dono em 04/10/2026 |
 | Ramo principal | `main`. As PRs 1 (versão 0.3) e 2 (versão 0.4.0) estão mescladas |
 | Release | `v0.4.0-preview`, criada pela CI. É imutável e aponta para a revisão anterior à troca de marca |
-| CI | `Verify BBrainX` verde em Ubuntu, macOS e Windows: 95 testes, nenhum pulado. A prova por revisão está em `docs/validation/ci-report.json` |
+| CI | `Verify BBrainX` verde em Ubuntu, macOS e Windows, sem teste pulado. A contagem e a prova de cada revisão estão em `docs/validation/ci-report.json` |
 | Marca | Monograma BX em uso, provisório. As três opções continuam em `public/brand/options/` |
 | Perfil Laya | Instalável e medido. Não altera o pacote de contexto |
 | Sem prova | Só o Claude Code 2.1.263 foi visto conectando ao servidor (`claude mcp get bbrainx`, em 04/10/2026); nenhum outro harness foi homologado. Não há tarefa real com critério de aceite nem rótulo de uso real |
@@ -146,7 +146,7 @@ Mudar qualquer item abaixo é mudança de contrato: entra em «Contratos que mud
 | `session.checkpoint` | `session_checkpoint` | Checkpoint |
 | `memory.propose` | `memory_propose` | Proposta de memória |
 
-Toda resposta é o envelope `{ok, data, error, detail}`. Recusa do domínio (`ok: false`) chega ao harness com `isError: true`. O servidor só enxerga o projeto com que foi iniciado (`mcp --project`), e essa permissão nunca vem de argumento de ferramenta.
+Toda resposta é o envelope `{ok, data, error, detail}`. Recusa do domínio (`ok: false`) chega ao harness com `isError: true`. O servidor só enxerga o projeto com que foi iniciado (`mcp --project`), e essa permissão nunca vem de argumento de ferramenta. Como `project` é obrigatório em toda chamada, o servidor informa o id ao harness em dois lugares: na descrição desse argumento, em cada ferramenta, e nas instruções da sessão.
 
 ### 5.2 Motor de capacidades
 

@@ -82,6 +82,7 @@ A resposta precisa listar seis ferramentas: `context_bootstrap`, `context_search
 
 ## Como usar o BBrainX depois de ligado
 
+- Toda chamada leva `project` com o id registrado. O servidor informa esse id nas instruções da sessão e na descrição do argumento.
 - Comece uma tarefa com `context_bootstrap`: o objetivo vai em `query`; passe `task` para retomar um checkpoint salvo.
 - Use `context_search` para achar código ou documentação. A declaração de um nome vem antes dos usos e dos testes.
 - Antes de parar ou de passar a tarefa adiante, chame `session_checkpoint` com o que foi feito, as decisões, os arquivos tocados e as evidências. Leia de volta com `session_get`, neste ou em outro harness.

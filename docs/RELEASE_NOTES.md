@@ -44,8 +44,9 @@ O esquema do banco é o mesmo da 0.3 (versão 2): não há migração. As seis f
 
 ## Em `main` depois da prévia
 
-A release `v0.4.0-preview` é imutável e não traz estes itens; o código das seis ferramentas é o mesmo.
+A release `v0.4.0-preview` é imutável e não traz estes itens.
 
+- **O servidor informa o id do projeto.** A descrição do argumento `project` de cada ferramenta e as instruções da sessão passam a dizer qual projeto o processo atende. Antes, um agente numa sessão nova via o argumento obrigatório e não tinha de onde tirar o valor; o defeito apareceu na primeira ativação num projeto real. Nomes, argumentos e códigos de erro não mudaram.
 - **Marca.** O monograma BX passa a ser a marca em uso, de forma provisória: ícone, cabeçalho do README, painel e filme. As três opções continuam em `public/brand/options/`, agora com um GIF que as alterna (`docs/BRAND.md`).
 - **Prompts.** `docs/prompts/ACTIVATE.md` leva um agente, em qualquer harness, a ligar o BBrainX a um projeto e provar o resultado. `docs/prompts/LAYA_FINETUNE.md` dá a outro agente o contexto, as regras e os critérios de aceite para o ajuste fino do Laya.
 - **Handoff.** `docs/HANDOFF.md`: estado, mapa do repositório, contratos, armadilhas e próximos passos.
