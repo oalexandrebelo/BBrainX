@@ -3,7 +3,7 @@
     "repository": "vinilana/invokta",
     "role": "design model of the own capability engine and MCP server; not installed since 0.4",
     "execution": "none",
-    "observedAt": "2026-10-04T12:45:56.795Z",
+    "observedAt": "2026-10-05T05:02:14.823Z",
     "sha": "f1e2f04f98c967ab4bb73bd02c3fa581f04ce0e5",
     "downloaded": true,
     "executed": false,
@@ -13,7 +13,7 @@
   {
     "repository": "xyflow/xyflow",
     "role": "interactive architecture; @xyflow/react used",
-    "observedAt": "2026-10-04T12:45:57.717Z",
+    "observedAt": "2026-10-05T05:02:16.633Z",
     "sha": "3d35b57317576b0916c0bfeaaedd573aaacc2839",
     "downloaded": true,
     "executed": false,
@@ -23,7 +23,7 @@
   {
     "repository": "niieani/gpt-tokenizer",
     "role": "payload token counting; npm package used",
-    "observedAt": "2026-10-04T12:45:58.399Z",
+    "observedAt": "2026-10-05T05:02:17.822Z",
     "sha": "9182f2e567355e0a8f81022b6c52bdc688250ac8",
     "downloaded": true,
     "executed": false,
@@ -33,8 +33,8 @@
   {
     "repository": "NandhaKishorM/laya",
     "role": "optional installable profile (bbrainx laya install); measured, does not change the context pack",
-    "observedAt": "2026-10-04T12:45:59.448Z",
-    "sha": "2e4d9c87e8b1621deb344eac7de5c7258f32f849",
+    "observedAt": "2026-10-05T05:02:19.811Z",
+    "sha": "8a6e1328cce2460a0e5aa348ad465bb1b5821cd2",
     "downloaded": true,
     "executed": false,
     "licenseFile": "LICENSE",
@@ -43,7 +43,7 @@
   {
     "repository": "HKUDS/LightRAG",
     "role": "technique only: two retrieval levels; indexing needs an LLM",
-    "observedAt": "2026-10-04T12:46:00.414Z",
+    "observedAt": "2026-10-05T05:02:21.761Z",
     "sha": "453dce83d6d0354a06e46c8d4029a0895c4e054b",
     "downloaded": true,
     "executed": false,
@@ -53,7 +53,7 @@
   {
     "repository": "browser-use/jev-ultrafast",
     "role": "technique only: decide and validate before acting",
-    "observedAt": "2026-10-04T12:46:01.879Z",
+    "observedAt": "2026-10-05T05:02:24.075Z",
     "sha": "1231850a0bf1a0c0341fe408ef1668dbbfdfac46",
     "downloaded": true,
     "executed": false,
@@ -63,7 +63,7 @@
   {
     "repository": "tamaratran/fast-jev-compaction",
     "role": "technique only: deterministic preservation policy",
-    "observedAt": "2026-10-04T12:46:02.468Z",
+    "observedAt": "2026-10-05T05:02:25.463Z",
     "sha": "e3f262a7f4d42bd8dd32ced30d26176f7cb545b0",
     "downloaded": true,
     "executed": false,
@@ -73,7 +73,7 @@
   {
     "repository": "jev-chat/jev-chat-jarvis",
     "role": "out: screen and chat capture do not belong in a code context engine",
-    "observedAt": "2026-10-04T12:46:03.013Z",
+    "observedAt": "2026-10-05T05:02:26.473Z",
     "sha": "31ee16199e90828abac6ff2b0e6d7da18694b237",
     "downloaded": true,
     "executed": false,
@@ -83,7 +83,7 @@
   {
     "repository": "TheoLeeCJ/SemIf-OpenJev",
     "role": "technique only: fail instead of truncating; model too heavy for a default profile",
-    "observedAt": "2026-10-04T12:46:05.412Z",
+    "observedAt": "2026-10-05T05:02:29.784Z",
     "sha": "23cf1f39fc9534fe81437200959b6dfc7106e45a",
     "downloaded": true,
     "executed": false,
@@ -93,7 +93,7 @@
   {
     "repository": "ByteByteGoHq/system-design-101",
     "role": "design reference; not vendored in MIT code",
-    "observedAt": "2026-10-04T12:46:06.431Z",
+    "observedAt": "2026-10-05T05:02:31.673Z",
     "sha": "b28380a4710c5ec9638ec037d4168e288f334cba",
     "downloaded": true,
     "executed": false,
@@ -103,7 +103,7 @@
   {
     "repository": "ashishps1/awesome-system-design-resources",
     "role": "design reference; not vendored in MIT code",
-    "observedAt": "2026-10-04T12:46:06.966Z",
+    "observedAt": "2026-10-05T05:02:33.477Z",
     "sha": "25724090f7dd7746129b7194b55504f9d06f86ed",
     "downloaded": true,
     "executed": false,
@@ -113,7 +113,7 @@
   {
     "repository": "puncsky/system-design-and-architecture",
     "role": "design reference; no license declared, not copied",
-    "observedAt": "2026-10-04T12:46:07.499Z",
+    "observedAt": "2026-10-05T05:02:35.119Z",
     "sha": "8a5fbc4165b721a29781e93fc6b050890f7a6290",
     "downloaded": true,
     "executed": false,
@@ -123,7 +123,7 @@
   {
     "repository": "arialdomartini/Back-End-Developer-Interview-Questions",
     "role": "review questions reference (GPL-2.0); not copied",
-    "observedAt": "2026-10-04T12:46:08.026Z",
+    "observedAt": "2026-10-05T05:02:36.078Z",
     "sha": "5bcf6e9a7eb9ac0390abc8507a93f563d0e5efee",
     "downloaded": true,
     "executed": false,
@@ -133,7 +133,7 @@
   {
     "repository": "KAANKIZILTUG/LOGO-DESIGN-SKILL",
     "role": "identity process; no third-party logo copied",
-    "observedAt": "2026-10-04T12:46:08.526Z",
+    "observedAt": "2026-10-05T05:02:36.919Z",
     "sha": "0ecf52e9a4b3ac92b714f7cc6e3148ab8c774134",
     "downloaded": true,
     "executed": false,
@@ -143,7 +143,7 @@
   {
     "repository": "remotion-dev/remotion",
     "role": "optional release video; separate license",
-    "observedAt": "2026-10-04T12:46:09.487Z",
+    "observedAt": "2026-10-05T05:02:39.243Z",
     "sha": "e385a83dbde54179c0457ad90b7d7c3a4b6ab44a",
     "downloaded": true,
     "executed": false,
