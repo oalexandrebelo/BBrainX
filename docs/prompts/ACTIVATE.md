@@ -59,13 +59,15 @@ Aplique o que foi impresso:
 | Harness | Onde gravar |
 |---|---|
 | Claude Code | Rode, na pasta do projeto, o comando `claude mcp add …` impresso. Para versionar com a equipe, junte o JSON a `.mcp.json` |
-| Codex CLI | Bloco `[mcp_servers.bbrainx]` em `~/.codex/config.toml`. Se o bloco já existir, substitua só ele |
+| Codex CLI | Rode o comando `codex mcp add …` impresso, ou cole o bloco `[mcp_servers.bbrainx]` em `~/.codex/config.toml`. Se o bloco já existir, substitua só ele |
 | Cursor | Chave `mcpServers.bbrainx` em `.cursor/mcp.json` do projeto |
 | VS Code | Chave `servers.bbrainx` em `.vscode/mcp.json` |
 | Gemini CLI | Chave `mcpServers.bbrainx` em `.gemini/settings.json` do projeto ou em `~/.gemini/settings.json` |
 | Outro, com MCP por stdio | Comando: o caminho absoluto do Node. Argumentos: `<BBRAINX_REPO>/bin/bbrainx.mjs`, `mcp`, `--project`, `<PROJETO>`. Ambiente: `BBRAINX_HOME` com o valor que o comando imprimiu |
 
 Juntar significa preservar todo o resto do arquivo.
+
+No Codex e na configuração global do Gemini, o servidor aparece em toda sessão da máquina, não só neste projeto. Se a máquina tem mais de um projeto, registre com o projeto no nome (`bbrainx-<PROJETO>` no lugar de `bbrainx`).
 
 **5. Prove pelo fio, sem depender do harness.** O servidor responde a `tools/list` sem handshake:
 

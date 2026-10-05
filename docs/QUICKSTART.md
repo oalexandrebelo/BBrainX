@@ -48,7 +48,7 @@ node bin/bbrainx.mjs config --project meu-app --client codex
 node bin/bbrainx.mjs config --project meu-app --client cursor    # também: vscode, gemini
 ```
 
-Cada cliente recebe o seu formato: o comando `claude mcp add` e o JSON de `.mcp.json`; o bloco TOML de `~/.codex/config.toml`; o JSON de `.cursor/mcp.json`, de `.vscode/mcp.json` ou de `~/.gemini/settings.json`. Os formatos foram conferidos na documentação oficial de cada cliente em 4 de outubro de 2026. O comando só imprime: revise e cole no arquivo indicado. Para outro cliente MCP, use os mesmos `command`, `args` e `env`.
+Cada cliente recebe o seu formato: o comando `claude mcp add` e o JSON de `.mcp.json`; o comando `codex mcp add` e o bloco TOML de `~/.codex/config.toml`; o JSON de `.cursor/mcp.json`, de `.vscode/mcp.json` ou de `~/.gemini/settings.json`. Os formatos foram conferidos na documentação oficial de cada cliente em 4 de outubro de 2026. O comando só imprime: revise e cole no arquivo indicado. Para outro cliente MCP, use os mesmos `command`, `args` e `env`.
 
 Se preferir que o próprio agente faça a ligação, cole na sessão dele o prompt de [prompts/ACTIVATE.md](prompts/ACTIVATE.md): ele registra, indexa, grava só a entrada `bbrainx` e prova o resultado pelo fio.
 

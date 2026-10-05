@@ -116,6 +116,8 @@ test('wire: the harness is told which project id to pass, in the tool schemas an
     for(const tool of listed.result.tools)assert.match(tool.inputSchema.properties.project.description,/serves: wire\./,tool.name);
     const hello=await server.ask({jsonrpc:'2.0',id:3,method:'initialize',params:{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'raw',version:'1'}}});
     assert.match(hello.result.instructions,/Pass project "wire"/);
+    // Registro global de servidores (Codex, Gemini): o agente de outro repositório precisa saber que este não é para ele.
+    assert.match(hello.result.instructions,/serves only project "wire" \(root: .*repo\)/);assert.match(hello.result.instructions,/do not use these tools for work on another repository/);
     assert.equal(await server.end(),0);
   }finally{fs.rmSync(home,{recursive:true,force:true});}
 });
