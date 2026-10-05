@@ -19,7 +19,8 @@ O núcleo é Node 24 com o SQLite embutido (`node:sqlite`, FTS5). Não usa model
 | CI | `Verify BBrainX` verde em Ubuntu, macOS e Windows, sem teste pulado. A contagem e a prova de cada revisão estão em `docs/validation/ci-report.json` |
 | Marca | Monograma BX em uso, provisório. As três opções continuam em `public/brand/options/` |
 | Perfil Laya | Instalável e medido. Não altera o pacote de contexto |
-| Sem prova | Só o Claude Code 2.1.263 foi visto conectando ao servidor (`claude mcp get bbrainx`, em 04/10/2026); nenhum outro harness foi homologado. Não há tarefa real com critério de aceite nem rótulo de uso real |
+| Harnesses vistos funcionando | Claude Code 2.1.263 (`claude mcp get bbrainx` respondeu `Connected`, 04/10/2026) e Codex CLI 0.160.0 (chamada real de `context_search` por `codex exec`, 05/10/2026). Cursor, VS Code e Gemini CLI seguem a documentação de cada um, sem prova |
+| Sem prova | Não há tarefa real com critério de aceite nem rótulo de uso real |
 
 ## 3. Comandos
 
@@ -146,7 +147,7 @@ Mudar qualquer item abaixo é mudança de contrato: entra em «Contratos que mud
 | `session.checkpoint` | `session_checkpoint` | Checkpoint |
 | `memory.propose` | `memory_propose` | Proposta de memória |
 
-Toda resposta é o envelope `{ok, data, error, detail}`. Recusa do domínio (`ok: false`) chega ao harness com `isError: true`. O servidor só enxerga o projeto com que foi iniciado (`mcp --project`), e essa permissão nunca vem de argumento de ferramenta. Como `project` é obrigatório em toda chamada, o servidor informa o id ao harness em dois lugares: na descrição desse argumento, em cada ferramenta, e nas instruções da sessão.
+Toda resposta é o envelope `{ok, data, error, detail}`. Recusa do domínio (`ok: false`) chega ao harness com `isError: true`. O servidor só enxerga o projeto com que foi iniciado (`mcp --project`), e essa permissão nunca vem de argumento de ferramenta. Como `project` é obrigatório em toda chamada, o servidor informa o id ao harness em dois lugares: na descrição desse argumento, em cada ferramenta, e nas instruções da sessão. As instruções também dizem a pasta atendida e pedem que as ferramentas não sejam usadas em outro repositório: no Codex e no Gemini o registro de servidores é global, e o processo aparece em sessões de outros projetos.
 
 ### 5.2 Motor de capacidades
 

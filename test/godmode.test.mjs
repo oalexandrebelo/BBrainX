@@ -149,6 +149,7 @@ test('each client gets its own configuration shape, with paths that survive spac
   assert.deepEqual(jsonOf(clientConfig('gemini',options)).mcpServers.bbrainx.args,[options.entry,'mcp','--project','app']);
   const claude=clientConfig('claude',options);
   assert.match(claude,/claude mcp add bbrainx --env BBRAINX_HOME='\/Users\/me\/Library\/Application Support\/BBrainX' -- \/opt\/node '\/Users\/me\/My Apps\/bbrainx\.mjs' mcp --project app/);
+  assert.match(clientConfig('codex',options),/codex mcp add bbrainx --env BBRAINX_HOME='\/Users\/me\/Library\/Application Support\/BBrainX' -- \/opt\/node '\/Users\/me\/My Apps\/bbrainx\.mjs' mcp --project app\n/);
   assert.match(clientConfig('codex',options),/\[mcp_servers\.bbrainx\]\ncommand = "\/opt\/node"\nargs = \["\/Users\/me\/My Apps\/bbrainx\.mjs","mcp","--project","app"\]/);
   assert.throws(()=>clientConfig('unknown',options),error=>error.code==='UNKNOWN_CLIENT');
   assert.deepEqual([...CLIENTS],['claude','codex','cursor','vscode','gemini']);

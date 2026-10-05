@@ -46,7 +46,8 @@ O esquema do banco é o mesmo da 0.3 (versão 2): não há migração. As seis f
 
 A release `v0.4.0-preview` é imutável e não traz estes itens.
 
-- **O servidor informa o id do projeto.** A descrição do argumento `project` de cada ferramenta e as instruções da sessão passam a dizer qual projeto o processo atende. Antes, um agente numa sessão nova via o argumento obrigatório e não tinha de onde tirar o valor; o defeito apareceu na primeira ativação num projeto real. Nomes, argumentos e códigos de erro não mudaram.
+- **O servidor informa o id do projeto.** A descrição do argumento `project` de cada ferramenta e as instruções da sessão passam a dizer qual projeto o processo atende. Antes, um agente numa sessão nova via o argumento obrigatório e não tinha de onde tirar o valor; o defeito apareceu na primeira ativação num projeto real. Nomes, argumentos e códigos de erro não mudaram. As instruções também nomeiam a pasta atendida e pedem que as ferramentas não sejam usadas em outro repositório, porque no Codex e no Gemini o registro de servidores é global.
+- **Codex.** `config --client codex` passa a imprimir também o comando `codex mcp add`, executado como saiu no codex-cli 0.160.0, e lembra de pôr o projeto no nome do servidor quando a máquina tem mais de um.
 - **Marca.** O monograma BX passa a ser a marca em uso, de forma provisória: ícone, cabeçalho do README, painel e filme. As três opções continuam em `public/brand/options/`, agora com um GIF que as alterna (`docs/BRAND.md`).
 - **Prompts.** `docs/prompts/ACTIVATE.md` leva um agente, em qualquer harness, a ligar o BBrainX a um projeto e provar o resultado. `docs/prompts/LAYA_FINETUNE.md` dá a outro agente o contexto, as regras e os critérios de aceite para o ajuste fino do Laya.
 - **Handoff.** `docs/HANDOFF.md`: estado, mapa do repositório, contratos, armadilhas e próximos passos.

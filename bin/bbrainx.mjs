@@ -96,11 +96,13 @@ Nenhum comando altera a configuração dos harnesses. Mais: docs/QUICKSTART.md`)
     else if(command==='approve'||command==='revoke')print(store.reviewMemory(values.project,values.id,command==='approve'?'approved':'revoked',Number(values.version),values.mode));
     else if(command==='backup'){ensure(values.file,'FILE_REQUIRED');print(store.backup(values.file));}
     else if(command==='mcp'){
-      ensure(values.project,'PROJECT_REQUIRED');store.project(values.project);
+      ensure(values.project,'PROJECT_REQUIRED');const {root}=store.project(values.project);
+      // Em harness com registro global de servidores, este processo aparece em sessões de outros repositórios: as instruções dizem a quem ele serve.
+      const scope=' This server serves only project "'+values.project+'" (root: '+root+'). Pass project "'+values.project+'" in every call, and do not use these tools for work on another repository.';
       const {makeEngine,INSTRUCTIONS}=await import('../src/engine.mjs'),{serveMcpStdio}=await import('../src/mcp.mjs');
       // A saída padrão é do protocolo; o rastro opcional vai para a saída de erro, sem argumentos nem resultados.
       const onEvent=process.env.BBRAINX_TRACE==='1'?event=>console.error(JSON.stringify(event)):undefined;
-      await serveMcpStdio(makeEngine(store,[values.project],{onEvent}),{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS+' Pass project "'+values.project+'" in every call.',isFailure:output=>output?.ok===false});
+      await serveMcpStdio(makeEngine(store,[values.project],{onEvent}),{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS+scope,isFailure:output=>output?.ok===false});
     }
     else if(command==='serve'){
       const {startServer}=await import('../src/server.mjs'),server=await startServer(store,{port:Number(values.port||4317)});
