@@ -1,0 +1,12 @@
+{
+  "observedAt": "2026-10-06T03:25:23.259Z",
+  "builtStaticOnly": true,
+  "before": "context",
+  "afterCanvasEnter": "context",
+  "canvasKeyboardSelectedMcp": false,
+  "afterListEnter": "mcp",
+  "listKeyboardSelectedMcp": true,
+  "apiRequests": [],
+  "pageErrors": [],
+  "scope": "One local Chromium page, real static-only artifact, keyboard probe; not a complete accessibility audit."
+}
