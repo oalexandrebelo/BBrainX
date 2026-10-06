@@ -75,9 +75,22 @@ export class BrainStore {
     // O tempo de espera vem primeiro: trocar o modo do journal já disputa a trava com outros processos.
     this.db.exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
     try {
-      // VACUUM INTO não roda dentro de transação: a cópia de segurança vem antes; a troca de schema, atômica, depois.
-      if (this.#version() === 1) this.#backupV1();
-      this.transaction(() => this.#prepareSchema());
+      // Schema atual: validar versão e hash no mesmo snapshot, sem disputar a vaga de escritor.
+      // O slow path conserva backup e BEGIN IMMEDIATE; ele revalida depois de obter a trava.
+      let current = false;
+      this.db.exec('BEGIN DEFERRED');
+      try {
+        const version = this.#version();
+        ensure([0, 1, SCHEMA_VERSION].includes(version), 'MIGRATION_REQUIRED');
+        current = version === SCHEMA_VERSION;
+        if (current) this.#prepareSchema();
+        this.db.exec('COMMIT');
+      } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+      if (!current) {
+        // VACUUM INTO não roda em uma transação. Uma migração concorrente é revalidada no slow path.
+        if (this.#version() === 1) this.#backupV1();
+        this.transaction(() => this.#prepareSchema());
+      }
     } catch (e) { this.db.close(); throw e; }
   }
   #version() { return this.db.prepare('PRAGMA user_version').get().user_version; }
@@ -164,7 +177,7 @@ export class BrainStore {
       this.db.prepare('INSERT INTO task_history VALUES(?,?,?,?,?)').run(project, task, version, body, updated);
       const response = {project, task, version, content:stored, updated};
       this.db.prepare('INSERT INTO idempotency VALUES(?,?,?,?,?)').run(project, 'checkpoint', key, fingerprint, canonical(response));
-      this.event(project, 'checkpoint.created', {task, version, snapshot, gitHead:host.git?.head || null});
+      this.event(project,'checkpoint.created',{task,version,snapshot,gitHead:host.git?.head||null});
       return response;
     });
   }
