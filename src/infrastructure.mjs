@@ -26,7 +26,10 @@ export function profileById(id) {
 }
 /** Paralelismo disponível não é quantidade de núcleos físicos. Não arredondar RAM para promover perfil. */
 export function infrastructurePlan({ totalMemoryBytes, cpuCount, constrainedMemoryBytes = 0 }, requested = 'AUTO') {
-  if (!positive(totalMemoryBytes) || !positive(cpuCount) || !natural(constrainedMemoryBytes)) throw new RangeError('INVALID_HARDWARE');
+  // libuv pode representar um teto nativo muito acima da RAM física por um Number > MAX_SAFE_INTEGER.
+  // Não contamos/alocamos nesse domínio: limitamos pela RAM física validada antes de qualquer cálculo.
+  const validConstraint = Number.isFinite(constrainedMemoryBytes) && Number.isInteger(constrainedMemoryBytes) && constrainedMemoryBytes >= 0;
+  if (!positive(totalMemoryBytes) || !positive(cpuCount) || !validConstraint) throw new RangeError('INVALID_HARDWARE');
   if (requested !== 'AUTO') profileById(requested);
   const effectiveMemoryBytes = constrainedMemoryBytes > 0 ? Math.min(totalMemoryBytes, constrainedMemoryBytes) : totalMemoryBytes;
   const supported = INFRASTRUCTURE.filter(p => p.minMemoryBytes <= effectiveMemoryBytes && p.minCpu <= cpuCount);
@@ -35,7 +38,7 @@ export function infrastructurePlan({ totalMemoryBytes, cpuCount, constrainedMemo
   const selected = requested === 'AUTO' ? supported.filter(p => ['LOW','MEDIUM'].includes(p.id)).at(-1) ?? null : supported.find(p => p.id === requested) ?? null;
   return {
     schemaVersion: 1, policyVersion: PROFILE_VERSION, reference: CORE_REFERENCE, requested,
-    hardware: { totalMemoryBytes, effectiveMemoryBytes, cpuCount, constrainedMemoryBytes },
+    hardware: { totalMemoryBytes, effectiveMemoryBytes, cpuCount, constrainedMemoryBytes, constraintAbovePhysical: constrainedMemoryBytes > totalMemoryBytes },
     capabilityCeiling: ceiling?.id ?? null, selected: selected?.id ?? null, limits: selected,
     eligible: selected !== null, reason: selected ? 'PROFILE_SELECTED' : 'BELOW_REQUESTED_PROFILE',
     enforcement: 'cooperative-admission-only', measuredMedium: false,
