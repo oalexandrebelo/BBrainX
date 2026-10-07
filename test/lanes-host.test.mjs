@@ -1,6 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';import fs from 'node:fs';import path from 'node:path';import net from 'node:net';import http from 'node:http';
 import {spawn,fork} from 'node:child_process';import {fileURLToPath} from 'node:url';import {once} from 'node:events';
 import {laneFixture,git} from './fixtures/lane-setup.mjs';
+import {BrainStore} from '../src/store.mjs';
 import {LaneRegistry,gitWorkspace} from '../src/lanes/registry.mjs';import {LaneStore} from '../src/lanes/store.mjs';import {startLaneHttpServer} from '../src/lanes/service.mjs';
 import {laneConfig,LANE_CLIENTS} from '../src/lanes/clients.mjs';import {indexProject,search} from '../src/retrieval.mjs';
 
@@ -17,7 +18,7 @@ test('a third active lane is refused with the default cooperative MEDIUM limit',
 test('a root cannot be registered under a different lane id',t=>{const f=laneFixture(t,{register:false});f.registry.register(f.authority,'product','alpha',f.alpha);assert.throws(()=>f.registry.register(f.authority,'product','other',f.alpha),{code:'WORKSPACE_ALREADY_REGISTERED'});});
 test('retirement does not delete user files and ids are never silently recycled',t=>{const f=laneFixture(t),a=f.registry.active('product','alpha');const r=f.registry.retire('product','alpha',a.epoch);assert.equal(r.filesRemoved,false);assert(fs.existsSync(path.join(f.alpha,'feature.ts')));assert.throws(()=>f.registry.register(f.authority,'product','alpha',f.alpha),{code:'LANE_CLOSED'});});
 test('context indices for identical relative paths remain independent',t=>{const f=laneFixture(t);for(const lane of ['alpha','beta'])withLane(f,lane,s=>{indexProject(s,'product');const found=search(s,'product','workspaceMarker',10);assert(found.items[0].body.includes(lane==='alpha'?'ALPHA_MARKER':'BETA_MARKER'));assert(!found.items[0].body.includes(lane==='alpha'?'BETA_MARKER':'ALPHA_MARKER'));});});
-test('approved memory is read from the authority, not copied into lane databases',t=>{const f=laneFixture(t);const m=f.authority.proposeMemory('product','Never bypass authorization','ADR');f.authority.reviewMemory('product',m.id,'approved',1);for(const lane of ['alpha','beta'])withLane(f,lane,s=>{assert.equal(s.approvedMemoryCount('product'),1);assert.equal(s.memories('product',true)[0].id,m.id);assert.equal(s.db.prepare('SELECT count(*) AS n FROM memories').get().n,0);});});
+test('approved memory is read from the authority, not copied into lane databases',t=>{const f=laneFixture(t);const m=f.authority.proposeMemory('product','Never bypass authorization','ADR');f.authority.reviewMemory('product',m.id,'approved',1);for(const lane of ['alpha','beta'])withLane(f,lane,s=>{assert.equal(s.approvedMemoryCount('product'),1);const memories=s.memories('product',true);assert.equal(memories.length,1);assert.equal(memories[0].id,m.id);assert.equal(s.db.prepare('SELECT count(*) AS n FROM memories').get().n,0);});});
 test('proposal in alpha is shared but does not become approved in beta',t=>{const f=laneFixture(t);const p=withLane(f,'alpha',s=>s.proposeMemory('product','Proposed shared architecture','ADR'));withLane(f,'beta',s=>assert.equal(s.approvedMemoryCount('product'),0));assert.equal(f.authority.memories('product').find(m=>m.id===p.id).status,'proposed');});
 test('new operation observes revocation made after a previous operation',t=>{const f=laneFixture(t),m=f.authority.proposeMemory('product','GLOBAL_REQUIREMENT','ADR');f.authority.reviewMemory('product',m.id,'approved',1);withLane(f,'alpha',s=>{assert.equal(s.memories('product',true).length,1);f.authority.reviewMemory('product',m.id,'revoked',2);s.endOperation();s.beginOperation();assert.equal(s.memories('product',true).length,0);});});
 test('shared memory changing between capture and publication refuses context',t=>{const f=laneFixture(t),m=f.authority.proposeMemory('product','GLOBAL_REQUIREMENT','ADR');f.authority.reviewMemory('product',m.id,'approved',1);withLane(f,'alpha',s=>{s.approvedMemoryCount('product');f.authority.reviewMemory('product',m.id,'revoked',2);assert.throws(()=>s.commitContextEvent('product',{packId:'with-stale-memory'}),{code:'SHARED_MEMORY_CHANGED'});assert.equal(s.events('product').filter(e=>e.type==='context.compiled').length,0);});});
@@ -39,3 +40,33 @@ test('two service processes survive independently and stop using owned lifecycle
  try{const [a,b]=await Promise.all(['alpha','beta'].map(boot));assert.notEqual(a.m.url,b.m.url);assert.equal((await(await fetch(a.m.url)).json()).lane,'alpha');const exit=once(a.c,'exit');a.c.send({op:'stop'});await exit;assert.equal((await(await fetch(b.m.url)).json()).lane,'beta');const exitB=once(b.c,'exit');b.c.disconnect();await exitB;}finally{for(const c of children)if(c.exitCode===null&&!c.killed)c.kill();}
 });
 for(const client of LANE_CLIENTS)test('configuration fragment is host-bound and non-mutating: '+client,t=>{const f=laneFixture(t);const b=f.registry.active('product','alpha');const r=laneConfig(client,{node:process.execPath,entry:fileURLToPath(new URL('../scripts/lanes.mjs',import.meta.url)),home:f.home,binding:b});const raw=typeof r.fragment==='string'?r.fragment:JSON.stringify(r.fragment);assert(raw.includes('alpha'));assert(raw.includes('BBRAINX_HOME'));assert.equal(r.writesConfiguration,false);assert.equal(r.clientVersionVerified,null);assert.equal(r.workspace,b.root);});
+
+test('current authority schema opens for lane reader while another connection holds writer',t=>{
+ const f=laneFixture(t);f.authority.db.exec('BEGIN IMMEDIATE');let s;
+ try{s=new LaneStore(f.home,'product','alpha');s.beginOperation();assert.equal(s.approvedMemoryCount('product'),0);}
+ finally{s?.close();f.authority.db.exec('ROLLBACK');}
+});
+test('abrupt service death does not authorize PID-based recovery or fake successful cleanup',async t=>{
+ const f=laneFixture(t);const c=fork(fileURLToPath(new URL('./fixtures/lane-service-process.mjs',import.meta.url)),[f.home,'alpha'],{stdio:['ignore','pipe','pipe','ipc']});
+ c.stdout.resume();c.stderr.resume();
+ try{
+  const [ready]=await once(c,'message');assert.equal(ready.type,'ready');assert.equal((await fetch(ready.url)).status,200);
+  const exited=once(c,'exit');c.kill('SIGKILL');await exited;
+  const recorded=f.registry.services('product','alpha')[0];assert.equal(recorded.status,'listening');assert.equal(recorded.liveness,'not-verified');assert.equal(recorded.pidIsSignalAuthority,false);
+  await assert.rejects(startLaneHttpServer(f.registry,{project:'product',lane:'alpha',name:'web',handler:(_,r)=>r.end()}),{code:'SERVICE_OUTCOME_UNKNOWN_OR_ACTIVE'});
+  assert.throws(()=>f.registry.retire('product','alpha',f.registry.active('product','alpha').epoch),{code:'LANE_HAS_OBSERVED_SERVICES'});
+ }finally{if(c.exitCode===null&&!c.killed)c.kill();}
+});
+test('unqualified memory method queries retrieve both real declarations without dropping the authority',t=>{
+ const f=laneFixture(t),repo=fileURLToPath(new URL('../',import.meta.url)),store=new BrainStore(path.join(f.root,'search-state'));
+ try{
+  store.register('self',repo);indexProject(store,'self');
+  for(const name of ['reviewMemory','proposeMemory']){
+   const candidates=search(store,'self',name,10).items;
+   const firstThree=new Set(candidates.slice(0,3).map(x=>x.path));
+   assert(firstThree.has('src/store.mjs'),'Original authority must remain discoverable');
+   assert(firstThree.has('src/lanes/store.mjs'),'Lane override must also be discoverable');
+   for(const path of ['src/store.mjs','src/lanes/store.mjs'])assert(candidates.some(x=>x.path===path&&x.declares),'Both results must be actual declarations');
+  }
+ }finally{store.close();}
+});
