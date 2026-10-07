@@ -159,6 +159,10 @@ export class BrainStore {
     const {root} = this.project(project); identifier(task); identifier(key);
     ensure(Number.isSafeInteger(expectedVersion) && expectedVersion >= 0, 'INVALID_VERSION');
     const declared = normalizeCheckpoint(content), fingerprint = hash({task, content:declared, expectedVersion});
+    // Resposta histórica imutável: ler uma chave já comprometida dispensa observar o Git de novo.
+    // Se ainda não existe, a consulta dentro da transação continua arbitrando escritores concorrentes.
+    const replay = this.db.prepare('SELECT * FROM idempotency WHERE project=? AND operation=? AND key=?').get(project, 'checkpoint', key);
+    if (replay) { ensure(replay.fingerprint === fingerprint, 'IDEMPOTENCY_CONFLICT'); return JSON.parse(replay.response); }
     const host = {git:gitState(root), stampedAt:now()};
     return this.transaction(() => {
       const prior = this.db.prepare('SELECT * FROM idempotency WHERE project=? AND operation=? AND key=?').get(project, 'checkpoint', key);
