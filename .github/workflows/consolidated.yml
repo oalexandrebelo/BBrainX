@@ -36,6 +36,8 @@ jobs:
           node scripts/workstation-mutations.mjs
           node scripts/observatory-mutations.mjs
           node scripts/lanes-negative.mjs
+      - name: Independent laboratories and lossless archival checks
+        run: node scripts/consolidated-labs.mjs
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - name: Workbench and Atlas browser suites
