@@ -19,3 +19,9 @@ Este gate é uma regressão sobre corpus mutável, não uma medição cega indep
 A rodada também inclui abertura de leitor de lane com escritor central ativo e morte abrupta de um processo de serviço real. O segundo teste confirma que o registro permanece conservador e impede reaproveitamento por PID, não que exista um reconciliador automático já implementado.
 
 A aprovação final, contagens e revisão testada devem ser lidas no relatório da nova CI, nunca inferidas somente da existência deste documento.
+
+## Caminhos Windows e resolução nativa
+
+Na revisão intermediária `371e30d`, Linux e macOS passaram em 166 testes; Windows recusou a raiz de worktrees antes de iniciar os ensaios de lane. A comparação lexical entre a entrada resolvida pelo Node e a saída do Git não era apropriada para aliases de nome/caminho no Windows. A correção usa `fs.realpathSync.native` para os dois lados e para a raiz do estado antes de comparar. Não converte tudo para lowercase nem retira o teste de raiz de repositório.
+
+Dois testes adicionais conferem a grafia nativa, identidade de arquivo/diretório e idempotência entre grafias normalizadas. A aprovação Windows continua dependente da nova execução nativa. A correção não torna o filesystem imune a TOCTOU, nem cria uma sandbox. Referência: https://nodejs.org/docs/latest-v24.x/api/fs.html#fsrealpathsyncnativepath-options.

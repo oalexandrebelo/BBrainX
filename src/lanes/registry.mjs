@@ -16,10 +16,12 @@ CREATE TABLE lane_events(seq INTEGER PRIMARY KEY,type TEXT NOT NULL,project TEXT
 const schemaHash = hash(schema);
 const inside = (parent,child) => {const r=path.relative(parent,child);return r===''||(!path.isAbsolute(r)&&r!=='..'&&!r.startsWith('..'+path.sep));};
 const key = (project,lane) => hash({project,lane});
+// Use the OS resolver for short-name/case aliases; lexical case-folding can merge distinct paths.
+const nativePath = value => fs.realpathSync.native(path.resolve(value));
 
 /** Rev-parse only. No checkout, status, filters, hooks, network or repository scripts are run. */
 export function gitWorkspace(root) {
-  const actual=fs.realpathSync(path.resolve(root));
+  const actual=nativePath(root);
   ensure(fs.statSync(actual).isDirectory()&&actual!==path.parse(actual).root,'INVALID_WORKSPACE_ROOT');
   const env={...process.env};
   for(const name of Object.keys(env))if(name.startsWith('GIT_'))delete env[name];
@@ -30,7 +32,7 @@ export function gitWorkspace(root) {
       {encoding:'utf8',env,timeout:5000,maxBuffer:65536,windowsHide:true,stdio:['ignore','pipe','pipe']}).trimEnd().split(/\r?\n/);
   } catch { ensure(false,'WORKSPACE_GIT_UNAVAILABLE'); }
   ensure(values.length===2,'INVALID_GIT_WORKSPACE');
-  const top=fs.realpathSync(values[0]),common=fs.realpathSync(values[1]);
+  const top=nativePath(values[0]),common=nativePath(values[1]);
   ensure(top===actual,'WORKSPACE_MUST_BE_REPOSITORY_ROOT');
   return {root:actual,common};
 }
@@ -39,7 +41,7 @@ export function gitWorkspace(root) {
 export class LaneRegistry {
   constructor(home,{maxActive=2}={}) {
     ensure(Number.isSafeInteger(maxActive)&&maxActive>=1&&maxActive<=16,'INVALID_LANE_CAPACITY');
-    this.home=safeDirectory(home);this.maxActive=maxActive;
+    this.home=nativePath(safeDirectory(home));this.maxActive=maxActive;
     const file=path.join(this.home,'lanes-v1.sqlite');
     if(fs.existsSync(file))ensure(!fs.lstatSync(file).isSymbolicLink(),'UNSAFE_LANE_DB');
     this.db=new DatabaseSync(file);

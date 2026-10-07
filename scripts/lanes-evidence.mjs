@@ -1,6 +1,6 @@
 import fs from 'node:fs';import path from 'node:path';import os from 'node:os';import {spawnSync,execFileSync} from 'node:child_process';
 const out='artifacts/lanes';fs.mkdirSync(out,{recursive:true});
-const files=['test/lanes-host.test.mjs','test/lanes-mcp.test.mjs'];
+const files=['test/lanes-host.test.mjs','test/lanes-mcp.test.mjs','test/lanes-path.test.mjs'];
 const run=spawnSync(process.execPath,['--test','--test-reporter=tap',...files],{encoding:'utf8',timeout:180000,maxBuffer:8*1024*1024});
 const text=(run.stdout||'')+(run.stderr||'');fs.writeFileSync(path.join(out,'tests.log'),text);
 const metric=k=>Number(text.match(new RegExp('^# '+k+' (\\d+)','m'))?.[1]??NaN);
