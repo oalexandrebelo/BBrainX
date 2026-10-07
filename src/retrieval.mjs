@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { ensure, hash, text } from './primitives.mjs';
 import { classify, definitions, isStopword, plainWord, splitIdentifier, stemPrefix, symbolTerms } from './analyze.mjs';
 import { translate } from './glossary.mjs';
+import { verifyRoot } from './source-root.mjs';
 
 const allowed = new Set(['.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
 const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
@@ -35,6 +36,9 @@ export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
   ensure(typeof relative==='string'&&!path.isAbsolute(relative),'UNSAFE_PATH');
   const full=path.resolve(root,relative), rel=path.relative(root,full);
   ensure(rel&&!rel.startsWith('..'+path.sep)&&rel!=='..'&&!path.isAbsolute(rel),'UNSAFE_PATH');
+  // Chamadas locais podem usar aliases de ancestrais (por exemplo /var no macOS).
+  // O vínculo canonicalizado do registro é conferido pelas operações do projeto.
+  ensure(!fs.lstatSync(root).isSymbolicLink(),'SYMLINK_REJECTED');
   let cursor=root;
   for(const component of rel.split(path.sep)){cursor=path.join(cursor,component);ensure(!fs.lstatSync(cursor).isSymbolicLink(),'SYMLINK_REJECTED');}
   const stat=fs.statSync(full);ensure(stat.isFile()&&stat.size<=maxBytes,'FILE_TOO_LARGE');
@@ -45,6 +49,7 @@ export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
   return {body,hash:hash(bytes),bytes:bytes.length};
 }
 function candidates(root, limits) {
+  verifyRoot(root);
   const base=['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',root];
   const options={encoding:'utf8',timeout:5000,maxBuffer:65536,stdio:['ignore','pipe','pipe'],windowsHide:true,shell:false,env:{...process.env,LC_ALL:'C'}};
   const probe=spawnSync('git',[...base,'rev-parse','--is-inside-work-tree'],options);
@@ -129,6 +134,7 @@ export function indexProject(store, project, override) {
  */
 export function refreshFiles(store, project, paths, override) {
   const limits=resolveLimits(override), {root}=store.project(project);
+  verifyRoot(root);
   return store.transaction(()=>{
     const changed=[], removed=[];
     for(const relative of new Set(paths)){
@@ -138,6 +144,10 @@ export function refreshFiles(store, project, paths, override) {
       if(!file){if(known){removeFile(store,project,relative);removed.push(relative);}}
       else if(!known||known.hash!==file.hash){replaceFile(store,project,relative,file);changed.push(relative);}
     }
+    // Refresh tem a mesma política de admissão do index integral; falha reverte também chunks/FTS.
+    const totals=store.stmt('SELECT count(*) AS files,coalesce(sum(bytes),0) AS bytes FROM files WHERE project=?').get(project);
+    ensure(totals.files<=limits.maxFiles,'INDEX_FILE_LIMIT','Mais de '+limits.maxFiles+' arquivos elegíveis após atualização.');
+    ensure(totals.bytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' após atualização.');
     const snapshot=snapshotOf(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project));
     store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);
     if(changed.length||removed.length)store.event(project,'index.refreshed',{snapshot,changed:changed.length,removed:removed.length});
@@ -187,7 +197,8 @@ export function search(store,project,query,limit=12){
 }
 export function verifyChunk(store, project, chunk){
   ensure(chunk.project===project,'FORBIDDEN');
-  const file=readSafe(store.project(project).root,chunk.path,resolveLimits().maxFileBytes);
+  const {root}=store.project(project);verifyRoot(root);
+  const file=readSafe(root,chunk.path,resolveLimits().maxFileBytes);
   ensure(file.hash===chunk.file_hash,'STALE_INDEX','Arquivo alterado após indexação. Execute index novamente.');
   return file;
 }
