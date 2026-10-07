@@ -41,7 +41,7 @@
     return v;
   }
   function render(report,imported=false){
-    current=validate(report);$('export').disabled=false;
+    current=validate(report);document.querySelectorAll('.metrics,.grid-main').forEach(e=>e.removeAttribute('aria-busy'));$('export').disabled=false;
     const c=report.context,u=report.usage;
     put('total',number(u.tokens.totalTokens.value));put('cached',number(u.tokens.cacheRead.value));put('reduced',number(c.reducedTokens));
     put('total-note',u.importedCalls?`${u.tokens.totalTokens.knownCalls} de ${u.importedCalls} recibos com total conhecido`:'Nenhum recibo de usage final');

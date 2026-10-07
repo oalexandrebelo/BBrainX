@@ -1,4 +1,5 @@
 import test from 'node:test';
+import http from 'node:http';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
 import {BrainStore} from '../src/store.mjs';import {indexProject} from '../src/retrieval.mjs';
@@ -35,7 +36,8 @@ test('HTTP de uso aplica origem/host e não cria banco de recibos ao ler',async 
  const ok=await fetch(server.url+'/api/usage?project=demo');assert.equal(ok.status,200);assert.equal((await ok.json()).usage.importedCalls,0);
  assert.equal(fs.existsSync(path.join(brain.home,USAGE_DB)),false);
  const bad=await fetch(server.url+'/api/usage?project=demo',{headers:{Origin:'https://outsider.example'}});assert.equal(bad.status,403);
- const host=await fetch(server.url+'/api/usage?project=demo',{headers:{Host:'attacker.example'}});assert.equal(host.status,403);
+ // fetch pode remover Host customizado; HTTP nativo prova o header realmente enviado.
+ const host=await new Promise((resolve,reject)=>{const req=http.get(server.url+'/api/usage?project=demo',{headers:{Host:'attacker.example'}},res=>{res.resume();res.on('end',()=>resolve(res.statusCode));});req.on('error',reject);});assert.equal(host,403);
  const missing=await fetch(server.url+'/api/usage?project=other');assert.equal(missing.status,400);
  const post=await fetch(server.url+'/api/usage?project=demo',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});assert.equal(post.status,405);
 });
