@@ -1,0 +1,23 @@
+# Fila de evolução com critérios de aceite
+
+Ordem orientada a risco e evidência, revisada em 07/10/2026. Os itens são contratos de trabalho, não promessa de prazo. Antes de assumir, conferir [CONTINUITY.md](CONTINUITY.md), alterações em andamento e CI. Responsáveis abaixo são papéis, não atribuições fictícias a pessoas. “Implementado” descreve o código desta rodada; a aprovação para integração depende dos checks associados à revisão entregue na PR, não do status escrito nesta tabela.
+
+| Item / prioridade | Estado nesta rodada | Responsável | Aceite / evidência necessária |
+| --- | --- | --- | --- |
+| EV-01 / P1 — ownership de requisições MCP | Implementado nesta rodada | Protocolo + revisor independente | ID duplicado em voo não substitui controlador nem executa outro efeito; cancelamento/EOF preservados nas duas eras; teste vermelho/verde e fonte do contrato. |
+| EV-02 / P1 — replay de checkpoint sem Git redundante | Implementado nesta rodada | Persistência + performance | Resposta histórica idêntica; conflitos, grants e CAS preservados; segunda checagem transacional cobre corrida; medição pareada e contagem de subprocessos. |
+| EV-03 / P1 — distribuição e dependências rastreáveis | Implementado nesta rodada | Release + supply chain | Pacote corresponde aos blobs da revisão; manifesto/ZIP concordam; reconstrução com bytes idênticos no mesmo ambiente; SBOM por escopo e licença opcional identificada. |
+| EV-04 / P1 — continuidade de colaboradores | Implementado nesta rodada | Mantenedor + documentação | Um novo colaborador identifica base, limitações e próximo item sem histórico de chat; status não atribui relatório velho/skip a código novo; template de PR e critérios de encerramento versionados. |
+| EV-05 / P1 — corpus fixado e tarefas aceitas | Planejado | Avaliação independente | Dataset autorizado e fixado por hash, perguntas reservadas, critérios de aceite antes de executar, baseline/candidato pareados, custo completo e incerteza. Manter separação entre treino/calibração/holdout. |
+| EV-06 / P1 — limites de trabalho síncrono | Planejado | Runtime | Medir event-loop delay/RSS/CPU em linha longa, arquivo limítrofe e indexação grande; demonstrar cancelamento e budgets sem perda de snapshot. Comparar fatiamento/worker antes de escolher. |
+| EV-07 / P1 — recuperação de todo o produto | Planejado | Persistência/operações | Backup e restauração ensaiados de núcleo, usage, registry e lanes, com versão, integridade, permissões, RPO/RTO medidos e falha parcial. Não ampliar a promessa do backup atual. |
+| EV-08 / P2 — snapshot consistente no núcleo | Planejado | Persistência | Publicação não mistura revisões incompatíveis de índice/memória/checkpoint; teste concorrente com revogação e definição do ponto de linearização. Comparar custo com implementação atual. |
+| EV-09 / P2 — limites do broker Laya | Planejado, perfil opt-in | Integrações | Frames/filas bounded, deadline total e geração isolada, resposta tardia rejeitada; inferência real e benefício de tarefa antes de ativação no núcleo. |
+| EV-10 / P2 — cliente piloto e aquisição | Depende EV-03/05/07 | Produto/mantenedor | Instalação e rollback por terceiro, problema/aceite definidos com piloto, direitos/notices revisados, custos de suporte registrados; decisões de preço, licença e venda feitas pelo titular. |
+| EV-11 / P2 — backpressure no transporte stdio | Reproduzido, correção planejada | Protocolo/runtime | Respeitar consumidor lento sem fila ilimitada, preservar framing/cancelamento e declarar limites do host; ensaiar EOF, EPIPE e batches. A reprodução com streams reais acumulou 743.360 bytes com high-water mark de 65.536. |
+
+## Como alterar a fila
+
+Para promover um item: indicar revisão-base, hipótese, arquivos, teste que demonstrará a falha ou custo, comando reproduzível e rollback. Para concluir: apontar commit/PR/CI e resultado observado, incluindo limites. Bloqueio deve nomear dependência concreta; outro colaborador pode assumir a próxima ação sem reconstruir o chat. Não usar contagem de commits, linhas, ferramentas ou agentes como proxy de valor entregue.
+
+Os itens EV-05 e EV-07 antecedem qualquer promessa comercial de economia ou recuperação garantida. A continuidade técnica não exige escolher antecipadamente entre licenciar o produto e vendê-lo a outra empresa.

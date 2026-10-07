@@ -17,6 +17,7 @@
     "test": "node --test test/*.test.mjs",
     "test:e2e": "playwright test",
     "check": "npm test && npm run build",
+    "project:status": "node scripts/project-status.mjs",
     "sources": "node scripts/sources.mjs",
     "package:source": "node scripts/package.mjs",
     "study:doc": "node scripts/study-doc.mjs",
