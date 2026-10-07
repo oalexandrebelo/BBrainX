@@ -1,0 +1,119 @@
+{
+  "observedAt": "2026-10-06T03:24:57.957Z",
+  "library": "gpt-tokenizer 4.0.0",
+  "encoding": "o200k_base",
+  "node": "24.18.0",
+  "parityCases": 105,
+  "parityAllPassed": true,
+  "timings": {
+    "encodeLength": {
+      "samples": 100,
+      "p50Ms": 0.2745000000000033,
+      "p95Ms": 0.30400000000000205
+    },
+    "countTokens": {
+      "samples": 100,
+      "p50Ms": 0.28029200000000287,
+      "p95Ms": 0.2936249999999916
+    }
+  },
+  "lengths": [
+    {
+      "bytes": 8192,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "wallMs": 94.24170900000001,
+      "result": {
+        "bytes": 8192,
+        "tokens": 4165,
+        "ms": 19.521207999999994,
+        "rssBytes": 127680512
+      },
+      "watchdogMs": 3000,
+      "stderr": ""
+    },
+    {
+      "bytes": 16384,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "wallMs": 126.27366700000005,
+      "result": {
+        "bytes": 16384,
+        "tokens": 8305,
+        "ms": 52.83195899999999,
+        "rssBytes": 130547712
+      },
+      "watchdogMs": 3000,
+      "stderr": ""
+    },
+    {
+      "bytes": 32768,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "wallMs": 246.32012500000002,
+      "result": {
+        "bytes": 32768,
+        "tokens": 16586,
+        "ms": 173.897625,
+        "rssBytes": 135004160
+      },
+      "watchdogMs": 3000,
+      "stderr": ""
+    },
+    {
+      "bytes": 65536,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "wallMs": 809.1157089999999,
+      "result": {
+        "bytes": 65536,
+        "tokens": 33142,
+        "ms": 735.415833,
+        "rssBytes": 147161088
+      },
+      "watchdogMs": 3000,
+      "stderr": ""
+    },
+    {
+      "bytes": 131072,
+      "exit": {
+        "code": 0,
+        "signal": null
+      },
+      "wallMs": 2945.6130839999996,
+      "result": {
+        "bytes": 131072,
+        "tokens": 66284,
+        "ms": 2870.087042,
+        "rssBytes": 151175168
+      },
+      "watchdogMs": 3000,
+      "stderr": ""
+    },
+    {
+      "bytes": 262144,
+      "exit": {
+        "code": null,
+        "signal": "SIGKILL"
+      },
+      "wallMs": 3005.3870420000003,
+      "result": null,
+      "watchdogMs": 3000,
+      "stderr": ""
+    }
+  ],
+  "limitations": [
+    "countTokens avoids the returned token vector, not all internal BPE allocations.",
+    "Single long alphanumeric pretoken is an artificial adverse workload.",
+    "Each adverse case is a fresh subprocess with 3-second external watchdog and 512MiB V8 old-space limit.",
+    "Warm count timings follow encode timings; order/cache effects prevent a controlled speedup claim."
+  ]
+}

@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {codexProjectConfig} from '../src/codex-project.mjs';
+const options={root:'/Users/dev/My Project',node:'/opt/node/bin/node',entry:'/Users/dev/BBrainX/bin/bbrainx.mjs',project:'sample.v2',home:'/Users/dev/Library/Application Support/BBrainX'};
+test('gera tabela local opt-in sem instrução de registro global',()=>{const r=codexProjectConfig(options);assert.equal(r.target,'/Users/dev/My Project/.codex/config.toml');assert(r.text.includes('[mcp_servers."bbrainx-sample.v2"]'));assert(r.text.includes('required = false'));assert.equal(r.writesConfiguration,false);assert.equal(r.expandsTrust,false);assert(!r.text.includes('codex mcp add'));});
+test('caminhos Windows preservam separadores e são strings TOML escapadas',()=>{const r=codexProjectConfig({...options,root:'C:\\Code\\sample',node:'C:\\Node\\node.exe',entry:'C:\\BBrainX\\bin\\bbrainx.mjs',home:'C:\\Data\\BBrainX'});assert.equal(r.target,'C:\\Code\\sample\\.codex\\config.toml');assert(r.text.includes('command = "C:\\\\Node\\\\node.exe"'));});
+test('rejeita caminho relativo, controles e ID injetável',()=>{for(const field of ['root','node','entry','home']){assert.throws(()=>codexProjectConfig({...options,[field]:'relative'}));assert.throws(()=>codexProjectConfig({...options,[field]:'/tmp/a\ncommand=x'}));}assert.throws(()=>codexProjectConfig({...options,project:'x]'}));});
+test('aspas no caminho não fecham a string de configuração',()=>{const r=codexProjectConfig({...options,entry:'/tmp/with"quote/bin.mjs'});assert(r.text.includes('/tmp/with\\"quote/bin.mjs'));});

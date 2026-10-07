@@ -1,0 +1,66 @@
+name: Verify Consolidated Delivery
+on:
+  push:
+    branches: [feat/consolidated-research-delivery]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: consolidated-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  combined:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Reexecute all runtime suites in the combined tree
+        run: node scripts/consolidated-evidence.mjs
+      - name: Original evidence collectors against combined implementation
+        run: |
+          node scripts/contracts-evidence.mjs
+          node scripts/workstation-evidence.mjs
+          node scripts/observatory-evidence.mjs
+          node scripts/observatory-parity.mjs
+          node scripts/lanes-evidence.mjs
+      - name: Negative controls in this isolated checkout
+        run: |
+          node scripts/contracts-negative.mjs
+          node scripts/workstation-mutations.mjs
+          node scripts/observatory-mutations.mjs
+          node scripts/lanes-negative.mjs
+      - name: Independent laboratories and lossless archival checks
+        run: node scripts/consolidated-labs.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Workbench and Atlas browser suites
+        run: npm run test:e2e
+      - name: Observatory browser suite
+        run: npx playwright test --config playwright.usage.config.mjs
+      - name: Atlas static-only publication build
+        run: |
+          npx vite build --config vite.atlas.config.mjs
+          node scripts/atlas-publish.mjs
+      - name: Inventory and package reviewed source
+        run: |
+          node scripts/research-catalog.mjs
+          git archive --format=zip --output=artifacts/consolidated/BBrainX-Consolidated-Source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-Consolidated-Delivery
+          path: |
+            artifacts/consolidated/
+            artifacts/core-contracts/
+            artifacts/workstation/
+            artifacts/observatory/
+            artifacts/lanes/
+            test-results/
+          retention-days: 30

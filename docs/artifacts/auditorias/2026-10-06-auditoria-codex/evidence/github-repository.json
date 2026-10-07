@@ -1,0 +1,27 @@
+{
+  "name": "BBrainX",
+  "full_name": "oalexandrebelo/BBrainX",
+  "html_url": "https://github.com/oalexandrebelo/BBrainX",
+  "description": null,
+  "private": true,
+  "visibility": "private",
+  "default_branch": "main",
+  "created_at": "2026-10-04T05:07:20Z",
+  "updated_at": "2026-10-05T05:03:50Z",
+  "pushed_at": "2026-10-06T00:56:07Z",
+  "stargazers_count": 0,
+  "forks_count": 0,
+  "has_pages": false,
+  "has_discussions": false,
+  "topics": [],
+  "license": {
+    "key": "mit",
+    "name": "MIT License",
+    "spdx_id": "MIT",
+    "url": "https://api.github.com/licenses/mit",
+    "node_id": "MDc6TGljZW5zZTEz"
+  },
+  "language": "JavaScript",
+  "size": 5890,
+  "archived": false
+}

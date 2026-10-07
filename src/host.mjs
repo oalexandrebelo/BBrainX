@@ -4,6 +4,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { ensure } from './primitives.mjs';
+import { infrastructurePlan } from './infrastructure.mjs';
 
 export function stateHome(env = process.env, platform = process.platform) {
   if (env.BBRAINX_HOME) return path.resolve(env.BBRAINX_HOME);
@@ -39,13 +40,14 @@ export function doctor() {
   try { sqlite = true; db.exec('CREATE VIRTUAL TABLE probe USING fts5(text)'); fts5 = true; } finally { db.close(); }
   const git = commandVersion('git');
   const hardware = { platform: process.platform, architecture: process.arch, memoryGiB: Math.round(os.totalmem() / 1073741824), cpuCount: os.availableParallelism() };
+  const infrastructure = infrastructurePlan({totalMemoryBytes:os.totalmem(),cpuCount:hardware.cpuCount,constrainedMemoryBytes:process.constrainedMemory?.() ?? 0});
   return {
     node: process.versions.node, supportedNode: major > 22 || (major === 22 && minor >= 20), sqlite, fts5, git,
-    hardware, stateDirectory: stateHome(),
+    hardware, infrastructure, stateDirectory: stateHome(),
     profile: 'local-deterministic',
     optionalCandidate: process.platform === 'darwin' && process.arch === 'arm64' ? 'Apple Silicon: avaliar Laya MPS ou SemIf MLX, não ativados' : 'CPU: avaliar Laya ONNX, não ativado',
     backendBenchmarked: false, remoteProvidersEnabled: false,
     ready: (major > 22 || (major === 22 && minor >= 20)) && sqlite && fts5 && git.available,
-    limits: ['Diagnóstico não mede inferência.', 'GPU, clientes e modelos não são requisitos do núcleo.', 'Não altera autenticação dos harnesses.']
+    limits: ['Diagnóstico não mede inferência.', 'GPU, clientes e modelos não são requisitos do núcleo.', 'Não altera autenticação dos harnesses.', 'Perfil de infraestrutura é recomendação; não aplica limite global de RSS.']
   };
 }

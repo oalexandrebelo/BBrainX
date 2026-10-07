@@ -239,14 +239,16 @@ test('a repeated checkpoint call returns the stored answer without re-indexing, 
   assert.throws(() => saveCheckpoint(store, {project:'test', task:'T', expectedVersion:1, idempotencyKey:'k2', content:{...base, status:'done'}}), {code:'INVALID_STATUS'});
   assert.equal(indexed(), after);
 });
-test('a checkpoint is capped at 16 KiB, and a large one is trimmed inside the pack instead of breaking it', t => {
+test('a checkpoint is capped at 16 KiB; auxiliary history can shrink but decisions remain', t => {
   const {store} = workspace(t, {'a.md':'topic alpha'}); indexProject(store, 'test');
   assert.throws(() => store.checkpoint('test', 'T', {...base, done:Array.from({length:40}, (_, i) => ('step ' + i + ' ').repeat(70))}, 0, 'big'), {code:'PAYLOAD_TOO_LARGE'});
   const done = Array.from({length:30}, (_, i) => 'finished step number ' + i + ' of the long refactor with details '.repeat(4));
   saveCheckpoint(store, {project:'test', task:'T', expectedVersion:0, idempotencyKey:'k', content:{...base, done, decisions:['keep it small']}});
   const small = compileContext(store, {project:'test', query:'alpha', task:'T', budget:900});
   assert.equal(small.checkpointTrimmed, true);
-  assert.match(small.text, /lists left out to fit the budget: decisions 1, done 30; read them with session_get/);
+  assert.match(small.text, /lists left out to fit the budget: done 30; read them with session_get/);
+  assert.match(small.text, /"decisions":\["keep it small"\]/);
+  assert.doesNotMatch(small.text, /lists left out to fit the budget: decisions/);
   assert.match(small.text, /"nextAction":"Run the suite"/); assert.doesNotMatch(small.text, /finished step number 7/);
   const large = compileContext(store, {project:'test', query:'alpha', task:'T', budget:16000});
   assert.equal(large.checkpointTrimmed, false); assert.match(large.text, /finished step number 7/);

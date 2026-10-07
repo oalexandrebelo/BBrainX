@@ -1,3 +1,23 @@
+# Candidato — integridade de contratos (PR #10, não lançado)
+
+Base de estudo: 0.4.0 em `a9636e9`. As alterações abaixo só entram no produto após revisão e merge; não alteram o schema ou as configurações dos harnesses.
+
+## Contratos que mudam neste candidato
+
+- O deadline cobre validação de entrada, autorização, execução e saída. Uma chamada já cancelada não inicia validação ou acesso. Conferências monotônicas nas fronteiras impedem prosseguir depois de um estágio síncrono esgotar o prazo; isso não preempta esse estágio nem desfaz seus efeitos.
+- Entrada e principal são capturados antes do primeiro await. A autorização não modifica a identidade entregue à ação através de uma referência compartilhada.
+- `describe()` retorna árvores de schema desconectadas do catálogo interno. Editar a descrição recebida não altera o contrato visto por outro cliente.
+- `decisions` e `blockers` do checkpoint não são mais substituídos por contagens quando o histórico é compactado. Se os obrigatórios excedem o orçamento, a montagem é recusada. O histórico auxiliar continua podendo ser omitido com aviso. O teste anterior que exigia a omissão de decisões foi atualizado para exigir sua preservação literal; não foi removido.
+- Schemas Zod assíncronos podem ser explicitamente adaptados por `asyncZodSchema`, usando a API pública `safeParseAsync` sem sondagem síncrona repetida. O motor permanece Standard Schema. Sem mudança silenciosa dos schemas existentes.
+
+## Trabalho repetido evitado
+
+Uma leitura/hash por arquivo e versão em cada rodada de montagem, e quota documental avaliada antes da retokenização integral. O mapa não persiste entre chamadas; BPE continua exato. Medições e limites estão em `docs/core-contracts/` e nos artefatos da CI do commit, não nos números históricos abaixo.
+
+O candidato não incorpora automaticamente os PRs #6/#8/#9 ou o patch Laya anterior. Integração com #9 precisa preservar sua instrumentação de contexto e rerodar as duas suítes.
+
+---
+
 # BBrainX 0.4.0 — Developer Preview
 
 Motor e servidor MCP próprios, busca em linguagem natural entre português e inglês, perfil Laya instalável e o mapa do estudo. Duas dependências a menos.
