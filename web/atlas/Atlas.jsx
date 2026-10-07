@@ -1,4 +1,4 @@
-import React,{memo,useCallback,useEffect,useMemo,useState} from 'react';
+import React,{memo,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ReactFlow,ReactFlowProvider,Background,Controls,MiniMap,Handle,Position,useReactFlow,useNodesInitialized,MarkerType} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './atlas.css';
@@ -30,7 +30,7 @@ function initialState(){
 const Mark=()=> <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M4 12H20A8 8 0 0 1 20 28H4Z M4 36H24A8 8 0 0 1 24 52H4Z M36 12H44L60 52H52Z M52 12H60L44 52H36Z" fill="currentColor"/></svg>;
 const External=({href,children,...props})=><a href={href} target="_blank" rel="noreferrer" {...props}>{children}<span aria-hidden="true"> ↗</span></a>;
 function AtlasContent(){
- const [state,setState]=useState(initialState),[notice,setNotice]=useState('');
+ const [state,setState]=useState(initialState),[notice,setNotice]=useState(''),tabRefs=useRef([]);
  const graph=useMemo(()=>graphFor(state.view,state.status,state.query),[state.view,state.status,state.query]);
  const selected=graph.nodes.find(n=>n.id===state.selected)?.data||null;
  const connected=useMemo(()=>new Set(graph.edges.filter(e=>e.source===state.selected||e.target===state.selected).flatMap(e=>[e.source,e.target])),[graph.edges,state.selected]);
@@ -38,7 +38,17 @@ function AtlasContent(){
  const edges=useMemo(()=>graph.edges.map(e=>({...e,type:'smoothstep',animated:false,markerEnd:{type:MarkerType.ArrowClosed,color:e.documentedOnly?'#7f87ae':'#6dac9c'},style:{stroke:e.source===state.selected||e.target===state.selected?'#b9f8d8':e.documentedOnly?'#667195':'#4a776b',strokeWidth:e.source===state.selected||e.target===state.selected?2:1.1,strokeDasharray:e.documentedOnly?'6 6':undefined,opacity:!state.selected||e.source===state.selected||e.target===state.selected?1:0.45}})),[graph.edges,state.selected]);
  const select=useCallback(id=>setState(old=>({...old,selected:id})),[]);
  const nodeClick=useCallback((_,node)=>select(node.id),[select]);
+ const nodeChanges=useCallback(changes=>{const selection=changes.find(change=>change.type==='select'&&change.selected);if(selection)select(selection.id);},[select]);
  function change(field,value){setState(old=>{const next={...old,[field]:value};const nextGraph=graphFor(next.view,next.status,next.query);if(!nextGraph.nodes.some(n=>n.id===next.selected))next.selected=nextGraph.nodes[0]?.id||null;return next;});setNotice('');}
+ function tabKey(event,index){
+  let next;
+  if(event.key==='ArrowRight')next=(index+1)%views.length;
+  else if(event.key==='ArrowLeft')next=(index+views.length-1)%views.length;
+  else if(event.key==='Home')next=0;
+  else if(event.key==='End')next=views.length-1;
+  else return;
+  event.preventDefault();change('view',views[next].id);tabRefs.current[next]?.focus();
+ }
  useEffect(()=>{const p=new URLSearchParams();p.set('view',state.view);if(state.status!=='all')p.set('status',state.status);if(state.query)p.set('q',state.query);if(state.selected)p.set('node',state.selected);window.history.replaceState(null,'',window.location.pathname+'?'+p.toString()+window.location.hash);},[state]);
  useEffect(()=>{const fn=()=>setState(initialState());window.addEventListener('popstate',fn);return()=>window.removeEventListener('popstate',fn);},[]);
  function next(){const at=graph.nodes.findIndex(n=>n.id===state.selected);select(graph.nodes[(at+1)%graph.nodes.length]?.id||null);}
@@ -50,12 +60,12 @@ function AtlasContent(){
  <main>
  <section className="atlas-hero"><div><span className="atlas-eyebrow"><i/> ARQUITETURA EVOLUTIVA / MACOS PRIMEIRO</span><h1>Uma memória.<br/><em>Vários harnesses.</em></h1><p>O que roda, o que foi testado isoladamente e o que vem depois. Uma arquitetura que mostra suas evidências — e seus limites.</p></div><aside className="atlas-manifest"><div><span>REVISÃO AUDITADA</span><code>{revision.slice(0,8)}</code></div><div><span>BASE DO PRODUTO</span><strong>0.4.0 <small>developer preview</small></strong></div><div><span>CONTEÚDO DO ATLAS</span><strong>{components.length} <small>componentes · {views.length} percursos</small></strong></div><div className="atlas-manifest-note">Visão documental · {inspectedAt}<br/>Não é telemetria de agentes em execução.</div></aside></section>
  <section className="atlas-map-section" id="atlas-map" aria-label="Atlas da arquitetura">
- <div className="atlas-tabs" role="tablist" aria-label="Percursos de arquitetura">{views.map((v,i)=><button key={v.id} role="tab" aria-selected={state.view===v.id} aria-controls="atlas-panel" onClick={()=>change('view',v.id)}><span>0{i+1}</span>{v.label}</button>)}</div>
+ <div className="atlas-tabs" role="tablist" aria-label="Percursos de arquitetura">{views.map((v,i)=><button key={v.id} id={'atlas-tab-'+v.id} ref={element=>{tabRefs.current[i]=element;}} role="tab" tabIndex={state.view===v.id?0:-1} aria-selected={state.view===v.id} aria-controls="atlas-panel" onKeyDown={event=>tabKey(event,i)} onClick={()=>change('view',v.id)}><span>0{i+1}</span>{v.label}</button>)}</div>
  <div className="atlas-toolbar"><label className="atlas-search"><span aria-hidden="true">⌕</span><input aria-label="Buscar componentes" placeholder="Buscar componente, técnica ou camada…" maxLength={120} value={state.query} onChange={e=>change('query',e.target.value)}/>{state.query?<button aria-label="Limpar busca" onClick={()=>change('query','')}>×</button>:null}</label><select aria-label="Filtrar por maturidade" value={state.status} onChange={e=>change('status',e.target.value)}><option value="all">Todas as maturidades</option>{Object.entries(stages).map(([key,s])=><option key={key} value={key}>{s.label}</option>)}</select><div className="atlas-export"><button onClick={()=>download('svg')}>SVG ↓</button><button onClick={()=>download('json')}>JSON ↓</button></div></div>
- <div className="atlas-layout" id="atlas-panel" role="tabpanel">
+ <div className="atlas-layout" id="atlas-panel" role="tabpanel" aria-labelledby={'atlas-tab-'+state.view}>
  <div className="atlas-canvas-card"><div className="atlas-canvas-title"><div><span className="atlas-eyebrow">{String(views.findIndex(v=>v.id===state.view)+1).padStart(2,'0')} / {graph.nodes.length} COMPONENTES NESTA VISÃO</span><h2>{graph.view.title}</h2></div><button className="atlas-guide" onClick={next} disabled={!nodes.length}>Percorrer <span>→</span></button></div><p className="atlas-view-note">{graph.view.note}</p>
  <div className="atlas-canvas" data-testid="atlas-canvas" aria-label="Grafo React Flow da arquitetura">
- {nodes.length?<ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodeClick={nodeClick} nodesDraggable={false} nodesConnectable={false} elementsSelectable edgesFocusable={false} minZoom={0.2} maxZoom={1.7} fitView fitViewOptions={{padding:0.09}} colorMode="dark"><Background color="#273441" gap={26} size={1}/><Controls showInteractive={false}/><MiniMap nodeColor={n=>stages[n.data.status].color} maskColor="#091018b0" pannable zoomable/><AutoFit signature={state.view+'|'+state.status+'|'+state.query}/></ReactFlow>:<div className="atlas-empty"><strong>Nenhum componente encontrado.</strong><p>Ajuste a busca ou o filtro de maturidade.</p><button onClick={()=>{setState(old=>({...old,status:'all',query:'',selected:views.find(v=>v.id===old.view).ids[0]}));}}>Limpar filtros</button></div>}
+ {nodes.length?<ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodeClick={nodeClick} onNodesChange={nodeChanges} nodesDraggable={false} nodesConnectable={false} elementsSelectable edgesFocusable={false} minZoom={0.2} maxZoom={1.7} fitView fitViewOptions={{padding:0.09}} colorMode="dark"><Background color="#273441" gap={26} size={1}/><Controls showInteractive={false}/><MiniMap nodeColor={n=>stages[n.data.status].color} maskColor="#091018b0" pannable zoomable/><AutoFit signature={state.view+'|'+state.status+'|'+state.query}/></ReactFlow>:<div className="atlas-empty"><strong>Nenhum componente encontrado.</strong><p>Ajuste a busca ou o filtro de maturidade.</p><button onClick={()=>{setState(old=>({...old,status:'all',query:'',selected:views.find(v=>v.id===old.view).ids[0]}));}}>Limpar filtros</button></div>}
  </div><div className="atlas-canvas-note"><span><i className="atlas-solid"/> relação na base / perfil</span><span><i className="atlas-dashed"/> relação documental ou proposta</span><span>Zoom, seleção e inspeção. Sem executar agentes.</span></div>
  <div className="atlas-node-list" aria-label="Lista acessível dos componentes">{graph.nodes.map(n=><button key={n.id} aria-pressed={state.selected===n.id} onClick={()=>select(n.id)}><i style={{background:stages[n.data.status].color}}/>{n.data.title}</button>)}</div></div>
  <aside className="atlas-inspector" data-testid="atlas-inspector" aria-live="polite">

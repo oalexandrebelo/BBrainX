@@ -1,4 +1,12 @@
-# Candidato — integridade de contratos (PR #10, não lançado)
+# Candidato consolidado — ainda não lançado
+
+A PR #12 reúne Atlas, MEDIUM/replay, Observatory, contratos, lanes e os laboratórios isolados das PRs #6–#11. O estado integrado está em [research/INTEGRATION.md](research/INTEGRATION.md); as notas anteriores abaixo conservam o escopo e os resultados de suas rodadas, não descrevem sozinhas o estado atual.
+
+A revisão de lançamento acrescenta revalidação da raiz autorizada, quotas transacionais no refresh parcial, operação por teclado do Atlas e gates de CI que exigem a validação consolidada antes da publicação. Não muda o schema, não instala modelos e não incorpora automaticamente o candidato histórico de worker/cache Laya. Evidências e limites: [RELEASE_READINESS.md](RELEASE_READINESS.md).
+
+---
+
+# Histórico do candidato de integridade de contratos (PR #10)
 
 Base de estudo: 0.4.0 em `a9636e9`. As alterações abaixo só entram no produto após revisão e merge; não alteram o schema ou as configurações dos harnesses.
 

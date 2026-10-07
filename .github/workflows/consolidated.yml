@@ -1,7 +1,6 @@
 name: Verify Consolidated Delivery
 on:
-  push:
-    branches: [feat/consolidated-research-delivery]
+  workflow_call:
   workflow_dispatch:
 permissions:
   contents: read

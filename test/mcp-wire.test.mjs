@@ -4,6 +4,28 @@ import { spawn } from 'node:child_process';
 import { BrainStore } from '../src/store.mjs';import { indexProject } from '../src/retrieval.mjs';
 
 const bin=fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url));
+/** Só o bloco conhecido do Node é separado; stderr bruto permanece disponível no processo real. */
+function parseStderr(raw){
+  const nodeWarnings=[];
+  const application=raw.replace(/^\(node:\d+\) ExperimentalWarning: SQLite is an experimental feature and might change at any time\r?\n\(Use `node --trace-warnings \.\.\.` to show where the warning was created\)\r?\n/gm,block=>{nodeWarnings.push(block);return '';});
+  const events=application.trim()?application.trim().split(/\r?\n/).map(line=>JSON.parse(line)):[];
+  return {nodeWarnings,events};
+}
+test('wire stderr parser separates only the exact SQLite warning block and retains application events',()=>{
+  const warning='(node:123) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n';
+  const event={type:'invocation.started',capabilityId:'context.search'};
+  const raw=JSON.stringify(event)+'\n'+warning;
+  assert.deepEqual(parseStderr(raw),{nodeWarnings:[warning],events:[event]});
+  assert(raw.includes(warning),'raw stderr still includes the runtime warning');
+  assert.deepEqual(parseStderr(''),{nodeWarnings:[],events:[]});
+});
+test('wire stderr parser rejects residual errors, other warnings and incomplete SQLite warning blocks',()=>{
+  const warning='(node:123) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n';
+  for(const residual of ['Error: database unavailable\n','(node:123) ExperimentalWarning: another experimental feature\n',
+    '(node:123) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n',
+    '(Use `node --trace-warnings ...` to show where the warning was created)\n'])
+    assert.throws(()=>parseStderr(warning+residual),SyntaxError);
+});
 function fixture(){
   const home=fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-wire-')), root=path.join(home,'repo');fs.mkdirSync(root);
   fs.writeFileSync(path.join(root,'auth.js'),'export function verifySession(token){return Boolean(token);}\n');
@@ -78,7 +100,7 @@ test('wire: a line above the limit stops the server, and the trace never reaches
     await traced.ask({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'context_search',arguments:{project:'wire',query:'verifySession'}}});
     assert.equal(await traced.end(),0);
     assert.equal(traced.lines.length,1);
-    const events=traced.stderr().trim().split('\n').map(line=>JSON.parse(line));
+    const {events}=parseStderr(traced.stderr());
     assert.deepEqual(events.map(event=>event.type),['invocation.started','invocation.completed']);
     assert.equal(events[0].capabilityId,'context.search');assert.ok(!traced.stderr().includes('verifySession'));
   }finally{fs.rmSync(home,{recursive:true,force:true});}
@@ -101,7 +123,7 @@ test('wire: a modern client needs no handshake, and both eras share one process'
     // Um cliente legado no mesmo processo continua sendo atendido pela semântica do handshake.
     const hello=await server.ask({jsonrpc:'2.0',id:4,method:'initialize',params:{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'raw',version:'1'}}});
     assert.equal(hello.result.protocolVersion,'2025-11-25');assert.equal(hello.result.resultType,undefined);
-    assert.equal(await server.end(),0);assert.equal(server.stderr(),'');
+    assert.equal(await server.end(),0);assert.deepEqual(parseStderr(server.stderr()).events,[]);
   }finally{fs.rmSync(home,{recursive:true,force:true});}
 });
 
@@ -131,6 +153,6 @@ test('wire: a call cancelled in the same write gets no answer and the server sta
     assert.equal(server.lines.length,1,'the cancelled call must not be answered');
     const conflict=await server.ask({jsonrpc:'2.0',id:7,method:'tools/call',params:{name:'session_checkpoint',arguments:{project:'wire',task:'T1',expectedVersion:9,idempotencyKey:'k1',content:{objective:'o',nextAction:'n',status:'paused'}}}});
     assert.equal(conflict.result.isError,true);assert.equal(conflict.result.structuredContent.ok,false);assert.equal(typeof conflict.result.structuredContent.error,'string');
-    assert.equal(await server.end(),0);assert.equal(server.stderr(),'');
+    assert.equal(await server.end(),0);assert.deepEqual(parseStderr(server.stderr()).events,[]);
   }finally{fs.rmSync(home,{recursive:true,force:true});}
 });

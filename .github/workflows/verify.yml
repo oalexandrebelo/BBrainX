@@ -22,14 +22,38 @@ jobs:
           if [ -f package-lock.json ]; then npm ci --ignore-scripts --no-fund; else npm install --ignore-scripts --no-fund; fi
           mkdir -p artifacts
           npm ls --all --json > artifacts/npm-tree.json
-          npm audit --json > artifacts/npm-audit.json || true
+          npm audit --audit-level=high --json > artifacts/npm-audit.json
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: dependency-lock
           path: |
             package-lock.json
             artifacts/npm-tree.json
             artifacts/npm-audit.json
+  consolidated:
+    needs: dependencies
+    uses: ./.github/workflows/consolidated.yml
+  minimum-node:
+    needs: dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.20.0'
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Verify the minimum supported Node release
+        shell: bash
+        run: |
+          mkdir -p artifacts
+          npm test 2>&1 | tee artifacts/tests-node22.log
+          npm run build
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimum-node-evidence
+          path: artifacts/tests-node22.log
   verify:
     needs: dependencies
     strategy:
@@ -122,7 +146,7 @@ jobs:
           name: upstream-inventory
           path: artifacts/upstream-inventory.json
   publish-evidence:
-    needs: [verify, browser, media, upstreams]
+    needs: [verify, minimum-node, browser, media, upstreams, consolidated]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
@@ -156,6 +180,10 @@ jobs:
         with:
           name: upstream-inventory
           path: .ci-upstreams
+      - uses: actions/download-artifact@v4
+        with:
+          name: BBrainX-Consolidated-Delivery
+          path: .ci-consolidated
       - name: Collect observed evidence and exact dependency locks
         run: node scripts/collect-evidence.mjs
       - name: Publish only generated evidence and lockfiles
