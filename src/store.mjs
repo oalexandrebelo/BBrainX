@@ -77,7 +77,12 @@ export class BrainStore {
     try {
       // VACUUM INTO não roda dentro de transação: a cópia de segurança vem antes; a troca de schema, atômica, depois.
       if (this.#version() === 1) this.#backupV1();
-      this.transaction(() => this.#prepareSchema());
+      if (this.#version() === SCHEMA_VERSION) {
+        // Schema atual: verificar em snapshot de leitura, sem reservar o escritor apenas para conectar.
+        this.db.exec('BEGIN DEFERRED');
+        try { this.#prepareSchema(); this.db.exec('COMMIT'); }
+        catch (e) { this.db.exec('ROLLBACK'); throw e; }
+      } else this.transaction(() => this.#prepareSchema());
     } catch (e) { this.db.close(); throw e; }
   }
   #version() { return this.db.prepare('PRAGMA user_version').get().user_version; }
@@ -141,6 +146,11 @@ export class BrainStore {
   projects() {
     return this.db.prepare('SELECT p.*, (SELECT count(*) FROM files WHERE project=p.id) AS fileCount, (SELECT count(*) FROM chunks WHERE project=p.id) AS chunkCount FROM projects p ORDER BY id').all();
   }
+  approvedMemoryCount(project) {
+    this.project(project);
+    return this.db.prepare("SELECT count(*) AS total FROM memories WHERE project=? AND status='approved'").get(project).total;
+  }
+  commitContextEvent(project, payload) { this.transaction(() => this.event(project, 'context.compiled', payload)); }
   /**
    * Grava o estado de uma tarefa. `snapshot` declarado precisa ser o do índice atual; omitido, o host carimba o atual.
    * `host` (snapshot, Git, hora) é observado aqui e nunca aceito do chamador.

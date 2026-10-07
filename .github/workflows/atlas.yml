@@ -1,0 +1,56 @@
+name: Verify Architecture Atlas
+on:
+  push:
+    branches: [docs/x99-architecture-atlas]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: atlas-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  atlas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Validate architecture data and SVG export
+        run: |
+          mkdir -p artifacts/atlas
+          node --test --test-reporter=tap test/atlas.test.mjs | tee artifacts/atlas/unit-tests.log
+          node scripts/atlas-export.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Verify real browser interactions
+        run: npx playwright test e2e/atlas.spec.mjs --reporter=list,json
+        env:
+          PLAYWRIGHT_JSON_OUTPUT_NAME: artifacts/atlas/browser-report.json
+      - name: Build static-only publication
+        run: |
+          npx vite build --config vite.atlas.config.mjs
+          node scripts/atlas-publish.mjs
+      - name: Package source and publication evidence
+        if: success()
+        run: |
+          mkdir -p artifacts/atlas/source/web artifacts/atlas/source/test artifacts/atlas/source/e2e artifacts/atlas/source/scripts artifacts/atlas/source/docs
+          cp -R web/atlas artifacts/atlas/source/web/
+          cp test/atlas.test.mjs artifacts/atlas/source/test/
+          cp e2e/atlas.spec.mjs artifacts/atlas/source/e2e/
+          cp scripts/atlas-*.mjs artifacts/atlas/source/scripts/
+          cp atlas.html vite.config.mjs vite.atlas.config.mjs package.json package-lock.json LICENSE artifacts/atlas/source/
+          cp docs/ATLAS_X99.md docs/POSICIONAMENTO_X99.md artifacts/atlas/source/docs/
+          cp -R dist-atlas artifacts/atlas/static
+          printf '%s\n' "$GITHUB_SHA" > artifacts/atlas/tested-revision.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-Architecture-Atlas
+          path: |
+            artifacts/atlas/
+            test-results/
+          if-no-files-found: error

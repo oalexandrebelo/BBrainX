@@ -1,0 +1,56 @@
+{
+  "observedAt": "2026-10-06T03:22:53.831Z",
+  "testedRevision": "a9636e9402e3fa673ae05b3489202da1048aef5e",
+  "exit": {
+    "code": 0,
+    "signal": null
+  },
+  "elapsedMs": 4975.735083,
+  "assets": [
+    {
+      "path": "rl_agent_config.json",
+      "bytes": 472,
+      "sha256": "25061739243b617ad88d1219ba6f8a9c86c5881ca28df024fa2d9b3b2fcc30c6",
+      "match": true
+    },
+    {
+      "path": "encoder/config.json",
+      "bytes": 1938,
+      "sha256": "83f6916d13ef0f556ac461f28308dc2bffa7ebeadee8ec9e2db5812020ea5bb4",
+      "match": true
+    },
+    {
+      "path": "tokenizer/tokenizer_config.json",
+      "bytes": 524,
+      "sha256": "6c6b2d8e3c84ce0e671c129cd6b374b235d6f9863042a5836358d00a89bbb5a1",
+      "match": true
+    },
+    {
+      "path": "tokenizer/tokenizer.json",
+      "bytes": 34363188,
+      "sha256": "609d8f4c067cd3950f88594c5a802616cea245823836ef5848ee4fc40aab5b6f",
+      "match": true
+    },
+    {
+      "path": "model.safetensors",
+      "bytes": 643835514,
+      "sha256": "9d628fd971b700382ac6f65920a86f149777b2e748e0c955fb3b19695aa8f204",
+      "match": true
+    }
+  ],
+  "platform": "darwin",
+  "architecture": "arm64",
+  "node": "24.18.0",
+  "peakWorkerRssKiB": 1925664,
+  "peakNodeRssKiB": 54544,
+  "observations": 19,
+  "samplingIntervalMs": 250,
+  "modelDirectoryCopy": true,
+  "providerCalls": 0,
+  "caveats": [
+    "Copied previously installed weights; no installation or download.",
+    "Existing hand-labeled synthetic memory pairs: not an independent holdout.",
+    "ps RSS is not a measurement of GPU allocated memory or total machine energy.",
+    "Resource sampling introduces overhead; benchmark is exploratory."
+  ]
+}

@@ -6,6 +6,7 @@ import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { ensure } from './primitives.mjs';
 import { makeEngine, VERSION } from './engine.mjs';
 import { doctor } from './host.mjs';
+import { usageOverview } from './usage/summary.mjs';
 
 const dist=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url)));
 const contentTypes={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.json':'application/json; charset=utf-8','.png':'image/png','.webm':'video/webm','.mp4':'video/mp4'};
@@ -27,6 +28,7 @@ export async function startServer(store,{port=4317}={}){
       ensure(!['cross-site','same-site'].includes(req.headers['sec-fetch-site']),'ORIGIN_REJECTED');
       const url=new URL(req.url,'http://'+expected);
       if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:VERSION,csrf,projects:store.projects(),doctor:doctor(),mode:'local'});
+      if(req.method==='GET'&&url.pathname==='/api/usage')return json(res,200,usageOverview(store,url.searchParams.get('project')));
       if(req.method==='GET'&&url.pathname==='/api/project'){
         const project=url.searchParams.get('project');return json(res,200,{project:store.project(project),tasks:store.tasks(project),memories:store.memories(project),events:store.events(project)});
       }
@@ -38,7 +40,7 @@ export async function startServer(store,{port=4317}={}){
         const result=await engine.invoke(data.action,data.args,{principal:{id:'local-dashboard'},source:'direct'});return json(res,200,result);
       }
       if(req.method!=='GET'&&req.method!=='HEAD')return json(res,405,{error:'METHOD_NOT_ALLOWED'});
-      const relative=decodeURIComponent(url.pathname).replace(/^\/+/,''), target=path.resolve(dist,relative||'index.html');
+      const relative=decodeURIComponent(url.pathname).replace(/^\/+/,''), target=path.resolve(dist,relative==='observatory/'?'observatory/index.html':relative||'index.html');
       ensure(target.startsWith(dist+path.sep),'UNSAFE_PATH');
       if(!fs.existsSync(target)||!fs.statSync(target).isFile())return json(res,404,{error:'NOT_FOUND',hint:'Execute npm run build antes de iniciar o painel.'});
       res.writeHead(200,{'Content-Type':contentTypes[path.extname(target)]||'application/octet-stream','Cache-Control':'no-cache'});
