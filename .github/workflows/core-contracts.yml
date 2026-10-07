@@ -1,0 +1,36 @@
+name: Verify Core Contract Integrity
+on:
+  push:
+    branches: [fix/core-contract-integrity]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: core-contracts-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Verify contracts and real filesystem work
+        run: node scripts/contracts-evidence.mjs
+      - name: Prove regression tests reject the original implementation
+        run: node scripts/contracts-negative.mjs
+      - run: npm run build
+      - name: Package tracked code and bounded evidence
+        run: node scripts/contracts-package.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-Core-Contract-Integrity
+          path: artifacts/core-contracts/
+          retention-days: 30

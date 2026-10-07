@@ -17,7 +17,14 @@ export function compileContext(store,{project,query,budget=4000,task,onStale='re
   let result;const refreshed=new Set();
   for(let round=0;;round++){
     result=search(store,project,query,30);
-    const stale=[...new Set(result.items.filter(item=>!isFresh(store,project,item)).map(item=>item.path))];
+    // Todos os chunks da mesma versão do arquivo compartilham uma leitura/hash nesta rodada.
+    // Não persiste entre invocações nem elimina a corrida com alterações externas posteriores.
+    const checked=new Map();
+    const stale=[...new Set(result.items.filter(item=>{
+      const key=JSON.stringify([item.path,item.file_hash]);
+      if(!checked.has(key))checked.set(key,isFresh(store,project,item));
+      return !checked.get(key);
+    }).map(item=>item.path))];
     if(!stale.length)break;
     ensure(onStale==='refresh'&&round<2,'STALE_INDEX','Arquivo alterado após indexação. Execute index novamente.');
     const update=refreshFiles(store,project,stale);for(const file of [...update.changed,...update.removed])refreshed.add(file);
@@ -31,29 +38,33 @@ export function compileContext(store,{project,query,budget=4000,task,onStale='re
   let checkpointTrimmed=false;
   if(checkpoint){
     const full='Checkpoint: '+JSON.stringify(checkpoint.content);
-    // O checkpoint não pode tomar o pacote: acima de metade do orçamento, ficam o essencial e a contagem das listas.
+    // Compactar histórico auxiliar; decisões e bloqueios nunca viram apenas contagens.
     if(tokenCount(full)<=budget/2)required.push(full);
     else{
-      const {objective,nextAction,status,snapshot,host,...rest}=checkpoint.content;
+      const {objective,nextAction,status,snapshot,host,decisions,blockers,...rest}=checkpoint.content;
       const counts=Object.entries(rest).map(([name,value])=>name+' '+(Array.isArray(value)?value.length:1)).join(', ');
-      required.push('Checkpoint (lists left out to fit the budget: '+(counts||'none')+'; read them with session_get): '+JSON.stringify({objective,nextAction,status,snapshot,host}));checkpointTrimmed=true;
+      required.push('Checkpoint (lists left out to fit the budget: '+(counts||'none')+'; read them with session_get): '+JSON.stringify({objective,nextAction,status,snapshot,host,...(decisions===undefined?{}:{decisions}),...(blockers===undefined?{}:{blockers})}));checkpointTrimmed=true;
     }
     if(checkpoint.content.snapshot!==meta.snapshot)required.push('WARNING: checkpoint belongs to a different snapshot; validate its claims.');
   }
   for(const memory of memories)required.push('Approved memory '+memory.id+': '+memory.statement+' [source: '+memory.source+']');
   if(memoriesOmitted)required.push('Approved memories not related to this objective and left out: '+memoriesOmitted+'.');
   let rendered=required.join('\n\n');
-  ensure(tokenCount(rendered)<=budget,'MANDATORY_CONTEXT_EXCEEDS_BUDGET');
+  let renderedTokens=tokenCount(rendered);
+  ensure(renderedTokens<=budget,'MANDATORY_CONTEXT_EXCEEDS_BUDGET');
   const served=[],seen=new Set();let sourcesOmittedByBudget=0,docTokens=0;
   // Documentação fica com no máximo metade do orçamento enquanto houver código candidato: o pacote leva a explicação e a implementação.
   const hasCode=result.items.some(item=>item.kind!=='doc');
   for(const item of result.items){
     const digest=hash(item.body);if(seen.has(digest))continue;
     const section='\n\n---\n'+item.path+':'+item.start_line+'-'+item.end_line+' [sha256:'+item.file_hash+']\n'+item.body, cost=item.kind==='doc'?tokenCount(section):0;
-    if(tokenCount(rendered+section)>budget||(hasCode&&docTokens+cost>budget/2)){sourcesOmittedByBudget++;continue;}
+    if(hasCode&&docTokens+cost>budget/2){sourcesOmittedByBudget++;continue;}
+    const proposedTokens=tokenCount(rendered+section);
+    if(proposedTokens>budget){sourcesOmittedByBudget++;continue;}
+    renderedTokens=proposedTokens;
     docTokens+=cost;seen.add(digest);served.push({id:item.id,path:item.path,startLine:item.start_line,endLine:item.end_line,hash:item.file_hash,kind:item.kind});rendered+=section;
   }
-  const payload={project,snapshot:meta.snapshot,text:rendered,sources:served,payloadTokens:tokenCount(rendered),budget,encoding:'o200k_base',providerInputTokens:null,providerCacheTokens:null,billingSavings:null,selection:'lexical-ranked-with-doc-quota',coverageComplete:false,selectedFilesVerified:true,refreshedFiles:[...refreshed].sort(),sourcesOmittedByBudget,memoriesOmitted,checkpointTrimmed,checkpointStale:!!checkpoint&&checkpoint.content.snapshot!==meta.snapshot};
+  const payload={project,snapshot:meta.snapshot,text:rendered,sources:served,payloadTokens:renderedTokens,budget,encoding:'o200k_base',providerInputTokens:null,providerCacheTokens:null,billingSavings:null,selection:'lexical-ranked-with-doc-quota',coverageComplete:false,selectedFilesVerified:true,refreshedFiles:[...refreshed].sort(),sourcesOmittedByBudget,memoriesOmitted,checkpointTrimmed,checkpointStale:!!checkpoint&&checkpoint.content.snapshot!==meta.snapshot};
   const packId=hash({text:rendered,encoding:payload.encoding});
   store.transaction(()=>store.event(project,'context.compiled',{packId,payloadTokens:payload.payloadTokens,sourceCount:served.length,snapshot:meta.snapshot,refreshed:refreshed.size}));
   return {packId,...payload};
