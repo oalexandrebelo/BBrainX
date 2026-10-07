@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-atlas/
 .bbrainx/
 .env
 .env.*
