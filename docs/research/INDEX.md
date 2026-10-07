@@ -11,7 +11,7 @@ O histórico conserva suas datas, revisões, linguagem e limitações. Frases co
 | Fundação / prévias 0.2–0.4 | [Dossiê](../DOSSIER.md), [viabilidade](../FEASIBILITY.md), [perfis](../OPTIONAL_PROFILES.md), [mapa das ferramentas](../STUDY_MAP.md) | Já faz parte da base; hipóteses não viram implementação |
 | Avaliação e handoff históricos | [Método](../EVALUATION.md), [handoff](../HANDOFF.md), [primeiro uso](../QUICKSTART.md) | Preservados; instruções específicas da combinação abaixo |
 | Atlas X99 / PR #6 | [Atlas React Flow](../ATLAS_X99.md), [posicionamento](../POSICIONAMENTO_X99.md), `web/atlas` | Página documental incluída; estados de maturidade são históricos |
-| Auditoria integral / PR #7 | [Dossiê e evidências](../auditorias/2026-10-06-auditoria-codex/README.md) | Auditoria, backlog, reproduções e evidências preservados; achado não significa corrigido |
+| Auditoria integral / PR #7 | [Dossiê e evidências](../artifacts/auditorias/2026-10-06-auditoria-codex/README.md) | Auditoria, backlog, reproduções e evidências preservados; achado não significa corrigido |
 | MEDIUM e RSI / PR #8 | [Estudo](../medium-rsi/README.md), [benchmark](../medium-rsi/BENCHMARK.md), [fontes](../medium-rsi/SOURCES.md) | Perfis, admissão cooperativa e replay incluídos; não governo global de processos |
 | Observatory / PR #9 | [Guia](../observatory/README.md), [pesquisa](../observatory/RESEARCH.md), [Strata](../observatory/STRATA.md), [fontes](../observatory/SOURCES.md) | UI, normalizadores, ledger e medição opt-in incluídos |
 | Contratos e concorrentes / PR #10 | [Revisão](../core-contracts/REVIEW.md), [oportunidades](../core-contracts/OPPORTUNITIES.md), [ciência](../core-contracts/SCIENCE_GATES.md) | Correções de contrato incluídas; roteiro continua separado |
