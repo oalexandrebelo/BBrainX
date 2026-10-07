@@ -105,6 +105,8 @@ export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instr
       return undefined;
     }
     if(!validId(id))return rpcError(null,INVALID_REQUEST,'Request id must be a string or an integer.');
+    // A duplicata não pode substituir o controlador da chamada que já está em andamento.
+    if(running.has(id))return rpcError(id,INVALID_REQUEST,'Request id is already in flight.');
     // A era é escolhida por requisição: metadados modernos em `_meta`, ou a semântica legada aberta por `initialize`.
     const meta=plainObject(params)&&plainObject(params._meta)?params._meta:null;
     return meta&&META+'protocolVersion' in meta?modern(id,method,params,meta):legacy(id,method,params);
