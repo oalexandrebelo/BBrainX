@@ -7,6 +7,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { z } from 'zod';
 import { createEngine } from '../src/capability.mjs';
+import { asyncZodSchema } from '../src/schema-adapters.mjs';
 import { BrainStore } from '../src/store.mjs';
 import { indexProject } from '../src/retrieval.mjs';
 import { compileContext, tokenCount } from '../src/context.mjs';
@@ -44,7 +45,7 @@ test('authorization wait consumes the invocation deadline; no late action runs',
 });
 test('async input validation consumes the same deadline',async()=>{
   const started=barrier(),finish=barrier();let runs=0;
-  const schema=input.superRefine(async()=>{started.release();await finish.promise;});
+  const schema=asyncZodSchema(input.superRefine(async()=>{started.release();await finish.promise;}));
   const engine=make({input:schema,run:()=>{runs++;return {value:'executed'};}});
   const pending=engine.invoke('op',{text:'x'});await started.promise;
   const result=await settledBefore(pending);finish.release();await delay(5);
@@ -74,21 +75,22 @@ test('synchronous action expiration does not claim rollback of its effects',asyn
 });
 test('output validation cannot outlive the invocation deadline',async()=>{
   const finish=barrier();let ran=false;
-  const engine=make({output:output.superRefine(async()=>finish.promise),run:()=>{ran=true;return {value:'committed'};}});
+  const engine=make({output:asyncZodSchema(output.superRefine(async()=>finish.promise)),run:()=>{ran=true;return {value:'committed'};}});
   const pending=engine.invoke('op',{text:'x'});const result=await settledBefore(pending);finish.release();
   expectCode(result,'TIMEOUT');assert(ran);
 });
 test('late validator rejection is owned after timeout',async()=>{
   const finish=barrier(),errors=[];const listener=e=>errors.push(e);process.on('unhandledRejection',listener);
+  let refinements=0;
   try{
-    const engine=make({input:input.superRefine(async()=>{await finish.promise;throw new Error('private-data');})});
+    const engine=make({input:asyncZodSchema(input.superRefine(async()=>{refinements++;await finish.promise;throw new Error('private-data');}))});
     const result=await settledBefore(engine.invoke('op',{text:'x'}));finish.release();await delay(20);
-    expectCode(result,'TIMEOUT');assert.equal(errors.length,0);assert(!String(result.error).includes('private-data'));
+    expectCode(result,'TIMEOUT');assert.equal(refinements,1);assert.equal(errors.length,0);assert(!String(result.error).includes('private-data'));
   }finally{process.removeListener('unhandledRejection',listener);}
 });
 test('principal is snapshotted before asynchronous input validation',async()=>{
   const started=barrier(),finish=barrier();
-  const engine=make({timeoutMs:2000,input:input.superRefine(async()=>{started.release();await finish.promise;}),access:({principal})=>principal?.id==='allowed'});
+  const engine=make({timeoutMs:2000,input:asyncZodSchema(input.superRefine(async()=>{started.release();await finish.promise;})),access:({principal})=>principal?.id==='allowed'});
   const principal={id:'denied'},pending=engine.invoke('op',{text:'x'},{principal});
   await started.promise;principal.id='allowed';finish.release();await assert.rejects(pending,{code:'FORBIDDEN'});
 });
@@ -156,4 +158,18 @@ test('approved mandatory memory is not sacrificed to preserve decisions',t=>{
   const {store}=workspace(t),m=store.proposeMemory('project','policy '.repeat(350),'ADR');store.reviewMemory('project',m.id,'approved',1);
   store.checkpoint('project','TASK',{...cp,decisions:['Keep API.']},0,'create');
   assert.throws(()=>compileContext(store,{project:'project',task:'TASK',query:'validateSession',budget:256}),{code:'MANDATORY_CONTEXT_EXCEEDS_BUDGET'});
+});
+test('async Zod bridge invokes the refinement once, including successful inputs',async()=>{
+  let calls=0;const engine=make({timeoutMs:1000,input:asyncZodSchema(input.superRefine(async()=>{calls++;await delay(2);}))});
+  assert.deepEqual(await engine.invoke('op',{text:'valid'}),{value:'valid'});assert.equal(calls,1);
+});
+test('async Zod bridge preserves invalid issues and owns rejection before deadline',async()=>{
+  const invalid=make({input:asyncZodSchema(input.superRefine(async(_,ctx)=>{await delay(1);ctx.addIssue({code:'custom',message:'Rejected'});})),timeoutMs:1000});
+  await assert.rejects(invalid.invoke('op',{text:'x'}),{code:'INPUT_INVALID'});
+  const throwing=make({input:asyncZodSchema(input.superRefine(async()=>{await delay(1);throw new Error('private-data');})),timeoutMs:1000});
+  await assert.rejects(throwing.invoke('op',{text:'x'}),error=>error.code==='INPUT_INVALID'&&!String(error).includes('private-data'));
+});
+test('async Zod bridge rejects incompatible construction without evaluating a schema',()=>{
+  assert.throws(()=>asyncZodSchema(null),/ZOD_ASYNC_SCHEMA_REQUIRED/);
+  assert.throws(()=>asyncZodSchema({'~standard':{version:1,vendor:'other'}}),/ZOD_ASYNC_SCHEMA_REQUIRED/);
 });
