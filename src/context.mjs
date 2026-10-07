@@ -43,18 +43,33 @@ export function compileContext(store,{project,query,budget=4000,task,onStale='re
   for(const memory of memories)required.push('Approved memory '+memory.id+': '+memory.statement+' [source: '+memory.source+']');
   if(memoriesOmitted)required.push('Approved memories not related to this objective and left out: '+memoriesOmitted+'.');
   let rendered=required.join('\n\n');
-  ensure(tokenCount(rendered)<=budget,'MANDATORY_CONTEXT_EXCEEDS_BUDGET');
+  let renderedTokens=tokenCount(rendered);
+  ensure(renderedTokens<=budget,'MANDATORY_CONTEXT_EXCEEDS_BUDGET');
+  // Diagnóstico opt-in: não paga tokenização extra no caminho padrão. Nunca conta o repositório inteiro.
+  let referenceTokens=null;
+  if(process.env.BBRAINX_MEASURE_CONTEXT==='1'){
+    const parts=[rendered];let referenceBytes=Buffer.byteLength(rendered);
+    for(const item of result.items){
+      const part='\n\n---\n'+item.path+':'+item.start_line+'-'+item.end_line+' [sha256:'+item.file_hash+']\n'+item.body;
+      referenceBytes+=Buffer.byteLength(part);if(referenceBytes>65536)break;parts.push(part);
+    }
+    if(referenceBytes<=65536)referenceTokens=tokenCount(parts.join(''));
+  }
   const served=[],seen=new Set();let sourcesOmittedByBudget=0,docTokens=0;
   // Documentação fica com no máximo metade do orçamento enquanto houver código candidato: o pacote leva a explicação e a implementação.
   const hasCode=result.items.some(item=>item.kind!=='doc');
   for(const item of result.items){
     const digest=hash(item.body);if(seen.has(digest))continue;
     const section='\n\n---\n'+item.path+':'+item.start_line+'-'+item.end_line+' [sha256:'+item.file_hash+']\n'+item.body, cost=item.kind==='doc'?tokenCount(section):0;
-    if(tokenCount(rendered+section)>budget||(hasCode&&docTokens+cost>budget/2)){sourcesOmittedByBudget++;continue;}
+    if(hasCode&&docTokens+cost>budget/2){sourcesOmittedByBudget++;continue;}
+    // Cota barata primeiro. Reutiliza contagem exata do texto concatenado, sem assumir aditividade BPE.
+    const proposedTokens=tokenCount(rendered+section);
+    if(proposedTokens>budget){sourcesOmittedByBudget++;continue;}
+    renderedTokens=proposedTokens;
     docTokens+=cost;seen.add(digest);served.push({id:item.id,path:item.path,startLine:item.start_line,endLine:item.end_line,hash:item.file_hash,kind:item.kind});rendered+=section;
   }
-  const payload={project,snapshot:meta.snapshot,text:rendered,sources:served,payloadTokens:tokenCount(rendered),budget,encoding:'o200k_base',providerInputTokens:null,providerCacheTokens:null,billingSavings:null,selection:'lexical-ranked-with-doc-quota',coverageComplete:false,selectedFilesVerified:true,refreshedFiles:[...refreshed].sort(),sourcesOmittedByBudget,memoriesOmitted,checkpointTrimmed,checkpointStale:!!checkpoint&&checkpoint.content.snapshot!==meta.snapshot};
+  const payload={project,snapshot:meta.snapshot,text:rendered,sources:served,payloadTokens:renderedTokens,budget,encoding:'o200k_base',providerInputTokens:null,providerCacheTokens:null,billingSavings:null,selection:'lexical-ranked-with-doc-quota',coverageComplete:false,selectedFilesVerified:true,refreshedFiles:[...refreshed].sort(),sourcesOmittedByBudget,memoriesOmitted,checkpointTrimmed,checkpointStale:!!checkpoint&&checkpoint.content.snapshot!==meta.snapshot};
   const packId=hash({text:rendered,encoding:payload.encoding});
-  store.transaction(()=>store.event(project,'context.compiled',{packId,payloadTokens:payload.payloadTokens,sourceCount:served.length,snapshot:meta.snapshot,refreshed:refreshed.size}));
+  store.transaction(()=>store.event(project,'context.compiled',{packId,payloadTokens:payload.payloadTokens,sourceCount:served.length,measurementVersion:'candidate-window-v1',referenceTokens,snapshot:meta.snapshot,refreshed:refreshed.size}));
   return {packId,...payload};
 }
