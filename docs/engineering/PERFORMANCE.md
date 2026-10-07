@@ -23,6 +23,8 @@ Com `I` chaves de idempotência e `R` bytes da resposta histórica, a consulta u
 
 A CI reexecuta o experimento e conserva JSON bruto em `artifacts/engineering/checkpoint-replay.json`, com diagnóstico separado. Gates são paridade e contagens determinísticas; não há threshold de microssegundos sobre runner compartilhado. Dados locais completos do ensaio original ficam em `docs/artifacts/engineering-2026-10-07/`, comprimidos sem perda como `.json.gz`, com hashes dos bytes originais e comprimidos em `manifest.json`. Para ler: `gzip -dc docs/artifacts/engineering-2026-10-07/checkpoint-replay-node24.json.gz`. São evidência dessa execução, não baseline de produção.
 
+Na publicação de evidências em main, a CI preserva metadados e resultados sem as amostras individuais em `docs/validation/engineering/checkpoint-replay-summary.json`, incluindo o hash do JSON bruto. O log do Node mínimo também é preservado. A coleta recusa candidato sujo, revisão divergente, contagens incompletas ou invariantes violadas; resumos permanecem disponíveis depois da retenção dos artifacts. Para um experimento que sustente uma alegação histórica, preservar também as amostras completas, como nesta rodada.
+
 ## Alternativas rejeitadas ou ainda não justificadas
 
 - Mover Git para dentro de `BEGIN IMMEDIATE`: eliminaria o custo do replay, mas alongaria a trava de escritor com processo externo no caminho novo.
