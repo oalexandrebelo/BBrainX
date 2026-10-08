@@ -23,6 +23,8 @@ jobs:
           mkdir -p artifacts
           npm ls --all --json > artifacts/npm-tree.json
           npm audit --audit-level=high --json > artifacts/npm-audit.json
+          npm sbom --package-lock-only --sbom-format=cyclonedx > artifacts/sbom-root.cdx.json
+          (cd media && npm sbom --package-lock-only --sbom-format=cyclonedx) > artifacts/sbom-media.cdx.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -31,6 +33,8 @@ jobs:
             package-lock.json
             artifacts/npm-tree.json
             artifacts/npm-audit.json
+            artifacts/sbom-root.cdx.json
+            artifacts/sbom-media.cdx.json
   consolidated:
     needs: dependencies
     uses: ./.github/workflows/consolidated.yml
@@ -184,6 +188,10 @@ jobs:
         with:
           name: BBrainX-Consolidated-Delivery
           path: .ci-consolidated
+      - uses: actions/download-artifact@v4
+        with:
+          name: minimum-node-evidence
+          path: .ci-minimum
       - name: Collect observed evidence and exact dependency locks
         run: node scripts/collect-evidence.mjs
       - name: Publish only generated evidence and lockfiles
@@ -203,6 +211,6 @@ jobs:
         with:
           name: BBrainX-source-distribution
           path: |
-            artifacts/BBrainX-v0.4.0-source.zip
+            artifacts/BBrainX-v*-source.zip
             artifacts/SHA256SUMS.txt
             artifacts/source-manifest.json

@@ -1,0 +1,20 @@
+{
+  "purpose": "Original local paired microbenchmark samples; candidate identified by module hashes, not candidateHead alone",
+  "encoding": "gzip, lossless original UTF-8 JSON",
+  "files": [
+    {
+      "file": "checkpoint-replay-node24.json.gz",
+      "compressedBytes": 37769,
+      "rawBytes": 917404,
+      "compressedSha256": "a8858795d0f19630039bf0bffd9f360425b54787cb7358cc33a784abe823d20b",
+      "rawSha256": "25f37b5457bbbaa45b328d07a859df29ddcd3b696afddf630cff1ca25c204b18"
+    },
+    {
+      "file": "checkpoint-replay-node22-minimum.json.gz",
+      "compressedBytes": 37796,
+      "rawBytes": 917372,
+      "compressedSha256": "1f3d17352a070b0536e223d1eab3119b96334d6b2a54ad311c1918172b160560",
+      "rawSha256": "48719b7b127ca0543194dbb72dd7ff2b5fc8d477fdff8e9ce2686139328a8d5e"
+    }
+  ]
+}

@@ -37,6 +37,12 @@ jobs:
           node scripts/lanes-negative.mjs
       - name: Independent laboratories and lossless archival checks
         run: node scripts/consolidated-labs.mjs
+      - name: Source distribution identity and deterministic ZIP checks
+        run: python3 test/archive_test.py
+      - name: Checkpoint replay work and paired latency evidence
+        run: |
+          mkdir -p artifacts/engineering
+          node scripts/checkpoint-replay-benchmark.mjs 38904c38f1d27b84afaeb56fed702d233ad4e25f 100 5 > artifacts/engineering/checkpoint-replay.json 2> artifacts/engineering/checkpoint-replay.stderr.log || { cat artifacts/engineering/checkpoint-replay.stderr.log; exit 1; }
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - name: Workbench and Atlas browser suites
@@ -61,5 +67,6 @@ jobs:
             artifacts/workstation/
             artifacts/observatory/
             artifacts/lanes/
+            artifacts/engineering/
             test-results/
           retention-days: 30

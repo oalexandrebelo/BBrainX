@@ -2,6 +2,10 @@
 
 Contribuições devem ser pequenas, reproduzíveis e orientadas a evidências. Reduzir complexidade pode ser mais valioso que adicionar um framework.
 
+Comece pelo [ponto de retomada](docs/engineering/CONTINUITY.md), execute `npm run project:status` e escolha um item da [fila com critérios de aceite](docs/engineering/ROADMAP.md). Declare arquivos sob sua responsabilidade ao trabalhar em paralelo. Termine registrando revisão, resultado observado, limites e próxima ação na PR; outra pessoa deve conseguir continuar sem ler seu chat.
+
+Para desempenho e evolução técnica, siga o [norte de otimização](docs/engineering/OPTIMIZATION_NORTH.md): primeira entrega sugerida, módulos/testes de cada frente, invariantes e critérios para aceitar ou rejeitar ganhos.
+
 ## Ambiente
 
 Node 24, Git e `npm run setup`. Para navegador, instale Chromium com Playwright e execute `npm run test:e2e`. Nunca use dados privados, credenciais ou código proprietário nas fixtures.

@@ -92,7 +92,7 @@ npm run build
 npm run test:e2e    # painel no navegador
 ```
 
-A matriz da CI inclui macOS, Linux e Windows; **o resultado que vale é o da execução ligada à revisão**, em `docs/validation/`. Os testes novos de cada rodada foram provados por sabotagem: um defeito é injetado de propósito e o teste precisa reprovar.
+A matriz da CI inclui macOS, Linux e Windows; **o resultado que vale é o da execução ligada à revisão**, em `docs/validation/`. A CI também executa controles negativos de contratos, workstation, observatory e lanes: injeta defeitos em checkout isolado e exige que sejam detectados. Isso não implica cobertura por mutação de todos os testes.
 
 O que não existe: observador contínuo de arquivos, análise semântica por servidor de linguagem, sincronização entre máquinas, criptografia própria, autenticação multiusuário, captura de tela e execução de shell. O prazo de uma chamada não interrompe trabalho síncrono, como a indexação. Não use o banco ativo em iCloud ou em disco de rede. Revogar uma memória impede o uso futuro, mas não apaga cópias históricas nem backups. Veja o [modelo de segurança](docs/SECURITY_MODEL.md).
 
@@ -105,6 +105,8 @@ A marca em uso é o **monograma BX**, escolhida de forma provisória entre três
 ## Comunidade
 
 Projeto de Alexandre Belo (**AB**), desenvolvido com assistência de IA e revisão orientada a evidências. Não implica endosso de OpenAI, Anthropic, Google ou dos projetos estudados. Queremos contribuições reproduzíveis: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Para assumir a próxima contribuição, comece pelo [contexto de engenharia](docs/engineering/CONTINUITY.md), execute `npm run project:status` e escolha um item da [fila com critérios de aceite](docs/engineering/ROADMAP.md). O [livro de experimentos](docs/engineering/PERFORMANCE.md) distingue ganhos medidos, custos e tentativas descartadas.
 
 O código original do BBrainX é MIT. O contrato do motor segue o modelo do Invokta, cujo aviso MIT completo está em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Nomes, marcas, bibliotecas e referências mantêm seus direitos.
 
