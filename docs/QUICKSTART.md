@@ -173,6 +173,15 @@ A instalação precisa do `uv` ou de um Python de 3.10 a 3.13; não usa `sudo` n
 
 Para decisões protegidas contra truncamento, use `node bin/bbrainx.mjs laya decide --project <id> --state "texto" --file perguntas.json`, `serve --laya` no painel ou `mcp --project <id> --laya`. O MCP acrescenta `decision_evaluate` somente quando habilitado. [Guia completo, limites, cache e verificação real](integrations/LAYA.md). O perfil continua sem alterar o pacote de contexto. O benchmark aceita `--max-len` de 256 a 8192 (padrão 1024), `--batch-size` de 1 a 64 (padrão 4), `--timeout-ms` de 1000 a 600000 (padrão 120000) e `--out <arquivo.json>`.
 
+## Alinhar especificações do projeto
+
+```sh
+node bin/bbrainx.mjs sdd --project meu-projeto --mode assess
+node bin/bbrainx.mjs sdd --project meu-projeto
+```
+
+O primeiro comando somente avalia. O segundo avalia e cria uma base `SDD.md` se não houver artefatos SDD reconhecidos; nunca substitui especificações existentes. O rascunho expõe fatos e lacunas para revisão. No painel, use a aba **SDD**. Para expor a capacidade ao harness, acrescente `--sdd` ao servidor MCP já autorizado para o projeto. `--sdd --laya` pode habilitar as duas capacidades opcionais; preserve workspace/lane/home e escopo. [Rubrica, formatos e limites](integrations/SDD.md).
+
 ## 9. Atualizar da 0.2 para a 0.3 ou a 0.4
 
 Da 0.3 para a 0.4 não há migração: o esquema do banco é o mesmo. Vindo da 0.2, na primeira abertura o serviço migra o banco sozinho, numa transação:

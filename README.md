@@ -73,6 +73,18 @@ O servidor é próprio e fala as **duas eras do protocolo MCP** no mesmo process
 
 O servidor só enxerga o projeto com que foi iniciado, não executa comandos e não aprova memória. Texto recuperado é evidência, nunca instrução.
 
+## Alinhamento SDD por projeto
+
+O BBrainX detecta Spec Kit e documentos SDD reconhecidos, dá uma nota versionada de **cobertura documental** por feature e aponta requisitos sem tarefas ou referências órfãs. Quando não há SDD, a ação explícita de alinhamento cria `SDD.md` como rascunho técnico com fontes; preserva qualquer estrutura existente ou parcial.
+
+```sh
+node bin/bbrainx.mjs sdd --project meu-projeto
+node bin/bbrainx.mjs sdd --project meu-projeto --mode assess
+node bin/bbrainx.mjs mcp --project meu-projeto --sdd
+```
+
+A aba **SDD** oferece avaliação e alinhamento no painel. O primeiro comando cria somente quando ausente; `assess` é leitura. MCP expõe `sdd_align` por opt-in. A nota não certifica semântica, implementação ou testes: [contrato e rubrica](docs/integrations/SDD.md).
+
 ## Perfil opcional: Laya
 
 O [Laya](https://github.com/NandhaKishorM/laya) é um modelo local de decisão: escolhe entre opções, dá nota ou responde sim/não, sem gerar texto. O BBrainX o instala **só por comando seu**, num ambiente Python isolado, com os pesos conferidos por SHA-256:

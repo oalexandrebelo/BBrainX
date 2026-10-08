@@ -1,6 +1,16 @@
 # Ponto de retomada da engenharia
 
-Evolução Laya em 08/10: implementação `ecbdc85`/`179b918`, decisões explícitas opt-in por projeto e broker limitado. [Evidência e próxima ação](LAYA_2026-10-08.md):427 testes locais nos dois Nodes,25 E2E, tokenizer e modelo MPS real. O benchmark congelado1024/2048 não justifica reranking do contexto. Verificar CI da ponta e recibo instalado; resultados antigos abaixo permanecem históricos.
+Entrega atual: backend SDD `2de3540`, painel/documentação `f48cdccea3bd856ea7364d06376c56da920c02ac`, [PR #17](https://github.com/oalexandrebelo/BBrainX/pull/17), branch `feat/sdd-alignment-2026-10-08`. A [CI de f48cdcc](https://github.com/oalexandrebelo/BBrainX/actions/runs/37740626008) passou os nove jobs de validação. A PR está empilhada sobre a [PR #16](https://github.com/oalexandrebelo/BBrainX/pull/16) Laya, cuja [CI de 971390a](https://github.com/oalexandrebelo/BBrainX/actions/runs/37738784634) também passou. Conferir a ponta remota antes de integrar; commits posteriores de documentação têm CI própria.
+
+**Runtime instalado no Mac mini: f48cdcc**, com painel `serve --laya` e dados existentes preservados. Sete controles reais CLI/MCP passaram, incluindo criação/idempotência em pasta temporária, recusa entre projetos e inferência MPS com as duas capacidades habilitadas. O painel nativo executou Laya e avaliou o SDD do BBrainX. [Operação e evidência](../integrations/MAC_MINI.md) distinguem instalação, testes SDK e comprovação por cliente nativo.
+
+EV-13 entrega alinhamento SDD por projeto: 451 testes locais em cada Node suportado e 33 E2E, [manifesto](../integrations/sdd-verification-2026-10-08.json), [spec](../specs/sdd-alignment.md), [ADR-0002](../decisions/0002-sdd-coverage.md) e [guia](../integrations/SDD.md). `sdd --project ID` avalia/cria rascunho quando ausente; `--mode assess` é leitura, MCP exige `--sdd`. A nota mede cobertura documental por feature; não mede semântica, conformidade Spec Kit ou testes executados. Preservar documentos parciais, incompletude do inventário e limites defensivos do filesystem.
+
+Laya: `ecbdc85`/`179b918`/`971390a` entregam decisões explícitas opt-in por projeto e broker limitado. [Evidência e próxima ação](LAYA_2026-10-08.md): 427 testes locais nos dois Nodes, 25 E2E, tokenizer e modelo MPS real antes da adição SDD. O benchmark congelado 1024/2048 favorece o caminho lexical e não justifica reranking automático. EV-09 comprova runtime; benefício por tarefa e calibração permanecem dependentes de EV-05.
+
+**Norte para quem assume:** [mandato técnico completo](../prompts/ENGINEERING_EVOLUTION.md), com inferência/cache/economia, políticas/RL, fine-tuning, instalação e SDD. Começar com retomada reproduzível e EV-05; EV-06/11 e EV-07 preservam limites/recuperação. A próxima fatia SDD deve associar requisitos aprovados a tarefas e evidência da revisão real antes de automatizar convergência. O mandato não substitui a fila canônica do roadmap nem autoriza novas despesas, permissões ou publicação.
+
+Histórico anterior, conservado para rastreabilidade:
 
 Estado entregue EV-12: implementação `e36e712`, correção visual `abbdd0d` e correções de portabilidade `4a9e453`/`a22954f` e runtime instalado `a21f42ccab511da82906d0a9034389c8478a8d3c`. Operação atual e pendências: [MAC_MINI.md](../integrations/MAC_MINI.md). A revisão de portabilidade passou 402/402 testes no Node 24 e no Node mínimo 22.20, além do build. A entrega anterior passou 18/18 testes de navegador e quinze controles negativos em cópia isolada; conferir a CI da ponta da [PR #15](https://github.com/oalexandrebelo/BBrainX/pull/15) para aprovação da árvore final em cada ambiente. O MCP global Antigravity foi retirado; OmniRoute aguarda URL/modelo. A publicação comercial permanece pendente dos critérios próprios.
 
@@ -23,7 +33,7 @@ Quem for otimizar começa pelo [norte de otimização](OPTIMIZATION_NORTH.md), q
 
 Na baseline funcional acima: ownership MCP contra IDs em voo duplicados; replay de checkpoint sem Git e writer transaction redundantes; distribuição pelos blobs Git com manifesto v2 e ZIP verificável; SBOMs separados; status/contexto/roadmap versionados. A justificativa e os custos de desempenho estão no [livro de experimentos](PERFORMANCE.md). Consulte os checks da PR/revisão atual antes de integrar; os resultados da baseline não certificam commits posteriores.
 
-Próxima ação: conferir a CI da ponta remota, revisar a entrega EV-12 e tratar as lacunas nativas documentadas. A prioridade de otimização permanece EV-05 (corpus fixado e tarefas aceitas), EV-06 (trabalho síncrono limitado) e EV-07 (restauração do conjunto de bancos). EV-11 documenta a reprodução de saída MCP acumulada com consumidor lento. Não apresentar esses itens como concluídos.
+Próxima ação: conferir a CI da ponta remota, revisar as PRs empilhadas EV-12/Laya/SDD e tratar as lacunas nativas documentadas. A prioridade de otimização permanece EV-05 (corpus fixado e tarefas aceitas), EV-06 (trabalho síncrono limitado) e EV-07 (restauração do conjunto de bancos). EV-11 documenta a reprodução de saída MCP acumulada com consumidor lento. Não apresentar esses itens como concluídos.
 
 ## EV-12 — integração e controle por projeto
 

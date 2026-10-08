@@ -55,3 +55,40 @@ code.activate{display:block;font:10.5px ui-monospace,SFMono-Regular,monospace;ba
 .laya-panel summary{color:var(--mint);cursor:pointer;line-height:1.8}
 .laya-panel pre{font:11px/1.8 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:400px;overflow:auto;background:#0c151b;border:1px solid var(--line);border-radius:5px;padding:16px}
 @media(max-width:780px){.laya-panel{padding:20px 16px}.laya-panel .laya-layout{grid-template-columns:minmax(0,1fr);gap:24px}.laya-panel .laya-output{border-left:0;border-top:1px solid var(--line);padding:24px 0 0}.laya-panel .laya-heading{gap:12px}.laya-panel h2{font-size:22px}.laya-panel legend small{display:block;margin-left:0}.laya-panel .laya-choice{font-size:21px}}
+.sdd-panel{padding:28px;border:1px solid var(--line);border-radius:10px;background:var(--panel);min-width:0}
+.sdd-panel h2{font-size:26px;font-weight:500;letter-spacing:-.6px;margin:12px 0}
+.sdd-panel h3{font-size:20px;font-weight:500;margin:24px 0 16px}
+.sdd-panel h4{font-size:16px;font-weight:500;margin:12px 0}
+.sdd-panel h5{font-size:12px;font-weight:500;margin:18px 0 10px}
+.sdd-panel .sdd-heading p,.sdd-panel .sdd-hint{font-size:12px;line-height:1.8;color:var(--muted);overflow-wrap:anywhere}
+.sdd-panel .sdd-controls{border-block:1px solid var(--line);padding:20px 0;margin:24px 0}
+.sdd-panel label{display:block;font-size:12px;line-height:1.8;max-width:440px}
+.sdd-panel select{display:block;width:100%;min-width:0;padding:11px 12px;margin:7px 0 12px;border:1px solid var(--line);border-radius:5px;background:#0c151b;color:inherit}
+.sdd-panel .sdd-root{display:block;font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.sdd-panel .sdd-actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+.sdd-panel .sdd-notice{padding:16px;border:1px solid var(--line);border-radius:5px;font-size:12px;line-height:1.8;color:var(--mint);overflow-wrap:anywhere}
+.sdd-panel .sdd-warning{border-color:#77564c;background:#352522;color:#ffd2b5}
+.sdd-panel .sdd-feature{padding:20px;border:1px solid var(--line);border-radius:5px;margin:16px 0;min-width:0}
+.sdd-panel .sdd-feature>header{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:12px;font-size:12px;overflow-wrap:anywhere}
+.sdd-panel .sdd-feature strong{font-weight:500;color:var(--mint)}
+.sdd-panel table{width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px;line-height:1.7;margin:16px 0}
+.sdd-panel caption{text-align:left;color:var(--muted);margin-bottom:10px}
+.sdd-panel th,.sdd-panel td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);font-weight:400;overflow-wrap:anywhere}
+.sdd-panel th:last-child,.sdd-panel td:last-child{width:22%;text-align:right}
+.sdd-panel thead{color:var(--muted)}
+.sdd-panel .sdd-gaps{font-size:12px;line-height:1.8;padding-left:20px;color:var(--muted);overflow-wrap:anywhere}
+.sdd-panel .sdd-gaps li{margin:7px 0}
+.sdd-panel .sdd-summary{border-block:1px solid var(--line);padding:8px 0 20px;margin:24px 0}
+.sdd-panel .sdd-score{font:32px ui-monospace,monospace;color:var(--mint);margin:16px 0}
+.sdd-panel details{font-size:12px;margin:20px 0;min-width:0}
+.sdd-panel summary{color:var(--mint);cursor:pointer;line-height:1.8}
+.sdd-panel code{overflow-wrap:anywhere}
+.sdd-panel pre{font:11px/1.8 ui-monospace,monospace;padding:16px;background:#0c151b;border:1px solid var(--line);border-radius:5px;white-space:pre-wrap;overflow-wrap:anywhere;max-height:400px;overflow:auto}
+.sdd-panel .sdd-sources{list-style:none;padding:0}
+.sdd-panel .sdd-sources li{padding:12px 0;border-bottom:1px solid var(--line)}
+.sdd-panel .sdd-sources code,.sdd-panel .sdd-sources span{display:block;font-size:11px;line-height:1.8;overflow-wrap:anywhere}
+.sdd-panel .sdd-sources span{color:var(--muted)}
+.sdd-panel .sdd-trace{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;font-size:12px;line-height:1.8}
+.sdd-panel dt{color:var(--muted)}
+.sdd-panel dd{margin:4px 0;overflow-wrap:anywhere}
+@media(max-width:780px){.sdd-panel{padding:20px 16px}.sdd-panel h2{font-size:22px}.sdd-panel .sdd-feature{padding:16px 12px}.sdd-panel .sdd-trace{grid-template-columns:minmax(0,1fr)}.sdd-panel th,.sdd-panel td{padding:10px 4px}}
