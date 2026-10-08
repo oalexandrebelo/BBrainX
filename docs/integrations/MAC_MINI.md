@@ -1,20 +1,64 @@
 # Operação atual no Mac mini — 08/10/2026
 
-Runtime instalado: `a21f42ccab511da82906d0a9034389c8478a8d3c`, Node 24.21.0.
+Runtime instalado: `f48cdccea3bd856ea7364d06376c56da920c02ac`, Node 24.21.0.
+Laya e SDD foram adicionados sem migrar os bancos dos projetos. A revisão anterior
+`a21f42c` e a intermediária `971390a` permanecem disponíveis para rollback.
 Esta revisão substitui a aplicação inicial descrita em `docs/MAC_MINI_HARNESSES.md`.
 O estado existente foi preservado. Releases anteriores continuam disponíveis para rollback.
-Evidência sanitizada: [mac-mini-2026-10-08.json](mac-mini-2026-10-08.json).
+Evidência atual sanitizada: [laya-sdd-mac-mini-2026-10-08.json](laya-sdd-mac-mini-2026-10-08.json).
+A [evidência de integração anterior](mac-mini-2026-10-08.json) identifica o runtime a21f42c.
 
 O launcher `~/.local/bin/bbrainx` usa Node absoluto e exporta `BBRAINX_HOME`,
 `BBRAINX_ENTRY` e `BBRAINX_NODE`. O estado fica em
 `~/Library/Application Support/BBrainX/state`; a seleção de runtime é
 `~/Library/Application Support/BBrainX/app/current`. Não substituir o Node global.
 
-## Resultado observado
+## Laya e SDD aplicados
+
+A CLI instalada comprovou avaliação sem criar arquivo, criação de rascunho em
+projeto temporário e repetição sem alteração dos bytes. Um cliente SDK MCP real
+usou o entrypoint instalado com `--laya --sdd`: catálogo de oito ferramentas,
+avaliação do BBrainX, recusa de outro projeto registrado antes de criar arquivo e
+inferência Laya real no dispositivo MPS. Os sete controles passaram. O perfil
+local usa Python 3.12.14 e Laya 0.3.26 com revisão de pesos fixada; não houve
+fine-tuning nem chamada paga a provedor.
+
+No navegador nativo, o painel instalado executou uma decisão Laya e avaliou o
+SDD do BBrainX. A feature `docs:sdd-alignment` obteve 100/100 em cobertura
+**documental**; `semanticQuality` continua `not_assessed`. Isso não dá nota de
+qualidade ao produto inteiro nem atesta semântica, segurança ou testes aprovados.
+Nenhum SDD dos outros três projetos foi criado ou alterado nesta implantação.
+
+A validação local do código SDD passou 451 testes em cada Node (24.21 e 22.20),
+build e 33 E2E. A [CI do código f48cdcc](https://github.com/oalexandrebelo/BBrainX/actions/runs/37740626008)
+passou os nove jobs de validação. O commit posterior de continuidade altera
+somente documentos; conferir a ponta da PR #17 para sua própria CI.
+
+```sh
+bbrainx sdd --project bbrainx --mode assess
+bbrainx sdd --project ID
+bbrainx serve --laya
+```
+
+O segundo comando cria `SDD.md` apenas quando a inspeção é completa e nenhum
+artefato SDD reconhecido existe; o resultado é um rascunho para revisão.
+O painel em execução foi iniciado com `serve --laya`. Para MCP, acrescente
+`--sdd` e/ou `--laya` aos argumentos do servidor **já vinculado ao projeto**,
+preservando `--project`, workspace/lane e home. O catálogo padrão continua com
+seis ferramentas. A comprovação SDK não significa que todos os clientes nativos
+reconectaram ou usaram essas capacidades por modelo. Não habilitar todos os
+workers locais automaticamente: cada processo tem seu próprio modelo/cache.
+
+Consulte os contratos [SDD](SDD.md) e [Laya](LAYA.md). Laya oferece decisão fechada
+opt-in com abstenção e cache exato; o benchmark não justifica substituir o ranking
+lexical do contexto, nem demonstrou superioridade sobre JEV. A operação offline
+do worker não constitui sandbox de rede do sistema operacional.
+
+## Evidência histórica de integração — runtime a21f42c
 
 | Superfície | Resultado | Limite |
 | --- | --- | --- |
-| Codex CLI/app-server e backend VS Code | Configuração de projeto, seis ferramentas, título e ícone BBrainX, verificados novamente no runtime atual | Nenhuma thread ou inferência iniciada; runtimeStatus nulo |
+| Codex CLI/app-server e backend VS Code | Configuração de projeto, seis ferramentas, título e ícone BBrainX, verificados no runtime a21f42c | Nenhuma thread ou inferência iniciada; runtimeStatus nulo |
 | Claude e Kilo | Configuração por projeto e conexões reais no registro de atividade | Uso da ferramenta por modelo não foi exercitado |
 | Extensão BBrainX 0.1.1 no VS Code | Ícone BX transparente próprio, barra de status, raiz detectada e comando de detecção observados | Configuração detectada não equivale a conexão MCP |
 | Extensão BBrainX no Antigravity | VSIX instalado e recibo real de workspace emitido | Activity Bar não foi verificada separadamente |
@@ -41,10 +85,10 @@ O upgrade de portabilidade encerrou os processos BBrainX anteriores, reiniciou o
 painel e recarregou a janela `release-audit` no VS Code. Clientes nativos reconectam
 pelas configurações existentes; uma configuração presente não prova atividade.
 As provas de cinco controles MCP, dezesseis acessos próprios/cruzados e os dois
-backends Codex foram repetidas no runtime atual, sem chamadas de modelo.
+backends Codex foram repetidas no runtime a21f42c, sem chamadas de modelo.
 
-O painel local está em `http://127.0.0.1:4317`, iniciado explicitamente com
-`bbrainx serve`. Não foi instalado daemon de inicialização. Se o processo encerrar,
+O painel local está em `http://127.0.0.1:4317`, agora iniciado explicitamente com
+`bbrainx serve --laya`. Não foi instalado daemon de inicialização. Se o processo encerrar,
 execute novamente o comando ou **BBrainX: Iniciar painel local** no editor.
 
 ## Por que o MCP global Antigravity foi retirado
