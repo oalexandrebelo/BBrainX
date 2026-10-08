@@ -14,7 +14,9 @@ test('extension manifest gates execution settings at machine scope and keeps nat
   for(const property of Object.values(manifest.contributes.configuration.properties))assert.equal(property.scope,'machine');
   const commands=manifest.contributes.commands.map(command=>command.command);assert.deepEqual(commands,['bbrainx.detect','bbrainx.connect','bbrainx.openPanel','bbrainx.startPanel']);
   assert.equal(manifest.contributes.views.bbrainx[0].id,'bbrainx.workspaces');
-  assert.equal(fs.readFileSync(path.join(extension,'media/icon.svg'),'utf8').trim(),fs.readFileSync(path.join(root,'public/brand/icon.svg'),'utf8').trim());
+  const icon=fs.readFileSync(path.join(extension,'media/icon.svg'),'utf8'),brand=fs.readFileSync(path.join(root,'public/brand/icon.svg'),'utf8');
+  const paths=svg=>[...svg.matchAll(/<path\s+d="([^"]+)"/g)].map(match=>match[1]);
+  assert.deepEqual(paths(icon),paths(brand));assert.doesNotMatch(icon,/<rect\b/,'Activity Bar uses the transparent glyph as a monochrome mask');
   execFileSync(process.execPath,['--check',path.join(extension,'extension.cjs')],{timeout:10000,stdio:'pipe'});
 });
 

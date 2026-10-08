@@ -2,7 +2,7 @@
   "name": "bbrainx-workspace",
   "displayName": "BBrainX",
   "description": "Local workspace discovery, conservative MCP setup and BBrainX panel access.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "preview": true,
   "publisher": "bbrainxlocal",
   "license": "MIT",
