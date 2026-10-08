@@ -19,6 +19,7 @@ os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 MAX_STATES = 64
 MAX_QUESTIONS = 16
 MAX_STATE_CHARS = 50000
+MAX_REQUEST_BYTES = 1048576
 ANSWER_FIELDS = ("choice", "score", "noul", "answer_confidence", "confidence", "probabilities")
 
 
@@ -28,7 +29,7 @@ def main():
     sys.stdout = sys.stderr  # bibliotecas que imprimem não podem corromper o protocolo
 
     def reply(message):
-        protocol.write(json.dumps(message, ensure_ascii=False) + "\n")
+        protocol.write(json.dumps(message, ensure_ascii=False, allow_nan=False) + "\n")
         protocol.flush()
 
     started = time.perf_counter()
@@ -43,7 +44,12 @@ def main():
         reply({"op": "ready", "ok": False, "error": type(error).__name__, "detail": str(error)[:300]})
         return 1
 
-    for line in sys.stdin:
+    while True:
+        line = sys.stdin.buffer.readline(MAX_REQUEST_BYTES + 1)
+        if not line:
+            break
+        if len(line) > MAX_REQUEST_BYTES:
+            return 2
         line = line.strip()
         if not line:
             continue
@@ -61,16 +67,22 @@ def main():
                 raise ValueError("questions must be an object with 1 to %d entries" % MAX_QUESTIONS)
             if any(not isinstance(state, str) or len(state) > MAX_STATE_CHARS for state in states):
                 raise ValueError("each state must be a string of at most %d characters" % MAX_STATE_CHARS)
+            max_len = request.get("maxLen", 1024)
+            if type(max_len) is not int or not 32 <= max_len <= 8192:
+                raise ValueError("maxLen outside admitted bounds")
+            rows = len(states) * len(questions)
+            if rows > 128 or rows * max_len > 131072:
+                raise ValueError("batch exceeds admitted envelope")
             began = time.perf_counter()
-            raw = agent.predict_batch(states, questions, max_len=request.get("maxLen"))
+            raw = agent.predict_batch(states, questions, max_len=max_len)
             results = []
             for item in raw:
                 usage = item.get("usage", {})
                 answers = {name: {field: answer[field] for field in ANSWER_FIELDS if field in answer}
                            for name, answer in item.get("answers", {}).items()}
-                results.append({"answers": answers, "truncated": bool(usage.get("truncated")),
-                                "stateTokensDropped": int(usage.get("state_tokens_dropped") or 0),
-                                "inputTokens": int(usage.get("input_tokens") or 0)})
+                results.append({"answers": answers, "truncated": usage.get("truncated") if isinstance(usage.get("truncated"), bool) else None,
+                                "stateTokensDropped": usage.get("state_tokens_dropped"),
+                                "inputTokens": usage.get("input_tokens")})
             reply({"id": request_id, "ok": True, "results": results,
                    "ms": round((time.perf_counter() - began) * 1000, 1)})
         except Exception as error:

@@ -51,7 +51,7 @@ export function composeCapabilityLibraries(selections = [], local = {}) {
     check(Object.keys(rename).every(id => ids.includes(id)) && Object.values(rename).every(validId), 'INVALID_RENAME');
     for (const originalId of ids) {
       check(Object.hasOwn(available, originalId), 'CAPABILITY_NOT_EXPORTED');
-      add(rename[originalId] ?? originalId, available[originalId], { source: library.name, version: library.version, originalId });
+      add(Object.hasOwn(rename, originalId) ? rename[originalId] : originalId, available[originalId], { source: library.name, version: library.version, originalId });
     }
   }
   const ids = new Set();

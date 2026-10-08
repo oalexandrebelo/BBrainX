@@ -1,5 +1,12 @@
 import { EngineError, ERROR_CODES } from './capability.mjs';
 
+// Uma escrita já submetida pode falhar depois do prazo. Um listener sem captura de dados por
+// stream evita erro tardio não observado e não acumula um listener por invocação.
+const guardedStreams = new WeakSet();
+function guardLateError(stream) {
+  if (!guardedStreams.has(stream)) { stream.on('error', () => {}); guardedStreams.add(stream); }
+}
+
 /** Adapter CLI sem shell: identidade é fornecida pelo host, não por JSON/stdin. */
 export async function runEngineCli(engine, { argv, principal, input = process.stdin, output = process.stdout,
   error = process.stderr, maxBytes = 1048576, deadlineMs = 30000, isFailure = () => false } = {}) {
@@ -8,13 +15,20 @@ export async function runEngineCli(engine, { argv, principal, input = process.st
   const emit = async (stream, data) => {
     const line = JSON.stringify(data) + '\n';
     if (Buffer.byteLength(line) > maxBytes) throw new Error('CLI_OUTPUT_LIMIT');
+    guardLateError(stream);
     await new Promise((resolve, reject) => {
-      const onAbort = () => { cleanup(); reject(new Error('CLI_DEADLINE')); };
-      const onError = () => { cleanup(); reject(new Error('CLI_WRITE_FAILED')); };
-      const cleanup = () => { stream.removeListener('error', onError); controller.signal.removeEventListener('abort', onAbort); };
+      let settled = false;
+      const finish = failure => {
+        if (settled) return; settled = true;
+        stream.removeListener('error', onError); controller.signal.removeEventListener('abort', onAbort);
+        failure ? reject(new Error(failure)) : resolve();
+      };
+      const onAbort = () => finish('CLI_DEADLINE');
+      const onError = () => finish('CLI_WRITE_FAILED');
       if (controller.signal.aborted) return reject(new Error('CLI_DEADLINE'));
       stream.once('error', onError); controller.signal.addEventListener('abort', onAbort, { once: true });
-      stream.write(line, err => { if (err) reject(new Error('CLI_WRITE_FAILED')); else { cleanup(); resolve(); } });
+      try { stream.write(line, err => finish(err ? 'CLI_WRITE_FAILED' : null)); }
+      catch { finish('CLI_WRITE_FAILED'); }
     });
   };
   try {
@@ -36,7 +50,7 @@ export async function runEngineCli(engine, { argv, principal, input = process.st
   } catch (cause) {
     const code = cause instanceof EngineError && ERROR_CODES.includes(cause.code) ? cause.code : 'CLI_FAILED';
     // Não copiar publicDetails: um schema de terceiro pode incluir valores sensíveis.
-    try { error.once('error', () => {}); error.write(JSON.stringify({ error: { code } }) + '\n'); } catch { /* diagnóstico best effort */ }
+    try { guardLateError(error); error.write(JSON.stringify({ error: { code } }) + '\n'); } catch { /* diagnóstico best effort */ }
     return 1;
   } finally { clearTimeout(timer); }
 }
