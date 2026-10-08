@@ -20,8 +20,29 @@
   },
   "minimumNode": {
     "version": "22.20.0",
+    "runtimeTested": "22.20.0",
     "cliAndRunnerPassed": 13,
-    "fullSuite": "pending independent validation"
+    "fullSuite": {
+      "command": "npm test",
+      "result": "passed",
+      "tests": 397,
+      "passed": 397,
+      "failed": 0,
+      "cancelled": 0,
+      "environment": {
+        "NODE_NO_WARNINGS": "unset; SQLite ExperimentalWarning remained enabled",
+        "loopback": "allowed for service lifecycle tests",
+        "workspace": "disposable isolated snapshot"
+      },
+      "note": "Two stderr assertions now locate the exact expected JSON error among diagnostic lines, preserving the SQLite warning."
+    },
+    "cliErrorParsing": {
+      "command": "node --test --test-name-pattern='integrate lane CLI plan|CLI refuses another Node executable' test/control.test.mjs test/integration-node-path.test.mjs",
+      "result": "passed",
+      "tests": 2,
+      "passed": 2,
+      "NODE_NO_WARNINGS": "unset"
+    }
   },
   "extension": {
     "version": "0.1.0",
@@ -81,7 +102,7 @@
     "test/context-import.test.mjs": "a00f80b25c46f9a46e05fdddccaf3c3b3d6bb63da2b6f20ecc70041b46726dae",
     "test/contracts-regression.test.mjs": "312f2e3e115880c634ae5bda969ae83e06c692f4b2238af7352ea309f4df69d0",
     "test/control-cli.test.mjs": "8e04b6359e0b46b4fc9fe39faa3bcaee6b1ec3f61dc3b34909a14a57318d0ec4",
-    "test/control.test.mjs": "c06e43b9e407d3149fc9490122280c97e57f7939a497cf5d06035853f7b3317f",
+    "test/control.test.mjs": "32701cd68a84fce5b24f3b72b1ffd282607984d9c2220bebade8c2da073e51e3",
     "test/domain.test.mjs": "262d5df1971e368b320d6f10f23ded4ae284454aad5ec06919773ebea1f35498",
     "test/engine.test.mjs": "719a850d377a06af463cb3bb5a885c40702a67d75e9a6e0331a505d0531532d6",
     "test/extension.test.mjs": "7afe520b79771d99ffd3d482ec46d48d0acc1da9c993fe1e50fd5f581e7cb7a2",
@@ -103,7 +124,7 @@
     "test/godmode.test.mjs": "b5ad33b575990b445860385ed3c6962781553b542353fd8e7e1634cb23199381",
     "test/http.test.mjs": "3de3b666a28d649398ef29c6a51e54c2a34461d2ca2e2bc2b9dff205920de3c0",
     "test/index-policy.test.mjs": "643ef2ba1ba6c8c320914a0ed06f1e8fedd3c36d8c9f7e03e9252befe079a822",
-    "test/integration-node-path.test.mjs": "a70e02cb80ba60ebf3b2b9e7099426ab637a87b9e988f901fe73241c578e1752",
+    "test/integration-node-path.test.mjs": "5603eb7ecaee91e254037c15c9f5ca74cd3272de4ff34e9bc7455cbb282bb11a",
     "test/integrations.test.mjs": "372db2f1e91bc3a025ffeec8144c188ce55abf71ff5e4dd69f94d626c763347a",
     "test/lanes-host.test.mjs": "cca65a99acf6151369bae472a2ab69955e2391274da6eb18dd6bb0b6dcde8d62",
     "test/lanes-mcp.test.mjs": "3d567e60673d49c3d76bfb17dfd830c14393681c795bbc8a3eca071a155ecc9a",
@@ -127,7 +148,7 @@
     "test/usage-store.test.mjs": "1b5f59c07710ecc6374d8ea6c7f1c6263cb4cbb2472c5b40700d45e3a48b309f",
     "test/workspace.test.mjs": "81740110ac9f86089a34acaf45b0a01f3ecd96baaf48087d38ab4660490f4611",
     "test/workstation.test.mjs": "e27e809a8626fce7b8f8d9f37e88fb2e2edb91f0e0a1e61fbfae9646bbcf5e3f",
-    "web/ControlPanel.jsx": "aff2a2e0a9223f8f7ccb561467fe8d38a842169774abadb9094cc370b0f28a81",
+    "web/ControlPanel.jsx": "59abd42e5ac0adf0dc899dd0c5f75fb508983dd1249204e2ae1af10333f0c638",
     "web/architecture.js": "12369b7972722c8d569ada1f06a45e3abbbb3d8881af30a05b518396e374cc1d",
     "web/atlas/Atlas.jsx": "f2f17ad69abea220e2500dff77a0758039973d41d667fcf05f759bb8693b1b05",
     "web/atlas/atlas.css": "ba65fbaab317af42056419e824637b3ebce27424fb4a1d85731f22a2d06b5e80",
@@ -146,5 +167,75 @@
     "No cross-platform native client certification",
     "Antigravity global workspace selection remains unverified",
     "Cost budget is advisory over imported receipts"
-  ]
+  ],
+  "independent": {
+    "runtime": "22.20.0",
+    "workspace": "disposable isolated snapshot with the two corrected tests",
+    "NODE_NO_WARNINGS": "unset",
+    "loopback": "allowed for lifecycle tests",
+    "evidenceCollectors": {
+      "scripts/contracts-evidence.mjs": {
+        "result": "passed",
+        "tests": 24
+      },
+      "scripts/workstation-evidence.mjs": {
+        "result": "passed",
+        "tests": 45
+      },
+      "scripts/observatory-evidence.mjs": {
+        "result": "passed",
+        "tests": 52
+      },
+      "scripts/observatory-parity.mjs": {
+        "result": "passed",
+        "cases": 18
+      },
+      "scripts/lanes-evidence.mjs": {
+        "result": "passed",
+        "tests": 50
+      }
+    },
+    "negativeControls": {
+      "scripts/contracts-negative.mjs": {
+        "result": "passed",
+        "detected": 4
+      },
+      "scripts/workstation-mutations.mjs": {
+        "result": "passed",
+        "detected": 4
+      },
+      "scripts/observatory-mutations.mjs": {
+        "result": "passed",
+        "detected": 4
+      },
+      "scripts/lanes-negative.mjs": {
+        "result": "passed",
+        "detected": 3
+      },
+      "totalDetected": 15
+    },
+    "labs": {
+      "scripts/consolidated-labs.mjs": {
+        "result": "passed",
+        "witnessCache": "34/34",
+        "consistencyProtocol": "35/35"
+      }
+    },
+    "archive": {
+      "command": "python3 test/archive_test.py",
+      "result": "passed",
+      "tests": 3
+    },
+    "checkpointReplay": {
+      "command": "node scripts/checkpoint-replay-benchmark.mjs 38904c38f1d27b84afaeb56fed702d233ad4e25f 100 5",
+      "result": "passed",
+      "cases": 4,
+      "runtime": "22.20.0"
+    }
+  },
+  "postInstallCorrections": {
+    "ui": "Detected-client evidence now renders paths, not object coercions; coverage labels translated; same-project memory scope explicit",
+    "controlBrowserTestsPassed": 3,
+    "node22Stderr": "Error JSON is located among diagnostic lines; SQLite warnings remain enabled"
+  }
 }

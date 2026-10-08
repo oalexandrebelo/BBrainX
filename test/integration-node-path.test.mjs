@@ -7,6 +7,13 @@ import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 
 const entry=fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url));
+function stderrError(stderr,expected){
+  const line=stderr.split(/\r?\n/).find(line=>{
+    try{return JSON.parse(line)?.error===expected;}catch{return false;}
+  });
+  assert.ok(line,`Expected ${expected} JSON error in stderr; received:\n${stderr}`);
+  return JSON.parse(line);
+}
 function fixture(t){
   const directory=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-stable-node-'))),root=path.join(directory,'project'),home=path.join(directory,'state');
   fs.mkdirSync(root);fs.writeFileSync(path.join(root,'README.md'),'# Project\n');
@@ -40,7 +47,7 @@ test('CLI refuses another Node executable or invalid alias before state or confi
   fs.writeFileSync(foreign,'#!/bin/sh\ntouch "'+marker+'"\n',{mode:0o700});
   for(const [node,expected] of [[foreign,'INTEGRATION_NODE_MISMATCH'],['node','INVALID_INTEGRATION_NODE'],['','INVALID_INTEGRATION_NODE'],[path.join(f.directory,'missing'),'INVALID_INTEGRATION_NODE']]){
     const result=f.run(node,['--adopt-existing','--apply']);assert.equal(result.status,1,result.stdout);
-    assert.equal(JSON.parse(result.stderr.trim().split('\n').at(-1)).error,expected);
+    assert.equal(stderrError(result.stderr,expected).error,expected);
     assert.equal(fs.existsSync(f.home),false);assert.equal(fs.existsSync(path.join(f.root,'.mcp.json')),false);
   }
   assert.equal(fs.existsSync(marker),false);

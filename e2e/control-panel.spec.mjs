@@ -16,6 +16,9 @@ test('painel local mostra identidade real do projeto e estados desconhecidos sem
  await expect(page.getByText('Nenhum relatório de testes importado. Progresso e falhas são desconhecidos.')).toBeVisible();
  await expect(page.locator('.control-kpis')).toContainText('Desconhecido');
  await expect(page.locator('.control-command')).toContainText('bbrainx integrate --root');
+ await expect(page.locator('.control-integrations')).not.toContainText('[object Object]');
+ const detectedPath=payload.integrations.clients.flatMap(client=>client.evidence).find(item=>item.path)?.path;
+ if(detectedPath)await expect(page.locator('.control-integrations')).toContainText(detectedPath);
 });
 
 test('API do painel recusa projeto que não pertence ao catálogo local',async({request})=>{

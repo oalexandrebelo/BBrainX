@@ -15,6 +15,14 @@ import {fileURLToPath} from 'node:url';
 import {Client} from '@modelcontextprotocol/sdk/client/index.js';
 import {StdioClientTransport} from '@modelcontextprotocol/sdk/client/stdio.js';
 
+function stderrError(stderr,expected){
+ const line=stderr.split(/\r?\n/).find(line=>{
+  try{return JSON.parse(line)?.error===expected;}catch{return false;}
+ });
+ assert.ok(line,`Expected ${expected} JSON error in stderr; received:\n${stderr}`);
+ return JSON.parse(line);
+}
+
 function fixture(t){const root=fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-control-')),brain=new BrainStore(path.join(root,'state'));
  for(const id of ['alpha','beta']){fs.mkdirSync(path.join(root,id));fs.writeFileSync(path.join(root,id,'README.md'),'# '+id);brain.register(id,path.join(root,id));}
  t.after(()=>{brain.close();fs.rmSync(root,{recursive:true,force:true});});return {brain,root};}
@@ -67,10 +75,10 @@ test('integrate lane CLI plan verifies registered binding without creating its w
  assert.equal(plan.status,0,plan.stderr);assert.equal(JSON.parse(plan.stdout).lane,'alpha');
  assert(!fs.existsSync(path.join(f.home,'lanes')));assert(!fs.existsSync(path.join(f.alpha,'.mcp.json')));assert.equal(f.authority.projects().length,1);
  const wrong=spawnSync(process.execPath,[entry,'integrate','--root',f.beta,'--project','product','--lane','alpha','--clients','claude'],{encoding:'utf8',cwd:f.beta,env,timeout:10000});
- assert.equal(wrong.status,1);assert.equal(JSON.parse(wrong.stderr.trim().split('\n').at(-1)).error,'WORKSPACE_BINDING_MISMATCH');assert(!fs.existsSync(path.join(f.home,'lanes')));
+ assert.equal(wrong.status,1);assert.equal(stderrError(wrong.stderr,'WORKSPACE_BINDING_MISMATCH').error,'WORKSPACE_BINDING_MISMATCH');assert(!fs.existsSync(path.join(f.home,'lanes')));
  f.registry.retire('product','alpha',f.registry.active('product','alpha').epoch);
  const closed=spawnSync(process.execPath,[entry,'integrate','--root',f.alpha,'--project','product','--lane','alpha','--clients','claude'],{encoding:'utf8',cwd:f.alpha,env,timeout:10000});
- assert.equal(closed.status,1);assert.equal(JSON.parse(closed.stderr.trim().split('\n').at(-1)).error,'LANE_NOT_ACTIVE');assert(!fs.existsSync(path.join(f.home,'lanes')));
+ assert.equal(closed.status,1);assert.equal(stderrError(closed.stderr,'LANE_NOT_ACTIVE').error,'LANE_NOT_ACTIVE');assert(!fs.existsSync(path.join(f.home,'lanes')));
 });
 test('legacy lanes MCP advertises BBrainX and records the real lane connection',async t=>{
  const f=laneFixture(t),entry=fileURLToPath(new URL('../scripts/lanes.mjs',import.meta.url)),client=new Client({name:'control-lane-test',version:'1'});
