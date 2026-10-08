@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { ensure } from './primitives.mjs';
 import { makeEngine, VERSION } from './engine.mjs';
+import { alignSdd } from './sdd.mjs';
 import { doctor } from './host.mjs';
 import { usageOverview } from './usage/summary.mjs';
 import { controlOverview } from './control.mjs';
@@ -39,7 +40,7 @@ export async function startServer(store,{port=4317,laya=false}={}){
         ensure(equal(req.headers['x-bbrainx-csrf'],csrf),'CSRF_REJECTED');
         ensure(req.headers['content-type']?.startsWith('application/json'),'CONTENT_TYPE_REJECTED');
         const data=await body(req);ensure(typeof data.action==='string'&&data.args,'INVALID_REQUEST');
-        const engine=makeEngine(store,store.projects().map(x=>x.id),{decisions});
+        const engine=makeEngine(store,store.projects().map(x=>x.id),{decisions,sdd:alignSdd});
         const controller=new AbortController(),abort=()=>{if(!res.writableEnded)controller.abort();};
         res.once('close',abort);
         try{const result=await engine.invoke(data.action,data.args,{principal:{id:'local-dashboard'},source:'direct',signal:controller.signal});if(!res.destroyed)return json(res,200,result);return;}

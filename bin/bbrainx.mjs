@@ -7,7 +7,7 @@ import { ensure, newId } from '../src/primitives.mjs';
 import { doctor, stateHome } from '../src/host.mjs';
 import { clientConfig, CLIENTS } from '../src/clients.mjs';
 
-const {values,args}=(()=>{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};})();
+const {values,args}=(()=>{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};})();
 const command=args[0]||'help';let store;
 const print=value=>console.log(JSON.stringify(value,null,2));
 try{
@@ -44,6 +44,11 @@ Perfil opcional Laya (modelo local de decisão; não altera o pacote de contexto
   node bin/bbrainx.mjs serve --laya             (decisões locais explícitas no painel)
   node bin/bbrainx.mjs mcp --project nome --laya (habilita decision_evaluate)
 
+SDD por projeto:
+  node bin/bbrainx.mjs sdd --project nome       (avalia; cria rascunho se não houver SDD)
+  node bin/bbrainx.mjs sdd --project nome --mode assess (somente leitura)
+  node bin/bbrainx.mjs mcp --project nome --sdd (habilita sdd_align)
+
 Integração e painel por projeto:
   bbrainx discover                           (pastas abertas, projetos registrados e histórico)
   bbrainx integrate --root . [--project ID]   (plano sem alteração de configurações)
@@ -59,6 +64,13 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
   else if(command==='config'){
     ensure(values.project,'PROJECT_REQUIRED');
     console.log(clientConfig(values.client||'claude',{node:process.execPath,entry:fileURLToPath(import.meta.url),project:values.project,home:stateHome()}));
+  }
+  else if(command==='sdd'){
+    ensure(values.project,'PROJECT_REQUIRED');
+    const {BrainStore}=await import('../src/store.mjs');store=new BrainStore();
+    const {alignSdd}=await import('../src/sdd.mjs'),{makeEngine}=await import('../src/engine.mjs');
+    const result=await makeEngine(store,[values.project],{sdd:alignSdd}).invoke('sdd.align',{project:values.project,mode:values.mode||'ensure'},{principal:{id:'local-cli'}});
+    print(result);if(!result.ok)process.exitCode=1;
   }
   else if(command==='laya'){
     const laya=await import('../src/laya.mjs'), action=args[1]||'status', log=line=>console.error('laya: '+line);
@@ -129,7 +141,8 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       if(values.workspace){const {assertWorkspaceBinding}=await import('../src/workspace.mjs');assertWorkspaceBinding(store,{project:values.project,workspace:values.workspace,lane:values.lane});}
       const onEvent=process.env.BBRAINX_TRACE==='1'?event=>console.error(JSON.stringify(event)):undefined;
       const {LocalDecisions}=await import('../src/decisions.mjs'),decisions=values.laya?new LocalDecisions({home:store.authority?.home||store.home}):null;
-      let engine=makeEngine(store,[values.project],{onEvent,decisions});
+      const sdd=values.sdd?(await import('../src/sdd.mjs')).alignSdd:undefined;
+      let engine=makeEngine(store,[values.project],{onEvent,decisions,sdd});
       if(values.lane){const {bindLaneEngine}=await import('../src/lanes/store.mjs');engine=bindLaneEngine(engine,store);}
       const {observeEngine}=await import('../src/control.mjs');
       const observer=observeEngine(engine,store.authority||store,{project:values.project,harness:values.harness||'unknown',workspace:root,lane:values.lane||null});
