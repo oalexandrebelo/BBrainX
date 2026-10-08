@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { composeCapabilityLibraries } from './capability-composition.mjs';
 
 /**
  * Motor de capacidades do BBrainX: uma capacidade declara entrada, saída, acesso e prazo; o motor valida,
@@ -82,9 +83,10 @@ function race(work,signal){
  * `onEvent` recebe invocation.started|completed|failed com identificador, capacidade, duração e código; nunca
  * recebe argumentos nem resultado. Falha no observador não muda o resultado da chamada.
  */
-export function createEngine({name,version,capabilities,onEvent}){
+export function createEngine({name,version,capabilities={},libraries=[],onEvent}){
+  const composed=composeCapabilityLibraries(libraries,capabilities);
   const registry=new Map(), descriptions=new Map();
-  for(const [id,capability] of Object.entries(capabilities)){
+  for(const [id,capability] of Object.entries(composed.capabilities)){
     const {timeoutMs}=capability;
     if(timeoutMs!==undefined&&(!Number.isInteger(timeoutMs)||timeoutMs<1||timeoutMs>MAX_TIMEOUT_MS))throw new TypeError('Capability '+id+' timeoutMs must be an integer from 1 through '+MAX_TIMEOUT_MS+'.');
     registry.set(id,Object.freeze({...capability}));
@@ -94,6 +96,7 @@ export function createEngine({name,version,capabilities,onEvent}){
   const notFound=id=>new EngineError('CAPABILITY_NOT_FOUND','Capability not found.',{publicDetails:{capabilityId:id}});
   return {
     name,version,
+    provenance:()=>structuredClone(composed.provenance),
     list:()=>[...descriptions.values()].map(({id,description,title,annotations})=>({id,description,...(title===undefined?{}:{title}),...(annotations===undefined?{}:{annotations:structuredClone(annotations)})})),
     describe(id){const description=descriptions.get(id);if(!description)throw notFound(id);return structuredClone(description);},
     async invoke(id,rawInput,{principal=null,source='direct',signal,requestId=randomUUID()}={}){
