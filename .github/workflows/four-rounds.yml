@@ -21,10 +21,8 @@ jobs:
         with:
           node-version: 24
       - run: npm ci --ignore-scripts --no-fund
-      - run: |
-          mkdir -p artifacts/four-rounds
-          set -o pipefail
-          npm test 2>&1 | tee artifacts/four-rounds/tests.log
+      - name: Run the combined suite and validate its observed receipt
+        run: node scripts/four-rounds-evidence.mjs
       - run: npm run build
       - name: Read pinned reference sources without executing them
         run: python3 scripts/four-rounds-references.py
