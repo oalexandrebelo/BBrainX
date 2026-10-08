@@ -7,7 +7,7 @@ import { ensure, newId } from '../src/primitives.mjs';
 import { doctor, stateHome } from '../src/host.mjs';
 import { clientConfig, CLIENTS } from '../src/clients.mjs';
 
-const {values,args}=(()=>{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};})();
+const {values,args}=(()=>{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};})();
 const command=args[0]||'help';let store;
 const print=value=>console.log(JSON.stringify(value,null,2));
 try{
@@ -40,6 +40,9 @@ Servir:
 Perfil opcional Laya (modelo local de decisão; não altera o pacote de contexto):
   node bin/bbrainx.mjs laya status | install | remove
   node bin/bbrainx.mjs laya ask --state "texto" --file perguntas.json
+  node bin/bbrainx.mjs laya decide --project nome --state "texto" --file perguntas.json
+  node bin/bbrainx.mjs serve --laya             (decisões locais explícitas no painel)
+  node bin/bbrainx.mjs mcp --project nome --laya (habilita decision_evaluate)
 
 Integração e painel por projeto:
   bbrainx discover                           (pastas abertas, projetos registrados e histórico)
@@ -77,8 +80,16 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       try{const reply=await broker.decide([values.state],JSON.parse(fs.readFileSync(values.file,'utf8')));print(reply.ok?{...reply.results[0],ms:reply.ms,runtime:broker.info}:reply);if(!reply.ok)process.exitCode=1;}
       finally{broker.stop();}
     }
+    else if(action==='decide'){
+      ensure(values.project&&values.state&&values.file,'PROJECT_STATE_AND_FILE_REQUIRED');
+      const {BrainStore}=await import('../src/store.mjs');store=new BrainStore();
+      const {LocalDecisions}=await import('../src/decisions.mjs'),decisions=new LocalDecisions({home:store.home});
+      const {makeEngine}=await import('../src/engine.mjs');
+      try{const result=await makeEngine(store,[values.project],{decisions}).invoke('decision.evaluate',{project:values.project,state:values.state,questions:JSON.parse(fs.readFileSync(values.file,'utf8'))},{principal:{id:'local-cli'}});print(result);if(!result.ok)process.exitCode=1;}
+      finally{decisions.close();}
+    }
     else if(action==='remove')print(laya.removeProfile());
-    else throw new Error('Use: laya status | install | ask | remove');
+    else throw new Error('Use: laya status | install | ask | decide | remove');
   }
   else {
     if(command==='mcp'&&values.lane){const {LaneStore}=await import('../src/lanes/store.mjs');store=new LaneStore(stateHome(),values.project,values.lane);}
@@ -117,17 +128,18 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       // A saída padrão é do protocolo; o rastro opcional vai para a saída de erro, sem argumentos nem resultados.
       if(values.workspace){const {assertWorkspaceBinding}=await import('../src/workspace.mjs');assertWorkspaceBinding(store,{project:values.project,workspace:values.workspace,lane:values.lane});}
       const onEvent=process.env.BBRAINX_TRACE==='1'?event=>console.error(JSON.stringify(event)):undefined;
-      let engine=makeEngine(store,[values.project],{onEvent});
+      const {LocalDecisions}=await import('../src/decisions.mjs'),decisions=values.laya?new LocalDecisions({home:store.authority?.home||store.home}):null;
+      let engine=makeEngine(store,[values.project],{onEvent,decisions});
       if(values.lane){const {bindLaneEngine}=await import('../src/lanes/store.mjs');engine=bindLaneEngine(engine,store);}
       const {observeEngine}=await import('../src/control.mjs');
       const observer=observeEngine(engine,store.authority||store,{project:values.project,harness:values.harness||'unknown',workspace:root,lane:values.lane||null});
       if(observer.recordingError)console.error(JSON.stringify({observation:'unavailable',code:observer.recordingError}));
       const {serverBrand}=await import('../src/brand.mjs');
       try{await serveMcpStdio(observer.engine,{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS+scope,isFailure:output=>output?.ok===false,serverMetadata:serverBrand(values.project),onConnect:()=>observer.connected()});}
-      finally{observer.close();}
+      finally{decisions?.close();observer.close();}
     }
     else if(command==='serve'){
-      const {startServer}=await import('../src/server.mjs'),server=await startServer(store,{port:Number(values.port||4317)});
+      const {startServer}=await import('../src/server.mjs'),server=await startServer(store,{port:Number(values.port||4317),laya:values.laya===true});
       console.error('BBrainX local: '+server.url+' | Ctrl+C para encerrar');
       await new Promise(resolve=>{let closing=false;const end=async()=>{if(closing)return;closing=true;await server.close();resolve();};process.once('SIGINT',end);process.once('SIGTERM',end);});
     }

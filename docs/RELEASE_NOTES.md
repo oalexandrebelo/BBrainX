@@ -1,3 +1,7 @@
+# Decisões locais Laya — 08/10/2026
+
+Capacidade opcional no painel, CLI e MCP, com cache exato isolado, limites do broker, cancelamento e abstenção por perda de entrada. Perfil Python recuperável com seleção explícita de runtime compatível. O núcleo de contexto continua determinístico: o benchmark com janela maior ainda não superou a baseline lexical. [Contratos](integrations/LAYA.md) e [evidência](engineering/LAYA_2026-10-08.md). Sem alteração de pesos, API paga ou comparação vencedora com JEV.
+
 # Candidato consolidado — ainda não lançado
 
 A PR #12 reúne Atlas, MEDIUM/replay, Observatory, contratos, lanes e os laboratórios isolados das PRs #6–#11. O estado integrado está em [research/INTEGRATION.md](research/INTEGRATION.md); as notas anteriores abaixo conservam o escopo e os resultados de suas rodadas, não descrevem sozinhas o estado atual.

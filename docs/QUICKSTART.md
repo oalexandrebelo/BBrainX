@@ -66,7 +66,7 @@ node scripts/package-extension.mjs
 node bin/bbrainx.mjs discover --root "/Users/seu-usuario/Projetos/meu-app"
 ```
 
-O empacotador exige Python 3 para ZIP e gera `artifacts/extensions/bbrainx-workspace-0.1.0.vsix`, preview local não assinado. Instale pelo comando **Extensions: Install from VSIX** no editor. Configure **BBrainX: Executable** em settings de usuário; padrão `~/.local/bin/bbrainx`, launcher instalado separadamente. Para apontar direto para `bin/bbrainx.mjs`, configure também o caminho absoluto de **Node Executable**. Windows exige executável real ou Node + script; wrappers `.cmd` não recebem shell implícito.
+O empacotador exige Python 3 para ZIP e gera `artifacts/extensions/bbrainx-workspace-0.1.1.vsix`, preview local não assinado. Instale pelo comando **Extensions: Install from VSIX** no editor. Configure **BBrainX: Executable** em settings de usuário; padrão `~/.local/bin/bbrainx`, launcher instalado separadamente. Para apontar direto para `bin/bbrainx.mjs`, configure também o caminho absoluto de **Node Executable**. Windows exige executável real ou Node + script; wrappers `.cmd` não recebem shell implícito.
 
 A extensão usa `workspaceFolders` para listar pastas locais abertas e confiáveis. **Detectar** planeja; **Conectar** aplica a integração. Heartbeats de metadados a cada 30 s expiram em 90 s e não registram/indexam projetos automaticamente. Pastas virtuais, não salvas ou sem trust não iniciam processos. **Iniciar painel local** é explícito; **Abrir painel** usa URL HTTP loopback configurada. Host remoto exige launcher remoto e encaminhamento de porta. VSIX/API e MCP no Antigravity IDE ainda precisam de prova nativa na versão instalada. [Contrato do plugin](../extensions/vscode/README.md).
 
@@ -169,7 +169,9 @@ node bin/bbrainx.mjs laya remove     # apaga só a pasta do perfil
 
 `perguntas.json` segue o contrato do Laya. Exemplo: `{"tipo":{"type":"choice","instructions":"Que tipo de tarefa é esta?","criteria":{"correcao":"corrigir um defeito","funcionalidade":"construir algo novo"}},"urgente":{"type":"noul","instructions":"O texto diz que é urgente?"}}`.
 
-A instalação precisa do `uv` ou de um Python de 3.10 a 3.13; não usa `sudo` nem mexe no Python do sistema. O processo do modelo não acessa a rede e não recebe caminho de arquivo, só texto. **O perfil não altera o pacote de contexto**: medido em 4 de outubro de 2026, sem ajuste fino ele acertou menos que o caminho lexical. Para repetir a medição na sua máquina: `node scripts/laya-bench.mjs --project <id> --cases test/fixtures/eval-natural.cases --memory test/fixtures/eval-memory.cases`.
+A instalação precisa do `uv` ou de um Python de 3.10 a 3.13; não usa `sudo` nem muda o Python do sistema. `BBRAINX_PYTHON=/caminho/absoluto/python3.12` seleciona explicitamente o interpretador. Execução usa pesos locais e flags offline das bibliotecas; isso não é sandbox de rede do SO.
+
+Para decisões protegidas contra truncamento, use `node bin/bbrainx.mjs laya decide --project <id> --state "texto" --file perguntas.json`, `serve --laya` no painel ou `mcp --project <id> --laya`. O MCP acrescenta `decision_evaluate` somente quando habilitado. [Guia completo, limites, cache e verificação real](integrations/LAYA.md). O perfil continua sem alterar o pacote de contexto. O benchmark aceita `--max-len` de 256 a 8192 (padrão 1024), `--batch-size` de 1 a 64 (padrão 4), `--timeout-ms` de 1000 a 600000 (padrão 120000) e `--out <arquivo.json>`.
 
 ## 9. Atualizar da 0.2 para a 0.3 ou a 0.4
 

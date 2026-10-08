@@ -1,5 +1,7 @@
 # Ponto de retomada da engenharia
 
+Evolução Laya em 08/10: implementação `ecbdc85`/`179b918`, decisões explícitas opt-in por projeto e broker limitado. [Evidência e próxima ação](LAYA_2026-10-08.md):427 testes locais nos dois Nodes,25 E2E, tokenizer e modelo MPS real. O benchmark congelado1024/2048 não justifica reranking do contexto. Verificar CI da ponta e recibo instalado; resultados antigos abaixo permanecem históricos.
+
 Estado entregue EV-12: implementação `e36e712`, correção visual `abbdd0d` e correções de portabilidade `4a9e453`/`a22954f` e runtime instalado `a21f42ccab511da82906d0a9034389c8478a8d3c`. Operação atual e pendências: [MAC_MINI.md](../integrations/MAC_MINI.md). A revisão de portabilidade passou 402/402 testes no Node 24 e no Node mínimo 22.20, além do build. A entrega anterior passou 18/18 testes de navegador e quinze controles negativos em cópia isolada; conferir a CI da ponta da [PR #15](https://github.com/oalexandrebelo/BBrainX/pull/15) para aprovação da árvore final em cada ambiente. O MCP global Antigravity foi retirado; OmniRoute aguarda URL/modelo. A publicação comercial permanece pendente dos critérios próprios.
 
 

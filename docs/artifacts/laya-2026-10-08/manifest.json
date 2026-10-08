@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "local-laya-evidence",
+  "observedDate": "2026-10-08",
+  "corpusCommit": "564d341f69cf5057f60bf092c2e0048d38d733b3",
+  "corpusSnapshot": "3acb01ce1e529162454de96a9e479810b00521f38ccd4d30eabcb5527d40390e",
+  "corpusIndexedFiles": 246,
+  "corpusExcludedFiles": {
+    "test/turbo.test.mjs": "existing secret-pattern filter"
+  },
+  "implementationCommit": "179b918",
+  "benchmarkExecution": "working tree before implementation commit; original git metadata preserved inside each report",
+  "benchmarkScriptSha256": "3daf29d0a91a083459957d7f8d897a5c23b9a25c209131f2aaab83b584ffeab8",
+  "files": [
+    {
+      "path": "bench-1024.json.gz",
+      "rawBytes": 369612,
+      "rawSha256": "f5154894f311481cfbbda13fa24b0b2eae6e578c6b11811076377f4decb7dba7",
+      "compressedSha256": "9a2e4008bed4749ce50ca3d824236de61e3379e549d9fd30825544ebe51e280a"
+    },
+    {
+      "path": "bench-2048.json.gz",
+      "rawBytes": 369411,
+      "rawSha256": "f988fef7746eceabd0a90552508cf99be31abb2a270193eb16eba878031c0d96",
+      "compressedSha256": "ca8e7b7bf07dfa3d0b5cd85198728bb659182ab2fc87f053b7d6ce39214a9e32"
+    },
+    {
+      "path": "real-integration.json.gz",
+      "rawBytes": 4974,
+      "rawSha256": "b940fd932eff9e926b4691bf266a3f8c488f5fc90a4207ca0faab6a9d8de79a7",
+      "compressedSha256": "8394b16093a6865d65aecc995be9976dcc45dd3900aae723c859fceaad2f6824"
+    }
+  ],
+  "verification": {
+    "node24.21": {
+      "pass": 427,
+      "fail": 0,
+      "skipped": 0,
+      "logSha256": "963a132d1cd0ae65fae4535f41431b87e1db9af02acfc12bcf7420bf3948f118"
+    },
+    "node22.20": {
+      "pass": 427,
+      "fail": 0,
+      "skipped": 0,
+      "logSha256": "8aaa500fcc49743867a5f1d801c3dbd617466834ea345c51de49e7460dd1d823"
+    },
+    "browser": {
+      "pass": 25,
+      "fail": 0,
+      "skipped": 0
+    },
+    "build": "passed",
+    "tokenizerChecks": 5,
+    "realSmokeChecks": 9,
+    "negativeControls": {
+      "stateOnlyTruncationRemoved": "caught",
+      "projectCacheScopeRemoved": "caught"
+    }
+  },
+  "limits": [
+    "Observed examples and seen regression datasets; not blind quality evaluation.",
+    "No JEV inference, financial savings or process RSS measurement.",
+    "Single run per maxLen; timings exploratory, host not isolated from other validation activity.",
+    "Local validation, not CI certification of later commits."
+  ]
+}

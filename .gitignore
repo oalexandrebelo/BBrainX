@@ -12,3 +12,7 @@ test-results/
 .DS_Store
 vendor/
 .ci-*/
+
+# Local Python validation of the optional model worker.
+__pycache__/
+*.pyc

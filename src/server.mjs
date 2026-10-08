@@ -8,6 +8,7 @@ import { makeEngine, VERSION } from './engine.mjs';
 import { doctor } from './host.mjs';
 import { usageOverview } from './usage/summary.mjs';
 import { controlOverview } from './control.mjs';
+import { LocalDecisions, disabledDecisions } from './decisions.mjs';
 
 const dist=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url)));
 const contentTypes={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.json':'application/json; charset=utf-8','.png':'image/png','.webm':'video/webm','.mp4':'video/mp4'};
@@ -16,9 +17,9 @@ function json(res,status,payload){res.writeHead(status,{'Content-Type':'applicat
 async function body(req){let bytes=0,parts=[];for await(const part of req){bytes+=part.length;ensure(bytes<=65536,'PAYLOAD_TOO_LARGE');parts.push(part);}return JSON.parse(Buffer.concat(parts).toString('utf8'));}
 
 /** Loopback, same-origin e CSRF. Fronteira de confiança: usuário local do SO, não multi-tenant. */
-export async function startServer(store,{port=4317}={}){
+export async function startServer(store,{port=4317,laya=false}={}){
   ensure(Number.isInteger(port)&&port>=0&&port<65536,'INVALID_PORT');
-  const csrf=randomBytes(32).toString('hex');let address;
+  const csrf=randomBytes(32).toString('hex'),decisions=laya?new LocalDecisions({home:store.home}):null;let address;
   const server=http.createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
     res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'none'");
@@ -28,7 +29,7 @@ export async function startServer(store,{port=4317}={}){
       ensure(!req.headers.origin||req.headers.origin==='http://'+expected,'ORIGIN_REJECTED');
       ensure(!['cross-site','same-site'].includes(req.headers['sec-fetch-site']),'ORIGIN_REJECTED');
       const url=new URL(req.url,'http://'+expected);
-      if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:VERSION,csrf,projects:store.projects(),doctor:doctor(),mode:'local'});
+      if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:VERSION,csrf,projects:store.projects(),doctor:doctor(),mode:'local',laya:decisions?.status()||disabledDecisions()});
       if(req.method==='GET'&&url.pathname==='/api/usage')return json(res,200,usageOverview(store,url.searchParams.get('project')));
       if(req.method==='GET'&&url.pathname==='/api/control')return json(res,200,controlOverview(store,url.searchParams.get('project')));
       if(req.method==='GET'&&url.pathname==='/api/project'){
@@ -38,8 +39,11 @@ export async function startServer(store,{port=4317}={}){
         ensure(equal(req.headers['x-bbrainx-csrf'],csrf),'CSRF_REJECTED');
         ensure(req.headers['content-type']?.startsWith('application/json'),'CONTENT_TYPE_REJECTED');
         const data=await body(req);ensure(typeof data.action==='string'&&data.args,'INVALID_REQUEST');
-        const engine=makeEngine(store,store.projects().map(x=>x.id));
-        const result=await engine.invoke(data.action,data.args,{principal:{id:'local-dashboard'},source:'direct'});return json(res,200,result);
+        const engine=makeEngine(store,store.projects().map(x=>x.id),{decisions});
+        const controller=new AbortController(),abort=()=>{if(!res.writableEnded)controller.abort();};
+        res.once('close',abort);
+        try{const result=await engine.invoke(data.action,data.args,{principal:{id:'local-dashboard'},source:'direct',signal:controller.signal});if(!res.destroyed)return json(res,200,result);return;}
+        finally{res.removeListener('close',abort);}
       }
       if(req.method!=='GET'&&req.method!=='HEAD')return json(res,405,{error:'METHOD_NOT_ALLOWED'});
       const relative=decodeURIComponent(url.pathname).replace(/^\/+/,''), target=path.resolve(dist,relative==='observatory/'?'observatory/index.html':relative||'index.html');
@@ -51,5 +55,5 @@ export async function startServer(store,{port=4317}={}){
   });
   server.requestTimeout=30000;server.headersTimeout=10000;server.maxRequestsPerSocket=100;
   await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(port,'127.0.0.1',()=>{address=server.address();resolve();});});
-  return {url:'http://127.0.0.1:'+address.port,close:()=>new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()))};
+  return {url:'http://127.0.0.1:'+address.port,close:()=>{decisions?.close();return new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));}};
 }
