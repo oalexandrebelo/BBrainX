@@ -15,3 +15,43 @@ code.activate{display:block;font:10.5px ui-monospace,SFMono-Regular,monospace;ba
 .tool-node strong{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere}
 .topbar nav button{white-space:nowrap}
 @media(max-width:780px){.topbar nav{overflow-x:auto;justify-content:flex-start;scrollbar-width:none}.topbar nav::-webkit-scrollbar{display:none}.topbar nav button{flex:0 0 auto;padding:10px 11px}.map-count{display:none}}
+.laya-panel{border:1px solid var(--line);border-radius:10px;background:var(--panel);padding:28px}
+.laya-panel .laya-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.laya-panel h2{font-size:26px;font-weight:500;letter-spacing:-.6px;margin:12px 0}
+.laya-panel h3{font-size:20px;font-weight:500;margin:16px 0}
+.laya-panel .laya-heading p,.laya-panel .laya-hint{font-size:12px;line-height:1.8;color:var(--muted);margin:10px 0;overflow-wrap:anywhere}
+.laya-panel .laya-tag{display:inline-block;border:1px solid var(--line);border-radius:4px;padding:7px 10px;color:var(--mint);font-size:11px;white-space:nowrap}
+.laya-panel .laya-notice{padding:14px 16px;border:1px solid var(--line);border-radius:5px;font-size:12px;line-height:1.8;margin:20px 0;color:var(--muted)}
+.laya-panel .laya-notice code{color:var(--mint);overflow-wrap:anywhere}
+.laya-panel .laya-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px}
+.laya-panel form,.laya-panel .laya-output{min-width:0}
+.laya-panel label{display:block;font-size:12px;color:#bdcbd0;line-height:1.8}
+.laya-panel label>span{float:right;color:var(--muted);font-size:11px}
+.laya-panel select,.laya-panel textarea,.laya-panel input{display:block;width:100%;padding:11px 12px;margin:7px 0 18px;border:1px solid var(--line);border-radius:5px;background:#0c151b;color:inherit;min-width:0}
+.laya-panel textarea{resize:vertical;line-height:1.7}
+.laya-panel .laya-root{display:block;margin:-7px 0 20px;font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.laya-panel fieldset{border:1px solid var(--line);border-radius:5px;padding:16px;margin:20px 0}
+.laya-panel legend{font-size:12px;padding:0 7px;line-height:1.8}
+.laya-panel legend small{color:var(--muted);font-size:10px;margin-left:8px}
+.laya-panel .laya-option{display:flex;align-items:center;gap:12px}
+.laya-panel .laya-option label{flex:1;min-width:0}
+.laya-panel .laya-option input{margin-bottom:10px}
+.laya-panel .laya-option .text-button{padding:8px 0;font-size:10px}
+.laya-panel .laya-actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px}
+.laya-panel .laya-output{border-left:1px solid var(--line);padding-left:28px}
+.laya-panel .laya-choice{font-size:24px;line-height:1.5;color:var(--mint);overflow-wrap:anywhere}
+.laya-panel .laya-confidence{font-size:12px;color:var(--muted);line-height:1.8;border-top:1px solid var(--line);padding-top:16px}
+.laya-panel .laya-confidence strong{color:#e5eceb;font-weight:500}
+.laya-panel .laya-error{border:1px solid #77564c;background:#352522;color:#ffd2b5;border-radius:5px;padding:16px;font-size:12px;line-height:1.8;overflow-wrap:anywhere}
+.laya-panel table{width:100%;border-collapse:collapse;font-size:12px;line-height:1.7;margin:24px 0;table-layout:fixed}
+.laya-panel caption{text-align:left;margin-bottom:12px;color:var(--muted)}
+.laya-panel th,.laya-panel td{text-align:left;border-bottom:1px solid var(--line);padding:10px 8px;overflow-wrap:anywhere;font-weight:400}
+.laya-panel th:last-child,.laya-panel td:last-child{width:32%;text-align:right}
+.laya-panel thead{color:var(--muted)}
+.laya-panel .laya-metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:24px 0;padding:20px 0;border-block:1px solid var(--line)}
+.laya-panel dt{color:var(--muted);font-size:11px;margin-bottom:7px}
+.laya-panel dd{margin:0;font-size:14px;overflow-wrap:anywhere}
+.laya-panel details{margin-top:24px;font-size:12px}
+.laya-panel summary{color:var(--mint);cursor:pointer;line-height:1.8}
+.laya-panel pre{font:11px/1.8 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;max-height:400px;overflow:auto;background:#0c151b;border:1px solid var(--line);border-radius:5px;padding:16px}
+@media(max-width:780px){.laya-panel{padding:20px 16px}.laya-panel .laya-layout{grid-template-columns:minmax(0,1fr);gap:24px}.laya-panel .laya-output{border-left:0;border-top:1px solid var(--line);padding:24px 0 0}.laya-panel .laya-heading{gap:12px}.laya-panel h2{font-size:22px}.laya-panel legend small{display:block;margin-left:0}.laya-panel .laya-choice{font-size:21px}}
