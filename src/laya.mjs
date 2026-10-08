@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { LayaTransport } from './laya-transport.mjs';
 import { pipeline } from 'node:stream/promises';
 import { Readable, Transform } from 'node:stream';
 import { fileURLToPath } from 'node:url';
@@ -26,7 +27,7 @@ export const LAYA=Object.freeze({
 });
 const assets=fileURLToPath(new URL('../profiles/laya/',import.meta.url));
 // Conferidos a cada carga, antes de qualquer peso ser lido. O tokenizer_config.json fica de fora: o Laya pode reescrevê-lo.
-const guarded=Object.fromEntries(LAYA.files.filter(file=>file.bytes>1048576).map(file=>[file.path,file.sha256]));
+const guarded=Object.fromEntries(LAYA.files.filter(file=>file.path!=='tokenizer/tokenizer_config.json').map(file=>[file.path,file.sha256]));
 
 export function layaPaths(home=stateHome()){
   const root=path.join(home,'profiles','laya'), venv=path.join(root,'venv');
@@ -46,10 +47,10 @@ export async function fetchWeights({home,log=()=>{},fetchImpl=fetch,files=LAYA.f
     log('baixando '+file.path+' ('+Math.round(file.bytes/1048576)+' MiB)');
     const response=await fetchImpl('https://huggingface.co/'+LAYA.repository+'/resolve/'+LAYA.revision+'/'+LAYA.checkpoint+'/'+file.path);
     ensure(response.ok&&response.body,'LAYA_DOWNLOAD_FAILED',file.path+': HTTP '+response.status);
-    const partial=target+'.partial', digest=createHash('sha256');let bytes=0;
+    const partial=target+'.partial.'+randomUUID(), digest=createHash('sha256');let bytes=0;
     const meter=new Transform({transform(chunk,_,done){bytes+=chunk.length;digest.update(chunk);done(bytes>file.bytes?new BrainError('LAYA_DIGEST_MISMATCH',file.path+' é maior que o esperado.'):null,chunk);}});
     try{
-      await pipeline(Readable.fromWeb(response.body),meter,fs.createWriteStream(partial));
+      await pipeline(Readable.fromWeb(response.body),meter,fs.createWriteStream(partial,{flags:'wx',mode:0o600}));
       ensure(bytes===file.bytes&&digest.digest('hex')===file.sha256,'LAYA_DIGEST_MISMATCH',file.path+' não confere com o SHA-256 fixado; nada foi instalado.');
       fs.renameSync(partial,target);
     }finally{fs.rmSync(partial,{force:true});}
@@ -96,52 +97,11 @@ export function layaStatus(home){
 /** Apaga só a pasta do perfil (ambiente e pesos). O banco e as memórias não ficam nela. */
 export function removeProfile(home){const {root}=layaPaths(home);fs.rmSync(root,{recursive:true,force:true});return {removed:root};}
 
-const FAILURES_TO_OPEN=3, OPEN_MS=300000;
-/**
- * Fala com o processo do Laya por linhas JSON. Nunca lança: qualquer problema vira {ok:false,reason} e quem
- * chamou segue pelo caminho determinístico. Três falhas seguidas abrem o disjuntor por cinco minutos.
- */
-export class LayaBroker{
-  #child=null;#starting=null;#pending=new Map();#sequence=0;#failures=0;#openUntil=0;#buffer='';
-  info=null;
-  constructor({home,startMs=90000,deadlineMs=4000,command}={}){this.paths=layaPaths(home);this.startMs=startMs;this.deadlineMs=deadlineMs;this.command=command;}
-  #fail(reason){if(++this.#failures>=FAILURES_TO_OPEN){this.#openUntil=Date.now()+OPEN_MS;this.#failures=0;}return {ok:false,reason};}
-  #onLine(line){
-    let message;try{message=JSON.parse(line);}catch{return;}
-    if(message.op==='ready'){this.#pending.get('ready')?.(message);return;}
-    this.#pending.get(message.id)?.(message);
+/** Transporte limitado por geração. Não habilita cache, altera pesos ou a seleção lexical. */
+export class LayaBroker extends LayaTransport {
+  constructor({home,command,...options}={}) {
+    const paths=layaPaths(home);
+    super({...options,command:command??[paths.python,path.join(assets,'worker.py'),paths.model,JSON.stringify(guarded)]});
+    this.paths=paths;
   }
-  #wait(key,milliseconds){
-    return new Promise(resolve=>{
-      const timer=setTimeout(()=>{this.#pending.delete(key);resolve(null);},milliseconds);
-      this.#pending.set(key,message=>{clearTimeout(timer);this.#pending.delete(key);resolve(message);});
-    });
-  }
-  start(){
-    if(this.info)return Promise.resolve(true);
-    return this.#starting??=(async()=>{
-      const [command,...args]=this.command??[this.paths.python,path.join(assets,'worker.py'),this.paths.model,JSON.stringify(guarded)];
-      try{this.#child=spawn(command,args,{stdio:['pipe','pipe','ignore'],shell:false,windowsHide:true});}catch{this.#starting=null;return false;}
-      const child=this.#child, gone=()=>{if(this.#child===child){this.#child=null;this.info=null;this.#starting=null;}for(const resolve of [...this.#pending.values()])resolve(null);};
-      child.once('error',gone);child.once('exit',gone);child.stdin.on('error',()=>{});
-      child.stdout.setEncoding('utf8').on('data',chunk=>{this.#buffer+=chunk;for(let at=this.#buffer.indexOf('\n');at!==-1;at=this.#buffer.indexOf('\n')){const line=this.#buffer.slice(0,at);this.#buffer=this.#buffer.slice(at+1);if(line.trim())this.#onLine(line);}});
-      const ready=await this.#wait('ready',this.startMs);
-      if(!ready?.ok){this.stop();this.#starting=null;return false;}
-      this.info={laya:ready.laya,torch:ready.torch,device:ready.device,loadMs:ready.loadMs};
-      return true;
-    })();
-  }
-  /** `states` são textos; `questions` segue o contrato do Laya ({tipo, instruções, critérios}). Devolve uma resposta por estado. */
-  async decide(states,questions,{deadlineMs=this.deadlineMs,maxLen}={}){
-    if(Date.now()<this.#openUntil)return {ok:false,reason:'DEGRADED'};
-    if(!await this.start())return this.#fail('UNAVAILABLE');
-    const id='d'+(++this.#sequence), reply=this.#wait(id,deadlineMs);
-    try{this.#child.stdin.write(JSON.stringify({id,op:'decide',states,questions,...(maxLen?{maxLen}:{})})+'\n');}catch{return this.#fail('UNAVAILABLE');}
-    const message=await reply;
-    if(message===null)return this.#fail(this.#child?'TIMEOUT':'UNAVAILABLE');
-    if(!message.ok)return this.#fail('ERROR');
-    this.#failures=0;
-    return {ok:true,results:message.results,ms:message.ms};
-  }
-  stop(){const child=this.#child;this.#child=null;this.info=null;this.#starting=null;if(child){child.stdin.end();child.kill();}}
 }

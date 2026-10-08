@@ -1,0 +1,47 @@
+name: Five Cumulative Batteries
+on:
+  push:
+    branches: [feat/four-rounds-engineering]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: five-batteries-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Reexecute baseline without promoting historical counts
+        run: |
+          mkdir -p artifacts/five-batteries
+          set -o pipefail
+          npm test 2>&1 | tee artifacts/five-batteries/runtime.log
+      - run: npm run build
+      - name: Offline authoring toolchain, no credentials or font files
+        run: |
+          mkdir -p artifacts/authoring
+          tar --exclude='*.woff' --exclude='*.woff2' --exclude='*.ttf' --exclude='*.otf' -czf artifacts/authoring/node_modules.tar.gz node_modules
+          tar -czf artifacts/authoring/node.tar.gz -C "$(dirname "$(command -v node)")" node
+          sha256sum artifacts/authoring/*.tar.gz > artifacts/authoring/SHA256SUMS
+          git archive --format=zip --output=artifacts/five-batteries/source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BBrainX-Authoring-Toolchain
+          path: artifacts/authoring/
+          retention-days: 1
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-Five-Batteries
+          path: artifacts/five-batteries/
+          retention-days: 14
