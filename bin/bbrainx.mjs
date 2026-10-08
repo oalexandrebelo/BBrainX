@@ -86,7 +86,9 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
     if(command==='init'){ensure(values.root&&values.project,'ROOT_AND_PROJECT_REQUIRED');print(store.register(values.project,values.root));}
     else if(command==='up'){
       // Um passo só: registra (ou reencontra) a pasta, indexa e mostra como ligar cada harness.
-      const root=fs.realpathSync(path.resolve(values.root||process.cwd())), known=store.projects().find(item=>item.root===root);
+      const root=fs.realpathSync.native(path.resolve(values.root||process.cwd())), known=store.projects().find(item=>{
+        try{return fs.realpathSync.native(item.root)===root;}catch{return false;}
+      });
       const project=known?.id||values.project||path.basename(root).replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^[^A-Za-z0-9]+/,'').slice(0,80).replace(/[^A-Za-z0-9]+$/,'')||'projeto';
       store.register(project,root);
       const {indexProject}=await import('../src/retrieval.mjs'), indexed=indexProject(store,project), entry=fileURLToPath(import.meta.url);

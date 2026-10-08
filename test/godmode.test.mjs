@@ -165,5 +165,9 @@ test('`up` registers, indexes and names the next steps; running it again reuses 
   assert.deepEqual(Object.keys(first.next.connect),[...CLIENTS]);assert.match(first.next.connect.codex,/config --project My-Project-v2 --client codex$/);
   const again=run('up','--root',root,'--project','another-name');
   assert.equal(again.project,'My-Project-v2','the folder keeps the name it already has');assert.equal(again.changed,0);
+  const legacy=new BrainStore(path.join(dir,'state'));
+  try{legacy.db.prepare('UPDATE projects SET root=? WHERE id=?').run(fs.realpathSync(root),first.project);}finally{legacy.close();}
+  const reopened=run('up','--root',fs.realpathSync.native(root),'--project','third-name');
+  assert.equal(reopened.project,first.project,'legacy stored path spelling preserves project identity');assert.equal(reopened.changed,0);
   assert.equal(run('search','--project','My-Project-v2','--query','greet').items[0].path,'main.py');
 });

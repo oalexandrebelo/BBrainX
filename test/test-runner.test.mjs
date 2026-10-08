@@ -145,10 +145,10 @@ test('coalesces slow progress persistence and writes the latest final snapshot',
   assert.ok(Date.now() - started < 5000, `slow writes serialized too many stale snapshots (${Date.now() - started}ms)`);
 });
 
-test('refuses a registered root replaced by a symlink before running project code', {skip:process.platform === 'win32'}, async t => {
+test('refuses a registered root replaced by a symlink before running project code', async t => {
   const {brain, root} = fixture(t), original = root + '-original', outside = root + '-outside';
   fs.mkdirSync(outside);fs.writeFileSync(path.join(outside, 'outside.test.mjs'), "import fs from 'node:fs'; fs.writeFileSync('outside-ran.marker','yes');");
-  fs.renameSync(root, original);fs.symlinkSync(outside, root, 'dir');
+  fs.renameSync(root, original);fs.symlinkSync(outside, root, process.platform === 'win32' ? 'junction' : 'dir');
   await assert.rejects(runProjectTests(brain, {project:'sample', files:['outside.test.mjs']}), {code:'PROJECT_ROOT_CHANGED'});
   assert.equal(fs.existsSync(path.join(outside, 'outside-ran.marker')), false);
 });
