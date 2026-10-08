@@ -83,7 +83,9 @@ node bin/bbrainx.mjs laya ask --state "O login quebrou em produção." --file pe
 node bin/bbrainx.mjs laya remove
 ```
 
-Medido num MacBook M5 Pro pela GPU: carga em 4 a 18 s, cerca de 8 ms por decisão curta, 1,8 GB de RAM. **Sem ajuste fino ele acerta menos que o caminho lexical** nas duas decisões testadas (reordenar a busca e escolher memórias relevantes), então ele **não altera o pacote de contexto**. Fica disponível para perguntar e para você repetir a medição com `node scripts/laya-bench.mjs`. Nenhuma linha do BBrainX chama o JEV ou outro serviço hospedado.
+O perfil também oferece decisões locais no painel (`serve --laya`), no CLI (`laya decide --project ...`) e no MCP (`mcp --project ... --laya`, ferramenta `decision_evaluate`). Inclui cache exato por projeto/processo, cancelamento, limites de recursos e abstenção quando texto, pergunta ou opções são truncados. A confiança retornada não é calibrada. [Ativação, contrato e evidência](docs/integrations/LAYA.md).
+
+Os ensaios históricos de busca e relevância de memória não demonstraram benefício sobre a baseline lexical. O modelo **não altera o pacote de contexto**. A nova integração comprova execução local e isolamento; não comprova superioridade sobre JEV, economia de API ou qualidade universal.
 
 ## Mapa do estudo
 
