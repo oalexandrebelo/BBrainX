@@ -1,9 +1,9 @@
 {
-  "observedAt": "2026-10-08T04:15:28.834Z",
-  "runtimeRevision": "abbdd0d88fb5e53499c787b2f50f1cfb23648b40",
+  "observedAt": "2026-10-08T04:33:01.124Z",
+  "runtimeRevision": "4a9e45372088309cae395e3756aa490eabaf1caa",
   "node": "v24.21.0",
   "lockSha256": "aa6cdd6625a87b634ac9c60ddb962d22d24d1c9322ad686af40fad977bc44a99",
-  "sourceTarSha256": "9271d2b5a218954d8de7a19384608e785539cac0212c7e1e4bde37357a7ef160",
+  "sourceTarSha256": "862766dfd98b24fb01eb7210c9e2220a3af4ed1e8d1652a4598e2bf482223ae9",
   "projects": [
     {
       "id": "omniway-its",
@@ -59,7 +59,7 @@
     }
   ],
   "projectIsolation": {
-    "observedAt": "2026-10-08T04:15:29.507Z",
+    "observedAt": "2026-10-08T04:33:01.809Z",
     "checks": [
       {
         "project": "bbrainx",
@@ -158,15 +158,15 @@
     "modelRequests": 0
   },
   "installedTests": {
-    "id": "28b9b0e2-cde4-49f7-9604-283bba541d96",
+    "id": "09762bc3-f324-4a7c-b4c6-4c8e1ecace45",
     "status": "passed",
     "passed": 14,
     "failed": 0,
     "total": 14,
-    "revision": "abbdd0d88fb5e53499c787b2f50f1cfb23648b40"
+    "revision": "4a9e45372088309cae395e3756aa490eabaf1caa"
   },
   "nativeCodex": {
-    "observedAt": "2026-10-08T04:11:44.260Z",
+    "observedAt": "2026-10-08T04:33:02.798Z",
     "cwd": "<HOME>/Documents/Projetos/BBrainX/release-audit",
     "scope": "Actual native Codex app-server configuration and isolated BBrainX MCP discovery; no threads, prompts, tool calls or inference",
     "projectConfigSha256": "bfe285cd8db1ec1b565aac82f63e35b296eeda8ed17d73062ec95c9b98d549d6",
@@ -225,7 +225,7 @@
             "serverInfo": {
               "name": "bbrainx",
               "version": "0.4.0",
-              "title": "BBrainX \u00b7 bbrainx",
+              "title": "BBrainX · bbrainx",
               "icons": [
                 {
                   "mimeType": "image/svg+xml",
@@ -300,7 +300,7 @@
             "serverInfo": {
               "name": "bbrainx",
               "version": "0.4.0",
-              "title": "BBrainX \u00b7 bbrainx",
+              "title": "BBrainX · bbrainx",
               "icons": [
                 {
                   "mimeType": "image/svg+xml",
@@ -330,7 +330,7 @@
     ],
     "projectConfigAfterSha256": "bfe285cd8db1ec1b565aac82f63e35b296eeda8ed17d73062ec95c9b98d549d6",
     "projectConfigUnchanged": true,
-    "installedRuntime": "<HOME>/Library/Application Support/BBrainX/app/releases/e36e712aebe72e34c94919de9c9bf0778cf78a37"
+    "installedRuntime": "<HOME>/Library/Application Support/BBrainX/app/releases/4a9e45372088309cae395e3756aa490eabaf1caa"
   },
   "editorExtension": {
     "version": "0.1.0",
@@ -349,5 +349,23 @@
   },
   "omniroute": "Pending operator Base URL and model/combo; no provider configuration or inference requests",
   "trust": "Only prior release-audit trust retained; no new trust granted to other projects",
-  "panel": "Loopback 127.0.0.1:4317; started explicitly, no boot daemon configured"
+  "panel": "Loopback 127.0.0.1:4317; started explicitly, no boot daemon configured",
+  "runtimeUpgrade": "Previous BBrainX processes terminated; panel restarted and release-audit VS Code window reloaded. Native clients reconnect through existing project configuration.",
+  "nativeReconnected": [
+    {
+      "harness": "kilo",
+      "status": "connected",
+      "startedAt": "2026-10-08T04:34:00.968Z"
+    },
+    {
+      "harness": "claude",
+      "status": "connected",
+      "startedAt": "2026-10-08T04:33:59.925Z"
+    },
+    {
+      "harness": "claude",
+      "status": "connected",
+      "startedAt": "2026-10-08T04:33:59.912Z"
+    }
+  ]
 }

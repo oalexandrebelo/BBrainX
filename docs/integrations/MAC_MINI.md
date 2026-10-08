@@ -1,6 +1,6 @@
 # Operação atual no Mac mini — 08/10/2026
 
-Runtime instalado: `abbdd0d88fb5e53499c787b2f50f1cfb23648b40`, Node 24.21.0.
+Runtime instalado: `4a9e45372088309cae395e3756aa490eabaf1caa`, Node 24.21.0.
 Esta revisão substitui a aplicação inicial descrita em `docs/MAC_MINI_HARNESSES.md`.
 O estado existente foi preservado. Releases anteriores continuam disponíveis para rollback.
 Evidência sanitizada: [mac-mini-2026-10-08.json](mac-mini-2026-10-08.json).
@@ -14,7 +14,7 @@ O launcher `~/.local/bin/bbrainx` usa Node absoluto e exporta `BBRAINX_HOME`,
 
 | Superfície | Resultado | Limite |
 | --- | --- | --- |
-| Codex CLI/app-server e backend VS Code | Configuração de projeto, seis ferramentas, título e ícone BBrainX | Prova nativa anterior à correção somente visual; nenhuma thread ou inferência iniciada; runtimeStatus nulo |
+| Codex CLI/app-server e backend VS Code | Configuração de projeto, seis ferramentas, título e ícone BBrainX, verificados novamente no runtime atual | Nenhuma thread ou inferência iniciada; runtimeStatus nulo |
 | Claude e Kilo | Configuração por projeto e conexões reais no registro de atividade | Uso da ferramenta por modelo não foi exercitado |
 | Extensão BBrainX no VS Code | Ícone próprio, barra de status, raiz detectada e comando de detecção observados | Configuração detectada não equivale a conexão MCP |
 | Extensão BBrainX no Antigravity | VSIX instalado e recibo real de workspace emitido | Activity Bar não foi verificada separadamente |
@@ -33,9 +33,15 @@ Os testes reais de isolamento fizeram quatro leituras no próprio projeto e doze
 tentativas entre projetos, todas recusadas com `FORBIDDEN`. Dois clientes MCP
 leram o mesmo checkpoint BBrainX; um processo iniciado no cwd errado foi recusado.
 O runner instalado gravou uma execução com 14 testes aprovados, zero falhas e a
-revisão `abbdd0d`. O painel foi inspecionado com os quatro projetos disponíveis,
+revisão `4a9e453`. O painel foi inspecionado com os quatro projetos disponíveis,
 sem mistura de dados ao selecionar um deles. Custos sem recibos aparecem como
 desconhecidos; orçamento é acompanhamento, sem controle sobre chamadas externas.
+
+O upgrade de portabilidade encerrou os processos BBrainX anteriores, reiniciou o
+painel e recarregou a janela `release-audit` no VS Code. Clientes nativos reconectam
+pelas configurações existentes; uma configuração presente não prova atividade.
+As provas de cinco controles MCP, dezesseis acessos próprios/cruzados e os dois
+backends Codex foram repetidas no runtime atual, sem chamadas de modelo.
 
 O painel local está em `http://127.0.0.1:4317`, iniciado explicitamente com
 `bbrainx serve`. Não foi instalado daemon de inicialização. Se o processo encerrar,

@@ -1,6 +1,6 @@
 # Ponto de retomada da engenharia
 
-Estado entregue EV-12: implementação `e36e712`, correção final e runtime instalado `abbdd0d88fb5e53499c787b2f50f1cfb23648b40`. Operação atual e pendências: [MAC_MINI.md](../integrations/MAC_MINI.md). Node 24 e Node mínimo 22.20: 397/397 testes; navegador: 18/18, com os três casos do painel repetidos após a correção visual. Quinze controles negativos detectados em cópia isolada. O MCP global Antigravity foi retirado; OmniRoute aguarda URL/modelo. A publicação comercial permanece pendente dos critérios próprios.
+Estado entregue EV-12: implementação `e36e712`, correção visual `abbdd0d` e correção de portabilidade/runtime instalado `4a9e45372088309cae395e3756aa490eabaf1caa`. Operação atual e pendências: [MAC_MINI.md](../integrations/MAC_MINI.md). A revisão de portabilidade passou 402/402 testes no Node 24 e no Node mínimo 22.20, além do build. A entrega anterior passou 18/18 testes de navegador e quinze controles negativos em cópia isolada; conferir a CI da ponta da [PR #15](https://github.com/oalexandrebelo/BBrainX/pull/15) para aprovação da árvore final em cada ambiente. O MCP global Antigravity foi retirado; OmniRoute aguarda URL/modelo. A publicação comercial permanece pendente dos critérios próprios.
 
 
 Este é o contexto operacional para quem assume o BBrainX. Leia com `AGENTS.md`, execute `npm run project:status` e confira a revisão remota antes de trabalhar. O [handoff de outubro](../HANDOFF.md) conserva o histórico; não define sozinho a prioridade atual.
@@ -74,8 +74,14 @@ Decisão de continuidade: [ADR-0001](../decisions/0001-evidence-and-continuity.m
 
 Operação entre clientes no Mac mini: [guia de harnesses](../MAC_MINI_HARNESSES.md). Os geradores incluem Antigravity IDE e Kilo Code atual. Configuração, handshake, conexão nativa e tarefa com LLM têm critérios separados; uma instalação local não promove os itens EV-05/06/07 nem certifica todos os clientes.
 
-## Verificação EV-12 — 08/10/2026
+## Verificação EV-12 inicial — 08/10/2026
 
 A árvore da entrega passou 397/397 testes no Node 24.21.0, build e 18/18 testes de navegador (9 Workbench/Atlas, 6 Observatory, 3 painel). A suíte completa também passou 397/397 no Node mínimo 22.20.0, sem silenciar warnings; os controles independentes e a instalação são descritos separadamente. Manifesto de arquivos e limites: [verification-2026-10-08.json](../integrations/verification-2026-10-08.json).
 
 Próximo colaborador: verificar a revisão instalada e o último recibo operacional antes de alterar configs; fechar a prova nativa de escopo do Antigravity por workspace, mantendo falha fechada; ampliar importadores somente com fixtures de formatos oficiais e provas de isolamento. Depois retomar EV-05/06/07 com corpus congelado. Nunca confundir cache de contexto BBrainX com cache KV ou cobrança do provedor.
+
+## Correção de portabilidade — 4a9e453
+
+A primeira CI da PR #15 passou nos demais jobs e falhou em oito casos Windows. A causa relevante era a comparação de caminhos 8.3 com caminhos longos: isso podia ocultar uma lane no painel, recusar uma configuração válida e perder a recusa de escopo de um projeto filho legado. Registro e comparações agora usam identidade nativa do SO; linhas legadas permanecem intactas e `verifyRoot` continua recusando redirecionamentos. Cursor reconhece os encodings de drive/separadores observados no Codex, sem conceder ownership pelo nome da pasta. Fixtures de executáveis respeitam PATHEXT e bancos de lanes fecham antes da limpeza.
+
+[Evidência da correção](../integrations/portability-2026-10-08.json): 402 testes em cada Node suportado, zero falhas/skips, build e provas reais repetidas no Mac mini. O registro verifica O(P) raízes de projetos com I/O de canonicalização fora do caminho de busca; não foi alegado ganho de velocidade. Próximo gate: conferir a execução remota da ponta da PR #15, incluindo Windows; a execução inicial falha não constitui aprovação. Preservar os testes de aliases, sobreposição e recibos redirecionados ao ampliar o catálogo.

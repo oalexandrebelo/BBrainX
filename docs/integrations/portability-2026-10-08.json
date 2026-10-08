@@ -1,0 +1,55 @@
+{
+  "observedAt": "2026-10-08T04:33:01.124Z",
+  "revision": "4a9e45372088309cae395e3756aa490eabaf1caa",
+  "baselineFailedCi": "https://github.com/oalexandrebelo/BBrainX/actions/runs/37727059465",
+  "localEnvironment": {
+    "platform": "darwin",
+    "architecture": "arm64"
+  },
+  "tests": [
+    {
+      "node": "24.21.0",
+      "passed": 402,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "node": "22.20.0",
+      "passed": 402,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "build": "passed; existing React Flow use-client bundler warning",
+  "installedSharedContext": 5,
+  "installedProjectIsolation": 16,
+  "installedRunnerTests": 14,
+  "nativeCodexBackends": 2,
+  "modelRequests": 0,
+  "sourceSha256": {
+    "src/context-import.mjs": "09cbfa2d195f8f62a26e6959ad8769d6d015a38c738ed6734df4a3167b641f1c",
+    "src/control-cli.mjs": "f5afe813a4c562b7a800ea70512d50295954f0dc315cb381813a83b575f40de1",
+    "src/control.mjs": "639e36d3827e89636ab73b8afc1039f6eccb4441aa1e5b53e04cbacb09abe65f",
+    "src/integrations.mjs": "53abc7573425ebcc5857e87466f91084980218526b87226377099ab5dedf48d3",
+    "src/store.mjs": "e640e7d93c34e465ddbbbf734ff8c2af51b312f11da0348eda016656a3766900",
+    "src/workspace.mjs": "72b9ae1c8cfa849b96a97475ec622cb16f0cdf301af6f0d5e65ffcb977a9be80",
+    "test/context-import.test.mjs": "84cdf300981615e1019d30bea7d7712cf475fd9df001c9f08558b6be799b35b1",
+    "test/control.test.mjs": "233db206529f7f35e70e4419b5a06a963a2d8ff0aab21711b373282e3465ee4e",
+    "test/fixtures/lane-setup.mjs": "d71d0bc21abba9bd5b5a03207bdfc086a8847be517762e1a6b98e30fb338bf5b",
+    "test/integration-node-path.test.mjs": "3c33445a7d1c54ce7f93854c27a81231614dcb9328444ea3d0f662ba13fdee8e",
+    "test/integrations.test.mjs": "c0d51a5d43a684db6edd554dc080889d557763d48f8e731b607aaeb91bca818c",
+    "test/retrieval-safety.test.mjs": "ab812f96a53cd3d06bfd825eaeca3766e8cc9fefcbfbc0a2248ebc5b7c2a4672",
+    "test/store-open.test.mjs": "ba06f6c71b7480ae7b51c0403ae37ceee47d991122dd08153406de550709a071",
+    "test/workspace.test.mjs": "8630f53d6bfff6adfcfe6a95dd445061ceb694eb718a114f71f1df8bad0aac29"
+  },
+  "logSha256": {
+    "bbrainx-portability-node24.log": "80f09d98ff668673057d53e2dfdf12911aee08bbb7d7477793b3664e03658325",
+    "bbrainx-portability-node22.log": "c1622a5914961a4982bf80852d6abb31a77e8d99b03dbf937b7612456e87e1ad",
+    "bbrainx-portability-build.log": "4df6437d5426be0f28a092fdfb6d649592dacb6c64f7953ee4839518bbfdda4f"
+  },
+  "limits": [
+    "Local execution was macOS; Windows requires the new CI run linked from PR15.",
+    "Tests and build do not establish measured speed, provider savings or commercial readiness.",
+    "Previous 18 browser cases and broader collectors belong to their recorded revisions; current CI reexecutes these gates."
+  ]
+}
