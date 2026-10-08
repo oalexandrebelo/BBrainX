@@ -27,10 +27,23 @@ node bin/bbrainx.mjs up --root /caminho/do/seu/projeto
 Para ligar ao seu harness:
 
 ```sh
-node bin/bbrainx.mjs config --project meu-projeto --client claude   # ou codex, cursor, vscode, gemini
+node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto
+node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto --apply
 ```
 
-O comando **imprime** a configuração. Quem cola no arquivo ou roda o `claude mcp add` é você: nenhum comando do BBrainX altera `config.toml`, `.mcp.json`, credenciais ou aprovações. `npm start` abre o painel em **http://127.0.0.1:4317**; no Mac, `Start-BBrainX.command` faz o mesmo com dois cliques.
+Sem `--apply`, `integrate` mostra destinos, hashes e pendências. Com `--apply`, registra a raiz, aplica a entrada MCP do projeto com backups privados e indexa os arquivos; preserva credenciais, provedores, trust e aprovações. Descobre Codex, Claude Code, VS Code, Kilo e Antigravity IDE por metadados locais, sem executar clientes. Codex/Claude/VS Code/Kilo têm configuração automática; Antigravity IDE exige etapa manual e não recebe cadastro global de todos os projetos. `--clients codex,claude,vscode,kilo` permite selecionar os destinos, inclusive preparar cliente ainda não instalado. Instalações antigas só podem ser migradas com `--adopt-existing` quando coincidem exatamente com o gerador anterior. Rollback: `node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO`; uma edição posterior impede sobrescrita. [Contrato do instalador](docs/integrations/INSTALLER.md).
+
+`config --project meu-projeto --client cursor` continua imprimindo fragmentos para integração manual (também aceita claude, codex, vscode e gemini). Configuração presente não prova conexão nativa. `npm start` serve o painel em **http://127.0.0.1:4317**; no Mac, `Start-BBrainX.command` faz o mesmo com dois cliques.
+
+O [plugin próprio BBrainX](extensions/vscode/README.md) oferece marca, árvore de pastas abertas e comandos Detectar/Conectar no VS Code e um VSIX para avaliação no Antigravity IDE. Use `node scripts/package-extension.mjs` (Python 3 apenas para empacotar), instale o VSIX pelo editor e configure o executável em settings de usuário. Pastas confiáveis geram heartbeats de metadados a cada 30 s; expiram em 90 s e não registram nem indexam projetos sozinhas. `node bin/bbrainx.mjs discover --root /caminho/do/projeto` distingue pastas abertas reportadas, projetos registrados e históricos com raiz validada; não captura qualquer sessão ativa de qualquer IDE.
+
+```sh
+node bin/bbrainx.mjs test --project meu-projeto --file test/auth.test.mjs --timeout 300000
+node bin/bbrainx.mjs control --project meu-projeto
+node bin/bbrainx.mjs import-context --project meu-projeto --harness claude --file /caminho/absoluto/sessao.jsonl
+```
+
+`test` executa arquivos concretos de `node:test` dentro da raiz registrada, com progresso e diagnóstico limitados; roda com permissões locais e não é sandbox. `import-context` exige escolha explícita de arquivo nativo de Claude, Codex ou Cursor e gera checkpoint `review_needed` com trechos não confiáveis; não concede acesso nem aprova memória. Fontes privadas ficam no estado local. Outros formatos históricos são recusados. Cursor sem cwd exige `--confirm-workspace /raiz/canonica`, continua marcado como não verificado pela fonte e recusa nomes ambíguos. [Passos e limites](docs/QUICKSTART.md#4-conectar-harnesses).
 
 Se preferir que o próprio agente faça a ligação, cole na sessão dele o prompt de [docs/prompts/ACTIVATE.md](docs/prompts/ACTIVATE.md). Quem assume o projeto começa por [docs/HANDOFF.md](docs/HANDOFF.md).
 

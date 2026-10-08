@@ -12,6 +12,8 @@ Baseline funcional deste guia: `7329ece31adb5b23aa50ba42bde9cf7553b764bd`, [PR #
 
 O replay otimizado já remove Git e writer transaction redundantes no banco principal. As amostras completas e hashes estão versionados em `docs/artifacts/engineering-2026-10-07/`. Gravações novas pagam um SELECT extra; lanes ainda travam o registry. Não redescobrir esse ganho nem apresentá-lo como aceleração de todos os checkpoints. O manifesto de fontes é v2 e a versão do produto continua 0.4.0 developer preview.
 
+A EV-12 de 08/10/2026 parte de `3bb09b0ea68763cc5dd708446ed9d8a4fab5b3bb` e acrescenta integração/controle por projeto; conferir o estado corrente em [CONTINUITY.md](CONTINUITY.md). São mudanças funcionais e evidência focada local, não um ganho de performance ou aprovação pelos números históricos acima. [SCOPE.md](../integrations/SCOPE.md) delimita a fatia; gates completos e verificação de clientes reais pertencem à revisão consolidada.
+
 Antes de editar, no checkout escolhido:
 
 ```sh
@@ -42,6 +44,7 @@ Ponto inicial já executável: `node scripts/benchmark.mjs`; escreve `artifacts/
 | EV-07 — recuperação do conjunto | `src/store.mjs` (`backup`), `src/usage/store.mjs`, `src/lanes/registry.mjs`, `src/lanes/store.mjs`, `test/retention.test.mjs` | Inventariar bancos e relações, ensaiar backup/restore em diretório isolado, checar permissões, versões, integridade e falha parcial; medir RPO/RTO sob carga definida. O backup atual do núcleo não inclui automaticamente usage, registry e lanes; snapshots individuais não formam uma transação entre bancos. |
 | EV-11 — saída MCP sob consumidor lento | `src/mcp.mjs` (`serveMcpStdio`), `test/mcp-wire.test.mjs`, `test/mcp-ownership.test.mjs` | Reproduzir com streams reais, high-water mark pequeno e consumidor lento/parado. A observação anterior acumulou 743.360 bytes com limite de 65.536. Medir bytes enfileirados e chamadas pendentes; limitar ambos, preservando framing, correlação por ID, cancelamento, EOF e EPIPE. Pausar apenas novas entradas não limita respostas das chamadas já iniciadas. Não impor serialização global que bloqueie cancelamento. |
 | EV-08/09 — consistência e integrações opcionais | `src/lanes/`, `src/context.mjs`, `src/laya.mjs`, `docs/research/INTEGRATION.md` | Definir o ponto de linearização e as invalidações antes de cache/worker/modelo. Laya exige filas/frames limitados, deadline total e isolamento de respostas tardias; benefício de tarefa e inferência real precedem ativação no núcleo. |
+| EV-12 — integração e controle por projeto | `src/workspace.mjs`, `src/integrations.mjs`, `src/control.mjs`, `src/context-import.mjs`, `src/test-runner.mjs` | Validar isolamento e comportamento dos limites com fixtures, CLI/MCP e painel reais. Medir overhead de heartbeat/descoberta/retorno do painel antes de otimizar; não chamar presença de configuração de conexão, histórico de pasta aberta ou orçamento advisory de controle de gastos. |
 
 EV-06 e EV-11 podem avançar em paralelo a EV-05 com ownership de arquivos separado. EV-07 antecede promessas de recuperação. Prioridade e mudanças de estado continuam na fila; essa tabela não declara nenhuma dessas correções implementada.
 
@@ -51,7 +54,9 @@ EV-06 e EV-11 podem avançar em paralelo a EV-05 com ownership de arquivos separ
 - Checkpoint mantém fingerprint, CAS, resposta histórica e efeito único. Preservar a checagem transacional depois de um miss; não colocar processo Git lento dentro da trava de escrita para facilitar o fast path.
 - Índice, contexto e memória aprovada mantêm os contratos de snapshot, revogação, leitura segura e obrigação integral ou recusa. Não servir contexto inválido como fallback de desempenho.
 - Cancelamento, limites e backpressure precisam de contratos explícitos sob saturação; apenas configurar um timeout não interrompe trabalho síncrono.
-- Não copiar SQLite ativo com `cp`, expor dados privados no corpus ou executar código dos projetos indexados. Modelos e integrações continuam opt-in.
+- Não copiar SQLite ativo com `cp`, expor dados privados no corpus ou executar código durante indexação/recuperação. Runner de testes exige ação explícita do host e não é sandbox; modelos e integrações continuam opt-in.
+- Plano de integração não cria estado da lane; aplicação e rollback conservam fingerprints/recibos. Descoberta histórica não concede root, importação não aprova memória e relatórios do painel não misturam projetos.
+- Preservar as distinções de custo unknown/reported/estimated e as coberturas locais. Testes arquivados são recuperáveis, não quota global de disco; controle de orçamento advisory não governa chamadas externas.
 - Não remover testes, documentos, arquivos do índice, casos difíceis ou recusas legítimas para aumentar um score. Qualquer mudança de política de indexação exige justificativa própria e avaliação independente.
 
 ## Quando aceitar ou rejeitar uma otimização

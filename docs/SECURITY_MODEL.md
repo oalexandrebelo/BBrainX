@@ -8,7 +8,7 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 
 - Servidor HTTP preso em `127.0.0.1`, Host exato, validação de Origin/Sec-Fetch-Site, CSP e token CSRF para mutações. Nenhum CORS global permissivo.
 - MCP stdio com projeto fixado no host. A entrada da ferramenta não altera a allowlist, não registra raízes e não aprova memórias.
-- Nenhuma ferramenta de shell, browser, desktop, implantação ou execução de código externo.
+- Nenhuma ferramenta MCP de shell, browser, desktop, implantação ou execução de código externo. O runner de testes é uma ação explícita do host, descrita separadamente abaixo.
 - Indexação textual limitada; rejeição de traversal, symlinks e alguns padrões de segredo. Arquivos executáveis são lidos como texto, nunca executados.
 - Fontes selecionadas verificadas por hash antes de compilar contexto. Trecho de arquivo alterado nunca é servido: o arquivo é relido e reindexado antes (ou, no modo estrito, o pacote é recusado). Arquivo que passou a casar com um padrão de segredo sai do índice.
 - Tetos de indexação e política de arquivo alterado vêm de quem inicia o processo (variáveis de ambiente ou chamada local). Argumento de ferramenta não os muda.
@@ -33,6 +33,20 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 - O resultado do modelo não altera o pacote de contexto nesta versão. Confiança do modelo não é autorização para nada.
 - Instalar pacotes Python executa código de terceiros no seu usuário, dentro de um ambiente isolado. É uma decisão sua, e é por isso que o núcleo não depende dela.
 
+## Integrações por projeto — EV-12
+
+- Registrar projetos recusa raízes canônicas iguais com IDs diferentes e relações parent/child; a checagem e o registro ocorrem na mesma transação. Diretórios irmãos permanecem válidos. Lanes exigem worktrees do mesmo Git comum e preservam epoch de binding; compartilham memória aprovada daquele projeto, mantendo índice e checkpoints próprios.
+- Configurações novas levam `--project`, `--workspace`, `--harness` e lane quando aplicável. O lançamento verifica cwd dentro da raiz canonicalizada e recusa projeto aninhado distinto. Cwd comprova somente o arranque: não autentica a origem de cada sessão de um servidor global. Configurações antigas sem workspace continuam compatíveis, sem essa garantia adicional.
+- Plano de integração não registra nem indexa projetos, escreve configurações ou cria bancos de lanes. `--lane` consulta o registry existente em modo readOnly e valida identidade/estado/Git; o banco da lane só abre na aplicação explícita. Aplicação altera somente a entrada MCP suportada, conserva trust, aprovações, provedores e credenciais e guarda backup privado com fingerprints para rollback. Um backup exato pode conter segredos da configuração anterior. Antigravity IDE fica manual-required; nenhum fallback global com grants de todos os projetos é criado.
+- Descoberta de instalação lê nomes/metadados de binários, bundles e extensões sem executá-los. Presença de cliente ou configuração não prova conexão. Recibos de Workspace API do editor têm lease de 90 segundos e não concedem acesso. O overview de um projeto inclui somente sua raiz e suas lanes; histórico de chat é classificado como histórico, sem afirmar que a pasta está aberta.
+- Observação MCP registra capacidade, projeto, workspace, harness, contadores e códigos de erro, sem argumentos/resultados. A janela cooperativa tem 256 registros por projeto e pode substituir encerrados/stale; ausência de heartbeat por 90 segundos fica stale. Tanto o bin principal quanto o entrypoint legado de lanes anunciam metadata de marca BBrainX e instrumentam as conexões. Cliente pode ignorar title/icons.
+- Overview lê somente bancos existentes, sem migração/criação: até 16 lanes ativas, 32 linhas de lanes, 20 tarefas por workspace e 16 KiB por checkpoint. Schema/scope inválido gera erro estruturado, sem servir checkpoints daquele banco. Memória, uso, testes e recibos do projeto não são agregados com outro projeto.
+- Importação histórica possui drivers explícitos para Claude, Cursor e JSONL nativo do Codex. All descobre os três, limitado; suporte MCP não certifica formato histórico de outros harnesses. Só texto visível user/assistant entra como evidência rotulada, após validar todos os cwd. Symlinks, subagents, JSON inválido e fontes alteradas são recusados. Cursor sem cwd exige confirmação separada e recusa colisão conhecida entre roots registradas; permanece marcado como não verificado pela fonte. Codex não segue history_base nem copia ferramentas/reasoning/instruções. O original privado pode conter dados sensíveis que foram excluídos dos excertos. Importar não aprova memória nem altera estado nativo/credenciais.
+- O runner local é opt-in por CLI/ação explícita, sem ferramenta MCP de execução. Não usa shell nem herda chaves de API; executa os arquivos Node escolhidos com a autoridade do usuário. Não é sandbox: código de teste pode abrir arquivos ou rede e descendentes podem escapar do grupo de processos. Diagnósticos limitados ficam privados. A janela ativa admite 128 execuções; terminais antigos são arquivados recuperavelmente e o painel mostra até 50. Arquivos arquivados não têm quota global de disco.
+- Orçamento monetário é aviso sobre os recibos importados, separado por moeda/basis. Não bloqueia gastos do provedor, não cobre automaticamente assinaturas e não transforma chamadas não observadas em custo zero.
+
+Contratos e limites completos: [escopo](integrations/SCOPE.md), [instalador](integrations/INSTALLER.md), [importação](integrations/CONTEXT_IMPORT.md) e [testes locais](integrations/TEST_RUNS.md). Essas fronteiras são cooperativas no mesmo usuário do SO; não são isolamento físico entre processos adversariais.
+
 ## Limites importantes
 
 **Segredos:** nomes e padrões não detectam todos os segredos. Revise as raízes e exclua fontes sensíveis antes de indexar. O conteúdo fica local, mas um harness pode enviá-lo ao provedor escolhido por você. A origem local do BBrainX não torna o restante do pipeline local.
@@ -43,7 +57,7 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 
 **Indexação:** sem daemon watcher. Uma pesquisa pode não refletir um novo arquivo até reindexar. A snapshot representa arquivos textuais elegíveis. Índices derivados não são a fonte exclusiva de verdade.
 
-**Declaração não é prova:** `done` e `evidence` de um checkpoint registram o que o agente afirma. Nenhum teste é reexecutado pelo serviço. Por isso o estado final continua sendo `review_needed`, nunca concluído.
+**Declaração não é prova:** `done` e `evidence` de um checkpoint registram o que o agente afirma. Gravar ou importar um checkpoint não inicia testes. Resultados do runner opt-in são registros separados; sucesso do processo, contagens publicadas pelo Node e alegação do agente não são a mesma evidência. Checkpoints continuam sem status de conclusão verificada.
 
 **Cópia da migração:** `brain.v1-backup.sqlite` contém tudo o que o banco continha, inclusive os trechos indexados. Fica na mesma pasta privada e deve ser apagada quando o retorno à 0.2 não for mais necessário.
 
@@ -71,6 +85,11 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 | Agente transforma hipótese em política | Só proposta via MCP; aprovação CLI humana |
 | Pacote excede orçamento | Erro para obrigatório, seleção para evidências opcionais |
 | Pipeline afirma teste inexistente | Não existe status `done` verificado nesta versão |
+| Projeto vizinho ou parent/child captura o mesmo workspace | Registro transacional sem sobreposição + binding canonical; `test/workspace.test.mjs` |
+| Plano de integração inicializa banco da lane | Registry readOnly antes de --apply; CLI real em `test/control.test.mjs` |
+| Painel de A lista receipt aberto de B | Filtro por raízes do projeto/lanes; `test/control.test.mjs` |
+| Pasta Cursor codificada concede origem ambígua | Sem cwd: confirmação explícita, colisão registrada recusada; `test/context-import.test.mjs` |
+| Importação de subagente Codex ou ferramenta como instrução | Filtro de SessionSource/parent/thread_source e conteúdo visível; `test/context-import.test.mjs` |
 
 ## Reportar vulnerabilidade
 

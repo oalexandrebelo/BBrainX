@@ -43,12 +43,49 @@ A snapshot é do conjunto textual indexado, não uma prova de revisão completa 
 ## 4. Conectar harnesses
 
 ```sh
-node bin/bbrainx.mjs config --project meu-app --client claude
-node bin/bbrainx.mjs config --project meu-app --client codex
-node bin/bbrainx.mjs config --project meu-app --client cursor    # também: vscode, gemini
+node bin/bbrainx.mjs integrate --root "/Users/seu-usuario/Projetos/meu-app"
+node bin/bbrainx.mjs integrate --root "/Users/seu-usuario/Projetos/meu-app" --apply
 ```
 
-Cada cliente recebe o seu formato: o comando `claude mcp add` e o JSON de `.mcp.json`; o comando `codex mcp add` e o bloco TOML de `~/.codex/config.toml`; o JSON de `.cursor/mcp.json`, de `.vscode/mcp.json` ou de `~/.gemini/settings.json`. Os formatos foram conferidos na documentação oficial de cada cliente em 4 de outubro de 2026. O comando só imprime: revise e cole no arquivo indicado. Para outro cliente MCP, use os mesmos `command`, `args` e `env`.
+O primeiro comando só planeja. `--apply` registra a raiz com o nome existente ou derivado da pasta (ou `--project ID`), aplica configurações suportadas e indexa. Uma raiz já concedida a outro ID ou sobreposta a outro projeto é recusada. Sem `--clients`, seleciona instalações detectadas; `--clients codex,claude,vscode,kilo` escolhe explicitamente os destinos, mesmo sem o cliente instalado. `--lane ID` exige lane existente com raiz correspondente.
+
+Os destinos são `.codex/config.toml`, `.mcp.json`, `.vscode/mcp.json` e o único config Kilo reconhecido (por padrão `.kilo/kilo.json`). Preserva demais servidores, comentários, provedores/OmniRoute, credenciais, trust e aprovações. Codex só carrega a configuração de projeto quando o cliente confia nele. Antigravity IDE retorna `manual-required`; não há fallback global nem servidor com acesso a todos os projetos. Instalação detectada não comprova extensão habilitada, carregamento da configuração ou conexão nativa. [Formatos e fontes oficiais](integrations/INSTALLER.md).
+
+Revise o plano antes de `--apply`. Uma colisão bloqueia todo o plano. Para instalação do gerador anterior, `--adopt-existing` aceita somente a forma exata com mesmo Node, script, estado, projeto e lane; outras entradas continuam bloqueadas. A aplicação retorna recibo e conserva bytes anteriores em backups privados. Para desfazer:
+
+```sh
+node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO
+```
+
+Rollback recusa arquivos editados posteriormente. Se a indexação falhar após aplicação, a CLI retorna recibo e `indexError`: corrija a indexação ou use esse rollback. Configurações com caminhos absolutos do estado/runtime merecem revisão antes de serem versionadas. `config --project meu-app --client cursor` continua imprimindo fragmentos manuais (também claude, codex, vscode e gemini); ele não escreve arquivos.
+
+### Plugin e descoberta de pastas abertas
+
+```sh
+node scripts/package-extension.mjs
+node bin/bbrainx.mjs discover --root "/Users/seu-usuario/Projetos/meu-app"
+```
+
+O empacotador exige Python 3 para ZIP e gera `artifacts/extensions/bbrainx-workspace-0.1.0.vsix`, preview local não assinado. Instale pelo comando **Extensions: Install from VSIX** no editor. Configure **BBrainX: Executable** em settings de usuário; padrão `~/.local/bin/bbrainx`, launcher instalado separadamente. Para apontar direto para `bin/bbrainx.mjs`, configure também o caminho absoluto de **Node Executable**. Windows exige executável real ou Node + script; wrappers `.cmd` não recebem shell implícito.
+
+A extensão usa `workspaceFolders` para listar pastas locais abertas e confiáveis. **Detectar** planeja; **Conectar** aplica a integração. Heartbeats de metadados a cada 30 s expiram em 90 s e não registram/indexam projetos automaticamente. Pastas virtuais, não salvas ou sem trust não iniciam processos. **Iniciar painel local** é explícito; **Abrir painel** usa URL HTTP loopback configurada. Host remoto exige launcher remoto e encaminhamento de porta. VSIX/API e MCP no Antigravity IDE ainda precisam de prova nativa na versão instalada. [Contrato do plugin](../extensions/vscode/README.md).
+
+`discover` separa pastas abertas reportadas, projetos registrados e sessões históricas com raiz validada. Não analisa títulos de janelas, não inicia clientes e não afirma capturar sessões ativas de todos os harnesses. Histórico validado atualmente: Claude, Codex e Cursor. Os demais ficam explicitamente sem adapter histórico.
+
+### Testes locais e contexto histórico
+
+```sh
+node bin/bbrainx.mjs test --project meu-app --task AUTH-1 --file test/auth.test.mjs,test/session.test.mjs --timeout 300000
+node bin/bbrainx.mjs control --project meu-app
+node bin/bbrainx.mjs test-history archive --project meu-app --id ID_DA_EXECUCAO
+node bin/bbrainx.mjs import-context --project meu-app --harness claude --file "/caminho/absoluto/sessao.jsonl"
+```
+
+O runner suporta **node:test**, não `npm test` arbitrário nem shell: até 100 arquivos concretos relativos à raiz registrada, sem glob, travessia ou symlink. Timeout em milissegundos: 100–3.600.000, padrão 300.000. Guarda revisão, estado, contagens e até 20 falhas/32 KiB de diagnósticos, com truncamento indicado. Stderr é contado, não armazenado. Ambiente reduzido e HOME temporário não são sandbox de SO; o código de teste continua com permissões do usuário e pode acessar disco/rede. Execute somente testes de repositórios confiáveis. Falha, cancelamento ou timeout retornam exit code não zero. Arquivamento aceita apenas execução terminada; o painel mostra histórico, progresso e dados desconhecidos sem inventar aprovação ou custo.
+
+Importação exige escolha explícita de um arquivo JSONL nas pastas nativas: `~/.claude/projects`, `~/.codex/sessions` ou `~/.cursor/projects/.../agent-transcripts`. Confere raiz canônica exata, recusa sessões filhas/subagents, symlinks, formatos desconhecidos e arquivos acima de 32 MiB. Só trechos textuais visíveis de usuário/assistente entram no checkpoint, até 20 mensagens/32 KiB de cauda e limites menores no checkpoint; não segue históricos referenciados. Prompts de sistema/developer, reasoning e saídas de ferramentas não são contexto importado.
+
+A fonte completa selecionada e manifesto ficam privados no estado local; o checkpoint é `review_needed` e marca o texto como não confiável. Isso não promove memória nem concede acesso. `--task ID` escolhe o checkpoint; `--version N` aplica controle de versão. Repetir a mesma fonte é idempotente, mas uma versão conflitante é recusada. Cursor sem cwd embutido exige `--confirm-workspace /raiz/canonica`, mantém `CURSOR_WORKSPACE_UNVERIFIED` e recusa colisão de nomes entre projetos registrados. Não marque essa confirmação como origem verificada.
 
 Se preferir que o próprio agente faça a ligação, cole na sessão dele o prompt de [prompts/ACTIVATE.md](prompts/ACTIVATE.md): ele registra, indexa, grava só a entrada `bbrainx` e prova o resultado pelo fio.
 

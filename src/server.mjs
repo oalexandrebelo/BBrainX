@@ -7,6 +7,7 @@ import { ensure } from './primitives.mjs';
 import { makeEngine, VERSION } from './engine.mjs';
 import { doctor } from './host.mjs';
 import { usageOverview } from './usage/summary.mjs';
+import { controlOverview } from './control.mjs';
 
 const dist=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url)));
 const contentTypes={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.json':'application/json; charset=utf-8','.png':'image/png','.webm':'video/webm','.mp4':'video/mp4'};
@@ -29,6 +30,7 @@ export async function startServer(store,{port=4317}={}){
       const url=new URL(req.url,'http://'+expected);
       if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:VERSION,csrf,projects:store.projects(),doctor:doctor(),mode:'local'});
       if(req.method==='GET'&&url.pathname==='/api/usage')return json(res,200,usageOverview(store,url.searchParams.get('project')));
+      if(req.method==='GET'&&url.pathname==='/api/control')return json(res,200,controlOverview(store,url.searchParams.get('project')));
       if(req.method==='GET'&&url.pathname==='/api/project'){
         const project=url.searchParams.get('project');return json(res,200,{project:store.project(project),tasks:store.tasks(project),memories:store.memories(project),events:store.events(project)});
       }

@@ -49,6 +49,8 @@ jobs:
         run: npm run test:e2e
       - name: Observatory browser suite
         run: npx playwright test --config playwright.usage.config.mjs
+      - name: Project control panel browser suite
+        run: npx playwright test --config playwright.control.config.mjs
       - name: Atlas static-only publication build
         run: |
           npx vite build --config vite.atlas.config.mjs
@@ -69,4 +71,5 @@ jobs:
             artifacts/lanes/
             artifacts/engineering/
             test-results/
+            artifacts/e2e/
           retention-days: 30

@@ -26,6 +26,7 @@ CREATE TRIGGER chunks_after_delete AFTER DELETE ON chunks BEGIN INSERT INTO chun
 CREATE TRIGGER chunks_after_update AFTER UPDATE ON chunks BEGIN INSERT INTO chunk_search(chunk_search,rowid,path,body,defs,symbols) VALUES('delete',old.seq,old.path,old.body,old.defs,old.symbols); INSERT INTO chunk_search(rowid,path,body,defs,symbols) VALUES(new.seq,new.path,new.body,new.defs,new.symbols); END;
 `;
 const SCHEMA_VERSION = 2, schemaHash = hash(durable + derived);
+export const BRAIN_SCHEMA_VERSION=SCHEMA_VERSION, BRAIN_SCHEMA_HASH=schemaHash;
 const SCHEMA_V1_HASH = '5e4aaf7f64696418b88d9a77f457a74a3c2c82a301f2359800d83c4f1e4b87fc';
 export const V1_BACKUP = 'brain.v1-backup.sqlite';
 
@@ -130,12 +131,16 @@ export class BrainStore {
     identifier(project);
     const actual = fs.realpathSync(path.resolve(root));
     ensure(fs.statSync(actual).isDirectory() && actual !== path.parse(actual).root, 'UNSAFE_PROJECT_ROOT');
-    const existing = this.db.prepare('SELECT * FROM projects WHERE id=?').get(project);
-    ensure(!existing || existing.root === actual, 'PROJECT_ROOT_CONFLICT');
-    const owner = this.db.prepare('SELECT id FROM projects WHERE root=?').get(actual);
-    ensure(!owner || owner.id === project, 'PROJECT_ROOT_ALREADY_REGISTERED', 'Esta pasta já está registrada como "' + owner?.id + '". Use esse nome ou registre outra raiz.');
-    this.db.prepare('INSERT OR IGNORE INTO projects(id,root,created) VALUES(?,?,?)').run(project, actual, now());
-    return this.project(project);
+    return this.transaction(()=>{
+      const existing = this.db.prepare('SELECT * FROM projects WHERE id=?').get(project);
+      ensure(!existing || existing.root === actual, 'PROJECT_ROOT_CONFLICT');
+      const owner = this.db.prepare('SELECT id FROM projects WHERE root=?').get(actual);
+      ensure(!owner || owner.id === project, 'PROJECT_ROOT_ALREADY_REGISTERED', 'Esta pasta já está registrada como "' + owner?.id + '". Use esse nome ou registre outra raiz.');
+      const inside=(parent,child)=>{const relative=path.relative(parent,child);return relative===''||(!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep));};
+      ensure(this.db.prepare('SELECT id,root FROM projects').all().every(other=>other.id===project||(!inside(other.root,actual)&&!inside(actual,other.root))),'PROJECT_ROOT_OVERLAP');
+      this.db.prepare('INSERT OR IGNORE INTO projects(id,root,created) VALUES(?,?,?)').run(project, actual, now());
+      return this.project(project);
+    });
   }
   project(project) {
     identifier(project);

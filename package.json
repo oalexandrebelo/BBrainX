@@ -5,8 +5,12 @@
   "type": "module",
   "description": "Local-first context, memory and verified handoffs across coding harnesses.",
   "license": "MIT",
-  "engines": { "node": ">=22.20.0" },
-  "bin": { "bbrainx": "bin/bbrainx.mjs" },
+  "engines": {
+    "node": ">=22.20.0"
+  },
+  "bin": {
+    "bbrainx": "bin/bbrainx.mjs"
+  },
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "doctor": "node bin/bbrainx.mjs doctor",
@@ -26,8 +30,10 @@
   "dependencies": {
     "@xyflow/react": "^12.10.0",
     "gpt-tokenizer": "4.0.0",
+    "jsonc-parser": "3.3.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "smol-toml": "1.9.0",
     "zod": "4.5.4"
   },
   "devDependencies": {
