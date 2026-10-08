@@ -1,0 +1,44 @@
+{
+  "name": "bbrainx-workspace",
+  "displayName": "BBrainX",
+  "description": "Local workspace discovery, conservative MCP setup and BBrainX panel access.",
+  "version": "0.1.1",
+  "preview": true,
+  "publisher": "bbrainxlocal",
+  "license": "MIT",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "extensionKind": ["workspace"],
+  "main": "./extension.cjs",
+  "activationEvents": ["onStartupFinished"],
+  "capabilities": {
+    "untrustedWorkspaces": { "supported": "limited", "description": "Shows folders only. Executable commands and activity receipts require a trusted workspace." },
+    "virtualWorkspaces": { "supported": false }
+  },
+  "contributes": {
+    "commands": [
+      { "command": "bbrainx.detect", "title": "BBrainX: Detectar workspace", "icon": "$(search)" },
+      { "command": "bbrainx.connect", "title": "BBrainX: Conectar workspace", "icon": "$(plug)" },
+      { "command": "bbrainx.openPanel", "title": "BBrainX: Abrir painel", "icon": "$(link-external)" },
+      { "command": "bbrainx.startPanel", "title": "BBrainX: Iniciar painel local", "icon": "$(play)" }
+    ],
+    "viewsContainers": { "activitybar": [{ "id": "bbrainx", "title": "BBrainX", "icon": "media/icon.svg" }] },
+    "views": { "bbrainx": [{ "id": "bbrainx.workspaces", "name": "Workspaces" }] },
+    "menus": {
+      "view/title": [
+        { "command": "bbrainx.detect", "when": "view == bbrainx.workspaces", "group": "navigation" },
+        { "command": "bbrainx.connect", "when": "view == bbrainx.workspaces && isWorkspaceTrusted", "group": "navigation" },
+        { "command": "bbrainx.openPanel", "when": "view == bbrainx.workspaces", "group": "navigation" }
+      ]
+    },
+    "configuration": {
+      "title": "BBrainX",
+      "properties": {
+        "bbrainx.executable": { "type": "string", "default": "~/.local/bin/bbrainx", "scope": "machine", "description": "Absolute trusted CLI launcher path. Leading ~/ expands to the extension host user's home." },
+        "bbrainx.nodeExecutable": { "type": "string", "default": "", "scope": "machine", "description": "Optional absolute Node LTS path when executable points to bin/bbrainx.mjs." },
+        "bbrainx.panelUrl": { "type": "string", "default": "http://127.0.0.1:4317", "scope": "machine", "description": "Local HTTP panel URL. Only localhost, 127.0.0.1 or ::1 are accepted." },
+        "bbrainx.activityReceipts": { "type": "boolean", "default": true, "scope": "machine", "description": "Send opened folder metadata every 30 seconds in a trusted local workspace. Does not register or index projects." }
+      }
+    }
+  }
+}

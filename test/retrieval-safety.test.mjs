@@ -50,7 +50,7 @@ test('root aliases accepted at registration retain their canonical authorized de
 });
 test('direct readSafe preserves valid ancestor aliases supplied by the local caller',t=>{
   const {dir,store}=fixture(t),rawRoot=path.join(dir,'project');
-  assert.equal(fs.realpathSync(rawRoot),store.project('project').root);
+  assert.equal(fs.realpathSync.native(rawRoot),store.project('project').root);
   assert.match(readSafe(rawRoot,'a.md').body,/AUTHORIZED_MARKER/);
 });
 test('partial refresh rolls back files, FTS, snapshot and event when total bytes exceed the host ceiling',t=>{

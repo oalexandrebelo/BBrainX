@@ -51,8 +51,9 @@ const rpcError=(id,code,message,data)=>({jsonrpc:'2.0',id:id??null,error:{code,m
  * `isFailure` diz quando um resultado válido representa uma recusa do domínio: ela segue com `isError`.
  * `rateLimit` é o teto de chamadas de ferramenta por janela, contra um agente em laço.
  */
-export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instructions,isFailure,rateLimit={calls:300,perMs:60000},now=Date.now}={}){
-  const catalog=toolCatalog(engine), running=new Map(), recent=[], serverInfo={name:engine.name,version:engine.version};
+export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instructions,isFailure,serverMetadata={},onConnect,rateLimit={calls:300,perMs:60000},now=Date.now}={}){
+  const catalog=toolCatalog(engine), running=new Map(), recent=[], serverInfo={...serverMetadata,name:engine.name,version:engine.version};
+  const connected=()=>{try{onConnect?.();}catch{/* Observation cannot change the protocol. */}};
   function allowed(){
     const time=now();while(recent.length&&time-recent[0]>=rateLimit.perMs)recent.shift();
     if(recent.length>=rateLimit.calls)return false;
@@ -78,6 +79,7 @@ export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instr
     const version=meta[META+'protocolVersion'];
     if(typeof version!=='string'||!plainObject(meta[META+'clientCapabilities']))return rpcError(id,INVALID_PARAMS,'Request _meta needs '+META+'protocolVersion and '+META+'clientCapabilities.');
     if(!MODERN_VERSIONS.includes(version))return rpcError(id,UNSUPPORTED_VERSION,'Unsupported protocol version',{supported:[...PROTOCOL_VERSIONS],requested:version});
+    connected();
     const complete=result=>({jsonrpc:'2.0',id,result:{resultType:'complete',...result,_meta:{[META+'serverInfo']:serverInfo}}});
     if(method==='server/discover')return complete({supportedVersions:[...PROTOCOL_VERSIONS],capabilities:{tools:{}},...(instructions?{instructions}:{}),...CACHE});
     if(method==='tools/list')return complete({tools:catalog.tools,...CACHE});
@@ -87,6 +89,7 @@ export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instr
   function legacy(id,method,params){
     const result=value=>({jsonrpc:'2.0',id,result:value});
     if(method==='initialize'){
+      connected();
       const protocolVersion=LEGACY_VERSIONS.includes(params?.protocolVersion)?params.protocolVersion:LEGACY_VERSIONS[0];
       return result({protocolVersion,capabilities:{tools:{}},serverInfo,...(instructions?{instructions}:{})});
     }

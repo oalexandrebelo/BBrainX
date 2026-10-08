@@ -157,7 +157,7 @@ export function refreshFiles(store, project, paths, override) {
 
 // Peso por coluna do FTS5: caminho, corpo, nomes declarados, partes de identificadores.
 const columnWeights='2.0, 1.0, 8.0, 1.5';
-const kindWeight={source:1,doc:.7,config:.6,test:.4,generated:.25};
+const kindWeight={source:1,doc:.5,config:.6,test:.4,generated:.25};
 const asksForTests=/\b(?:tests?|testes?|specs?|fixtures?|mocks?)\b/i;
 // Peso do segundo estágio (radicais e glossário pt → en) em relação ao casamento exato.
 const LOOSE_WEIGHT=.5;

@@ -1,0 +1,1767 @@
+{
+  "schemaVersion": 1,
+  "node": "24.21.0",
+  "createdAt": "2026-10-08T03:57:06.839Z",
+  "measurement": {
+    "warmupPasses": 2,
+    "timedPasses": 9,
+    "order": "alternating by query and round",
+    "note": "Descriptive local elapsed times only; no latency significance or noise claim."
+  },
+  "candidate": {
+    "change": "retrieval.mjs doc kind prior .7 -> .5 only",
+    "baseSha256": "fb010d6d23810ff5ad4367903d6fa7b84fec5e3d3a631d744f0a714c31371115",
+    "candidateSha256": "027ad0edaac4261855cd15c1dcb740338d81132aea4e759c681b9a0003dcd437"
+  },
+  "corpora": [
+    {
+      "id": "mem0",
+      "commit": "abb81c88e1f738a8117d8293530fbc31a5ef8fd9",
+      "rootFiles": 388,
+      "indexSnapshot": "820174954cc3e66edcc50641287d41752328a2446bf2a4606487436a335155a9",
+      "skippedByReason": {
+        "FILE_TOO_LARGE": 1
+      },
+      "metrics": {
+        "base": {
+          "cases": 40,
+          "mrr": 0.6020330540262081,
+          "hit1": 0.525,
+          "hit3": 0.625,
+          "hit10": 0.825,
+          "outside50": 2
+        },
+        "candidate": {
+          "cases": 40,
+          "mrr": 0.6063187683119224,
+          "hit1": 0.525,
+          "hit3": 0.625,
+          "hit10": 0.825,
+          "outside50": 2
+        }
+      },
+      "latencyMs": {
+        "base": {
+          "samples": 360,
+          "p50": 6.231416000000081,
+          "p95": 10.977332999999817
+        },
+        "candidate": {
+          "samples": 360,
+          "p50": 6.216292000000067,
+          "p95": 10.738875000000007
+        }
+      },
+      "regressions": {
+        "hit3": [],
+        "hit10": [],
+        "rankWorse": [],
+        "rankBetter": [
+          "mem0-28",
+          "mem0-33"
+        ]
+      },
+      "rows": [
+        {
+          "id": "mem0-01",
+          "expected": [
+            "mem0/embeddings/mock.py"
+          ],
+          "baseRank": null,
+          "candidateRank": null,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/embeddings/vertexai.ts",
+            "mem0-ts/src/oss/src/embeddings/aws_bedrock.ts",
+            "mem0-ts/src/oss/src/embeddings/base.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/embeddings/vertexai.ts",
+            "mem0-ts/src/oss/src/embeddings/aws_bedrock.ts",
+            "mem0-ts/src/oss/src/embeddings/base.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-02",
+          "expected": [
+            "mem0/utils/spacy_models.py"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/utils/spacy_models.py",
+            "mem0/utils/spacy_models.py",
+            "mem0/utils/entity_extraction.py"
+          ],
+          "candidateTop3": [
+            "mem0/utils/spacy_models.py",
+            "mem0/utils/spacy_models.py",
+            "mem0/utils/entity_extraction.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-03",
+          "expected": [
+            "mem0/utils/gcp_auth.py"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/utils/gcp_auth.py",
+            "mem0/utils/gcp_auth.py",
+            "mem0/utils/gcp_auth.py"
+          ],
+          "candidateTop3": [
+            "mem0/utils/gcp_auth.py",
+            "mem0/utils/gcp_auth.py",
+            "mem0/utils/gcp_auth.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-04",
+          "expected": [
+            "mem0/proxy/main.py"
+          ],
+          "baseRank": 8,
+          "candidateRank": 8,
+          "baseTop3": [
+            "mem0/client/utils.py",
+            "mem0-ts/src/oss/src/vector_stores/langchain.ts",
+            "mem0/client/utils.py"
+          ],
+          "candidateTop3": [
+            "mem0/client/utils.py",
+            "mem0-ts/src/oss/src/vector_stores/langchain.ts",
+            "mem0/client/utils.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-05",
+          "expected": [
+            "mem0/vector_stores/faiss.py"
+          ],
+          "baseRank": 17,
+          "candidateRank": 17,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts",
+            "mem0/vector_stores/neptune_analytics.py",
+            "mem0/vector_stores/pgvector.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts",
+            "mem0/vector_stores/neptune_analytics.py",
+            "mem0/vector_stores/pgvector.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-06",
+          "expected": [
+            "mem0/vector_stores/faiss.py"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/vector_stores/faiss.py",
+            "mem0/configs/vector_stores/faiss.py",
+            "mem0-ts/src/oss/src/vector_stores/oracledb.ts"
+          ],
+          "candidateTop3": [
+            "mem0/vector_stores/faiss.py",
+            "mem0/configs/vector_stores/faiss.py",
+            "mem0-ts/src/oss/src/vector_stores/oracledb.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-07",
+          "expected": [
+            "mem0/client/utils.py"
+          ],
+          "baseRank": 5,
+          "candidateRank": 5,
+          "baseTop3": [
+            "mem0-ts/src/common/exceptions.ts",
+            "mem0/exceptions.py",
+            "mem0-ts/src/common/exceptions.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/common/exceptions.ts",
+            "mem0/exceptions.py",
+            "mem0-ts/src/common/exceptions.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-08",
+          "expected": [
+            "mem0/vector_stores/configs.py"
+          ],
+          "baseRank": 4,
+          "candidateRank": 4,
+          "baseTop3": [
+            "mem0/configs/vector_stores/qdrant.py",
+            "mem0/utils/factory.py",
+            "mem0/configs/vector_stores/chroma.py"
+          ],
+          "candidateTop3": [
+            "mem0/configs/vector_stores/qdrant.py",
+            "mem0/utils/factory.py",
+            "mem0/configs/vector_stores/chroma.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-09",
+          "expected": [
+            "mem0/memory/setup.py",
+            "mem0-ts/src/client/config.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/client/config.ts",
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts",
+            "mem0/memory/setup.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/client/config.ts",
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts",
+            "mem0/memory/setup.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-10",
+          "expected": [
+            "mem0/memory/utils.py"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/memory/utils.py",
+            "mem0/llms/groq.py",
+            "mem0/configs/prompts.py"
+          ],
+          "candidateTop3": [
+            "mem0/memory/utils.py",
+            "mem0/llms/groq.py",
+            "mem0/configs/prompts.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-11",
+          "expected": [
+            "mem0/memory/utils.py"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/memory/utils.py",
+            "mem0-ts/src/oss/src/embeddings/fastembed.ts",
+            "mem0-ts/src/oss/src/embeddings/fastembed.ts"
+          ],
+          "candidateTop3": [
+            "mem0/memory/utils.py",
+            "mem0-ts/src/oss/src/embeddings/fastembed.ts",
+            "mem0-ts/src/oss/src/embeddings/fastembed.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-12",
+          "expected": [
+            "mem0/memory/storage.py"
+          ],
+          "baseRank": 3,
+          "candidateRank": 3,
+          "baseTop3": [
+            "mem0/vector_stores/databricks.py",
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts",
+            "mem0/memory/storage.py"
+          ],
+          "candidateTop3": [
+            "mem0/vector_stores/databricks.py",
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts",
+            "mem0/memory/storage.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-13",
+          "expected": [
+            "mem0/memory/storage.py",
+            "mem0-ts/src/oss/src/storage/SQLiteManager.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/memory/storage.py",
+            "mem0/memory/storage.py",
+            "mem0-ts/src/oss/src/storage/SQLiteManager.ts"
+          ],
+          "candidateTop3": [
+            "mem0/memory/storage.py",
+            "mem0/memory/storage.py",
+            "mem0-ts/src/oss/src/storage/SQLiteManager.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-14",
+          "expected": [
+            "mem0/memory/telemetry.py",
+            "mem0-ts/src/oss/src/utils/telemetry.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/memory/telemetry.py",
+            "mem0/memory/notices.py",
+            "mem0/configs/base.py"
+          ],
+          "candidateTop3": [
+            "mem0/memory/telemetry.py",
+            "mem0/memory/notices.py",
+            "mem0/configs/base.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-15",
+          "expected": [
+            "mem0/llms/base.py"
+          ],
+          "baseRank": 28,
+          "candidateRank": 28,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/memory/index.ts",
+            "mem0/configs/prompts.py",
+            "mem0/memory/main.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/memory/index.ts",
+            "mem0/configs/prompts.py",
+            "mem0/memory/main.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-16",
+          "expected": [
+            "mem0/llms/anthropic.py"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/llms/anthropic.py",
+            "mem0/memory/telemetry.py",
+            "mem0/llms/azure_openai_structured.py"
+          ],
+          "candidateTop3": [
+            "mem0/llms/anthropic.py",
+            "mem0/memory/telemetry.py",
+            "mem0/llms/azure_openai_structured.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-17",
+          "expected": [
+            "mem0/llms/aws_bedrock.py"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/llms/aws_bedrock.py",
+            "mem0-ts/src/oss/src/embeddings/aws_bedrock.ts",
+            "mem0-ts/src/oss/src/llms/aws_bedrock.ts"
+          ],
+          "candidateTop3": [
+            "mem0/llms/aws_bedrock.py",
+            "mem0-ts/src/oss/src/embeddings/aws_bedrock.ts",
+            "mem0-ts/src/oss/src/llms/aws_bedrock.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-18",
+          "expected": [
+            "mem0/reranker/huggingface_reranker.py",
+            "mem0-ts/src/oss/src/rerankers/cross_encoder.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/rerankers/cross_encoder.ts",
+            "mem0-ts/src/oss/src/rerankers/cross_encoder.ts",
+            "mem0/configs/rerankers/sentence_transformer.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/rerankers/cross_encoder.ts",
+            "mem0-ts/src/oss/src/rerankers/cross_encoder.ts",
+            "mem0/configs/rerankers/sentence_transformer.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-19",
+          "expected": [
+            "mem0/utils/scoring.py",
+            "mem0-ts/src/oss/src/utils/scoring.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/utils/scoring.py",
+            "mem0-ts/src/oss/src/utils/scoring.ts",
+            "mem0-ts/src/oss/src/utils/entity_extraction.ts"
+          ],
+          "candidateTop3": [
+            "mem0/utils/scoring.py",
+            "mem0-ts/src/oss/src/utils/scoring.ts",
+            "mem0-ts/src/oss/src/utils/entity_extraction.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-20",
+          "expected": [
+            "mem0/utils/lemmatization.py",
+            "mem0-ts/src/oss/src/utils/lemmatization.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/utils/lemmatization.ts",
+            "mem0-ts/src/oss/src/utils/lemmatization.ts",
+            "mem0/utils/lemmatization.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/utils/lemmatization.ts",
+            "mem0-ts/src/oss/src/utils/lemmatization.ts",
+            "mem0/utils/lemmatization.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-21",
+          "expected": [
+            "mem0/utils/entity_extraction.py",
+            "mem0-ts/src/oss/src/utils/entity_extraction.ts"
+          ],
+          "baseRank": 6,
+          "candidateRank": 6,
+          "baseTop3": [
+            "mem0/vector_stores/azure_ai_search.py",
+            "mem0-ts/src/oss/src/vector_stores/azure_ai_search.ts",
+            "mem0/vector_stores/azure_ai_search.py"
+          ],
+          "candidateTop3": [
+            "mem0/vector_stores/azure_ai_search.py",
+            "mem0-ts/src/oss/src/vector_stores/azure_ai_search.ts",
+            "mem0/vector_stores/azure_ai_search.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-22",
+          "expected": [
+            "mem0/memory/main.py",
+            "mem0-ts/src/oss/src/utils/expiration.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/memory/main.py",
+            "mem0/vector_stores/neptune_analytics.py",
+            "mem0/vector_stores/upstash_vector.py"
+          ],
+          "candidateTop3": [
+            "mem0/memory/main.py",
+            "mem0/vector_stores/neptune_analytics.py",
+            "mem0/vector_stores/upstash_vector.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-23",
+          "expected": [
+            "mem0/utils/factory.py"
+          ],
+          "baseRank": 29,
+          "candidateRank": 29,
+          "baseTop3": [
+            "mem0/llms/aws_bedrock.py",
+            "mem0/vector_stores/chroma.py",
+            "mem0/llms/aws_bedrock.py"
+          ],
+          "candidateTop3": [
+            "mem0/llms/aws_bedrock.py",
+            "mem0/vector_stores/chroma.py",
+            "mem0/llms/aws_bedrock.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-24",
+          "expected": [
+            "mem0/client/main.py",
+            "mem0-ts/src/client/mem0.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0/client/main.py",
+            "mem0-ts/src/client/mem0.ts",
+            "mem0/client/main.py"
+          ],
+          "candidateTop3": [
+            "mem0/client/main.py",
+            "mem0-ts/src/client/mem0.ts",
+            "mem0/client/main.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-25",
+          "expected": [
+            "mem0/memory/main.py"
+          ],
+          "baseRank": 9,
+          "candidateRank": 9,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts",
+            "mem0/vector_stores/weaviate.py",
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts",
+            "mem0/vector_stores/weaviate.py",
+            "mem0-ts/src/oss/src/vector_stores/databricks.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-26",
+          "expected": [
+            "mem0-ts/src/oss/src/utils/bm25.ts",
+            "mem0-ts/src/oss/src/vector_stores/memory.ts"
+          ],
+          "baseRank": 3,
+          "candidateRank": 3,
+          "baseTop3": [
+            "mem0/configs/prompts.py",
+            "mem0-ts/src/oss/src/prompts/index.ts",
+            "mem0-ts/src/oss/src/utils/bm25.ts"
+          ],
+          "candidateTop3": [
+            "mem0/configs/prompts.py",
+            "mem0-ts/src/oss/src/prompts/index.ts",
+            "mem0-ts/src/oss/src/utils/bm25.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-27",
+          "expected": [
+            "mem0-ts/src/oss/src/utils/casing.ts"
+          ],
+          "baseRank": 4,
+          "candidateRank": 4,
+          "baseTop3": [
+            "mem0-ts/src/client/utils.ts",
+            "mem0-ts/src/client/utils.ts",
+            "mem0-ts/src/oss/src/memory/index.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/client/utils.ts",
+            "mem0-ts/src/client/utils.ts",
+            "mem0-ts/src/oss/src/memory/index.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-28",
+          "expected": [
+            "mem0-ts/src/oss/src/utils/load_peer.ts"
+          ],
+          "baseRank": 3,
+          "candidateRank": 2,
+          "baseTop3": [
+            "mem0/exceptions.py",
+            "mem0-ts/src/oss/README.md",
+            "mem0-ts/src/oss/src/utils/load_peer.ts"
+          ],
+          "candidateTop3": [
+            "mem0/exceptions.py",
+            "mem0-ts/src/oss/src/utils/load_peer.ts",
+            "mem0-ts/src/oss/src/vector_stores/milvus.ts"
+          ],
+          "delta": -1
+        },
+        {
+          "id": "mem0-29",
+          "expected": [
+            "mem0-ts/src/oss/src/utils/sqlite.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/utils/sqlite.ts",
+            "mem0-ts/src/oss/src/vector_stores/memory.ts",
+            "mem0/configs/base.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/utils/sqlite.ts",
+            "mem0-ts/src/oss/src/vector_stores/memory.ts",
+            "mem0/configs/base.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-30",
+          "expected": [
+            "mem0-ts/src/oss/src/storage/MemoryHistoryManager.ts"
+          ],
+          "baseRank": 25,
+          "candidateRank": 25,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/utils/factory.ts",
+            "mem0-ts/src/oss/src/prompts/index.ts",
+            "mem0/configs/prompts.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/utils/factory.ts",
+            "mem0-ts/src/oss/src/prompts/index.ts",
+            "mem0/configs/prompts.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-31",
+          "expected": [
+            "mem0-ts/src/oss/src/storage/DummyHistoryManager.ts"
+          ],
+          "baseRank": 7,
+          "candidateRank": 7,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/memory/index.ts",
+            "mem0-ts/src/oss/src/embeddings/aws_bedrock.ts",
+            "mem0-ts/src/oss/src/prompts/index.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/memory/index.ts",
+            "mem0-ts/src/oss/src/embeddings/aws_bedrock.ts",
+            "mem0-ts/src/oss/src/prompts/index.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-32",
+          "expected": [
+            "mem0-ts/src/oss/src/storage/SupabaseHistoryManager.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/storage/SupabaseHistoryManager.ts",
+            "mem0-ts/src/oss/src/vector_stores/supabase.ts",
+            "mem0-ts/src/oss/examples/vector-stores/supabase.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/storage/SupabaseHistoryManager.ts",
+            "mem0-ts/src/oss/src/vector_stores/supabase.ts",
+            "mem0-ts/src/oss/examples/vector-stores/supabase.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-33",
+          "expected": [
+            "mem0-ts/src/oss/src/config/manager.ts"
+          ],
+          "baseRank": 15,
+          "candidateRank": 14,
+          "baseTop3": [
+            "mem0/configs/llms/openai.py",
+            "mem0/llms/openai_structured.py",
+            "mem0/embeddings/openai.py"
+          ],
+          "candidateTop3": [
+            "mem0/configs/llms/openai.py",
+            "mem0/llms/openai_structured.py",
+            "mem0/embeddings/openai.py"
+          ],
+          "delta": -1
+        },
+        {
+          "id": "mem0-34",
+          "expected": [
+            "mem0-ts/src/oss/src/vector_stores/vectorize.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/vector_stores/vectorize.ts",
+            "mem0-ts/src/oss/src/vector_stores/vectorize.ts",
+            "mem0-ts/src/oss/src/vector_stores/vectorize.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/vector_stores/vectorize.ts",
+            "mem0-ts/src/oss/src/vector_stores/vectorize.ts",
+            "mem0-ts/src/oss/src/vector_stores/vectorize.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-35",
+          "expected": [
+            "mem0-ts/src/oss/src/llms/mistral.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/llms/mistral.ts",
+            "mem0-ts/src/oss/examples/llms/mistral-example.ts",
+            "mem0/llms/aws_bedrock.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/llms/mistral.ts",
+            "mem0-ts/src/oss/examples/llms/mistral-example.ts",
+            "mem0/llms/aws_bedrock.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-36",
+          "expected": [
+            "mem0-ts/src/community/src/integrations/langchain/mem0.ts"
+          ],
+          "baseRank": 10,
+          "candidateRank": 10,
+          "baseTop3": [
+            "mem0/llms/langchain.py",
+            "mem0/memory/main.py",
+            "mem0-ts/src/oss/src/llms/langchain.ts"
+          ],
+          "candidateTop3": [
+            "mem0/llms/langchain.py",
+            "mem0/memory/main.py",
+            "mem0-ts/src/oss/src/llms/langchain.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-37",
+          "expected": [
+            "mem0-ts/src/client/utils.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/client/utils.ts",
+            "mem0-ts/src/client/utils.ts",
+            "mem0-ts/src/oss/src/vector_stores/valkey.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/client/utils.ts",
+            "mem0-ts/src/client/utils.ts",
+            "mem0-ts/src/oss/src/vector_stores/valkey.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-38",
+          "expected": [
+            "mem0-ts/src/oss/src/utils/factory.ts"
+          ],
+          "baseRank": 2,
+          "candidateRank": 2,
+          "baseTop3": [
+            "mem0-ts/src/oss/src/storage/SQLiteManager.ts",
+            "mem0-ts/src/oss/src/utils/factory.ts",
+            "mem0/memory/storage.py"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/src/storage/SQLiteManager.ts",
+            "mem0-ts/src/oss/src/utils/factory.ts",
+            "mem0/memory/storage.py"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-39",
+          "expected": [
+            "mem0-ts/src/oss/src/memory/index.ts"
+          ],
+          "baseRank": null,
+          "candidateRank": null,
+          "baseTop3": [
+            "mem0-ts/src/oss/tests/pgvector.unit.test.ts",
+            "mem0-ts/src/oss/tests/memory.prototype-key-embedding.test.ts",
+            "mem0-ts/src/oss/tests/memory.rerank.test.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/oss/tests/pgvector.unit.test.ts",
+            "mem0-ts/src/oss/tests/memory.prototype-key-embedding.test.ts",
+            "mem0-ts/src/oss/tests/memory.rerank.test.ts"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "mem0-40",
+          "expected": [
+            "mem0-ts/src/client/mem0.ts"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "mem0-ts/src/client/mem0.ts",
+            "mem0-ts/src/client/mem0.ts",
+            "mem0-ts/src/client/mem0.ts"
+          ],
+          "candidateTop3": [
+            "mem0-ts/src/client/mem0.ts",
+            "mem0-ts/src/client/mem0.ts",
+            "mem0-ts/src/client/mem0.ts"
+          ],
+          "delta": 0
+        }
+      ]
+    },
+    {
+      "id": "plandex",
+      "commit": "e2d772072efadbe41d2946d97d79be55532dbab5",
+      "rootFiles": 610,
+      "indexSnapshot": "fde6bae0c295dcccf093ff983502b584dcf1ef8185c1e0b3540fc7a40bd4cbd9",
+      "skippedByReason": {},
+      "metrics": {
+        "base": {
+          "cases": 39,
+          "mrr": 0.5637171600329495,
+          "hit1": 0.46153846153846156,
+          "hit3": 0.6666666666666666,
+          "hit10": 0.7948717948717948,
+          "outside50": 4
+        },
+        "candidate": {
+          "cases": 39,
+          "mrr": 0.5658968267714397,
+          "hit1": 0.46153846153846156,
+          "hit3": 0.6923076923076923,
+          "hit10": 0.7948717948717948,
+          "outside50": 4
+        }
+      },
+      "latencyMs": {
+        "base": {
+          "samples": 351,
+          "p50": 6.60570799999914,
+          "p95": 9.432666999999128
+        },
+        "candidate": {
+          "samples": 351,
+          "p50": 6.529125000000931,
+          "p95": 9.372832999999446
+        }
+      },
+      "regressions": {
+        "hit3": [],
+        "hit10": [],
+        "rankWorse": [],
+        "rankBetter": [
+          "plandex-08",
+          "plandex-26",
+          "plandex-38"
+        ]
+      },
+      "rows": [
+        {
+          "id": "plandex-01",
+          "expected": [
+            "app/server/model/model_error.go"
+          ],
+          "baseRank": 11,
+          "candidateRank": 11,
+          "baseTop3": [
+            "app/server/db/org_helpers.go",
+            "app/server/db/auth_helpers.go",
+            "app/server/syntax/file_map/examples/kotlin_example.kt"
+          ],
+          "candidateTop3": [
+            "app/server/db/org_helpers.go",
+            "app/server/db/auth_helpers.go",
+            "app/server/syntax/file_map/examples/kotlin_example.kt"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-02",
+          "expected": [
+            "app/shared/ai_models_errors.go"
+          ],
+          "baseRank": null,
+          "candidateRank": null,
+          "baseTop3": [
+            "app/server/model/prompts/update_format.go",
+            "app/server/model/prompts/apply_exec.go",
+            "app/server/model/prompts/apply_exec.go"
+          ],
+          "candidateTop3": [
+            "app/server/model/prompts/update_format.go",
+            "app/server/model/prompts/apply_exec.go",
+            "app/server/model/prompts/apply_exec.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-03",
+          "expected": [
+            "app/server/db/queue.go"
+          ],
+          "baseRank": 3,
+          "candidateRank": 3,
+          "baseTop3": [
+            "app/server/db/git.go",
+            "app/server/db/git.go",
+            "app/server/db/queue.go"
+          ],
+          "candidateTop3": [
+            "app/server/db/git.go",
+            "app/server/db/git.go",
+            "app/server/db/queue.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-04",
+          "expected": [
+            "app/server/db/locks.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/db/locks.go",
+            "app/server/db/locks.go",
+            "app/server/db/locks.go"
+          ],
+          "candidateTop3": [
+            "app/server/db/locks.go",
+            "app/server/db/locks.go",
+            "app/server/db/locks.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-05",
+          "expected": [
+            "app/server/db/git.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/db/git.go",
+            "app/server/db/git.go",
+            "app/server/handlers/plans_context.go"
+          ],
+          "candidateTop3": [
+            "app/server/db/git.go",
+            "app/server/db/git.go",
+            "app/server/handlers/plans_context.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-06",
+          "expected": [
+            "app/server/utils/whitespace.go"
+          ],
+          "baseRank": null,
+          "candidateRank": null,
+          "baseTop3": [
+            "app/cli/stream_tui/view.go",
+            "app/server/db/locks.go",
+            "app/server/syntax/structured_edits_tree_sitter.go"
+          ],
+          "candidateTop3": [
+            "app/cli/stream_tui/view.go",
+            "app/server/db/locks.go",
+            "app/server/syntax/structured_edits_tree_sitter.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-07",
+          "expected": [
+            "app/server/utils/xml.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/utils/xml.go",
+            "app/server/utils/xml.go",
+            "app/server/model/plan/tell_stream_processor.go"
+          ],
+          "candidateTop3": [
+            "app/server/utils/xml.go",
+            "app/server/utils/xml.go",
+            "app/server/model/plan/tell_stream_processor.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-08",
+          "expected": [
+            "app/server/syntax/unique_replacement.go"
+          ],
+          "baseRank": 35,
+          "candidateRank": 34,
+          "baseTop3": [
+            "app/shared/plan_model_settings.go",
+            "app/cli/cmd/set_model.go",
+            "app/server/model/plan/tell_stream_main.go"
+          ],
+          "candidateTop3": [
+            "app/shared/plan_model_settings.go",
+            "app/cli/cmd/set_model.go",
+            "app/server/model/plan/tell_stream_main.go"
+          ],
+          "delta": -1
+        },
+        {
+          "id": "plandex-09",
+          "expected": [
+            "app/server/syntax/comments.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/syntax/comments.go",
+            "app/server/model/prompts/build_helpers.go",
+            "app/server/model/prompts/update_format.go"
+          ],
+          "candidateTop3": [
+            "app/server/syntax/comments.go",
+            "app/server/model/prompts/build_helpers.go",
+            "app/server/model/prompts/update_format.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-10",
+          "expected": [
+            "app/server/syntax/validate.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/syntax/validate.go",
+            "app/server/types/reply.go",
+            "app/server/syntax/validate.go"
+          ],
+          "candidateTop3": [
+            "app/server/syntax/validate.go",
+            "app/server/types/reply.go",
+            "app/server/syntax/validate.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-11",
+          "expected": [
+            "app/server/syntax/structured_edits_apply.go"
+          ],
+          "baseRank": 2,
+          "candidateRank": 2,
+          "baseTop3": [
+            "app/cli/lib/git.go",
+            "app/server/syntax/structured_edits_apply.go",
+            "app/server/syntax/structured_edits_apply.go"
+          ],
+          "candidateTop3": [
+            "app/cli/lib/git.go",
+            "app/server/syntax/structured_edits_apply.go",
+            "app/server/syntax/structured_edits_apply.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-12",
+          "expected": [
+            "app/server/host/ip.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/host/ip.go",
+            "app/server/host/ip.go",
+            "app/server/setup/setup.go"
+          ],
+          "candidateTop3": [
+            "app/server/host/ip.go",
+            "app/server/host/ip.go",
+            "app/server/setup/setup.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-13",
+          "expected": [
+            "app/server/litellm_proxy.py"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/litellm_proxy.py",
+            "app/shared/ai_models_providers.go",
+            "app/cli/lib/claude_max.go"
+          ],
+          "candidateTop3": [
+            "app/server/litellm_proxy.py",
+            "app/shared/ai_models_providers.go",
+            "app/cli/lib/claude_max.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-14",
+          "expected": [
+            "app/server/model/litellm.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/model/litellm.go",
+            "app/server/litellm_proxy.py",
+            "app/server/routes/routes.go"
+          ],
+          "candidateTop3": [
+            "app/server/model/litellm.go",
+            "app/server/litellm_proxy.py",
+            "app/server/routes/routes.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-15",
+          "expected": [
+            "app/server/model/plan/build_race.go"
+          ],
+          "baseRank": 3,
+          "candidateRank": 3,
+          "baseTop3": [
+            "app/server/model/plan/build_validate_and_fix.go",
+            "app/server/model/plan/build_validate_and_fix.go",
+            "app/server/model/plan/build_race.go"
+          ],
+          "candidateTop3": [
+            "app/server/model/plan/build_validate_and_fix.go",
+            "app/server/model/plan/build_validate_and_fix.go",
+            "app/server/model/plan/build_race.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-16",
+          "expected": [
+            "app/server/model/plan/tell_stream_main.go"
+          ],
+          "baseRank": 5,
+          "candidateRank": 5,
+          "baseTop3": [
+            "app/cli/lib/claude_max.go",
+            "app/server/model/prompts/architect_context.go",
+            "app/server/types/message.go"
+          ],
+          "candidateTop3": [
+            "app/cli/lib/claude_max.go",
+            "app/server/model/prompts/architect_context.go",
+            "app/server/types/message.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-17",
+          "expected": [
+            "app/server/handlers/file_maps_queue.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/handlers/file_maps_queue.go",
+            "app/server/handlers/file_maps_queue.go",
+            "app/server/syntax/file_map/examples/rust_example.rs"
+          ],
+          "candidateTop3": [
+            "app/server/handlers/file_maps_queue.go",
+            "app/server/handlers/file_maps_queue.go",
+            "app/server/syntax/file_map/examples/rust_example.rs"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-18",
+          "expected": [
+            "app/server/handlers/proxy_helper.go"
+          ],
+          "baseRank": 19,
+          "candidateRank": 19,
+          "baseTop3": [
+            "app/server/model/prompts/user_prompt.go",
+            "app/server/syntax/file_map/examples/ruby_example.rb",
+            "app/server/model/prompts/user_prompt.go"
+          ],
+          "candidateTop3": [
+            "app/server/model/prompts/user_prompt.go",
+            "app/server/syntax/file_map/examples/ruby_example.rb",
+            "app/server/model/prompts/user_prompt.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-19",
+          "expected": [
+            "app/server/setup/setup.go"
+          ],
+          "baseRank": 3,
+          "candidateRank": 3,
+          "baseTop3": [
+            "app/cli/cmd/debug.go",
+            "app/cli/lib/apply.go",
+            "app/server/setup/setup.go"
+          ],
+          "candidateTop3": [
+            "app/cli/cmd/debug.go",
+            "app/cli/lib/apply.go",
+            "app/server/setup/setup.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-20",
+          "expected": [
+            "app/shared/ai_models_large_context.go"
+          ],
+          "baseRank": null,
+          "candidateRank": null,
+          "baseTop3": [
+            "app/server/model/plan/tell_exec.go",
+            "app/server/model/plan/tell_exec.go",
+            "app/server/model/prompts/architect_context.go"
+          ],
+          "candidateTop3": [
+            "app/server/model/plan/tell_exec.go",
+            "app/server/model/plan/tell_exec.go",
+            "app/server/model/prompts/architect_context.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-21",
+          "expected": [
+            "app/server/email/email.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/server/email/email.go",
+            "app/server/email/email.go",
+            "app/server/email/invite.go"
+          ],
+          "candidateTop3": [
+            "app/server/email/email.go",
+            "app/server/email/email.go",
+            "app/server/email/invite.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-22",
+          "expected": [
+            "app/shared/images.go"
+          ],
+          "baseRank": 7,
+          "candidateRank": 7,
+          "baseTop3": [
+            "app/shared/tokens.go",
+            "app/server/migrations/2025051600_custom_models_refactor.up.sql",
+            "app/server/db/data_models.go"
+          ],
+          "candidateTop3": [
+            "app/shared/tokens.go",
+            "app/server/migrations/2025051600_custom_models_refactor.up.sql",
+            "app/server/db/data_models.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-23",
+          "expected": [
+            "app/scripts/cmd/gen/gen.go"
+          ],
+          "baseRank": 10,
+          "candidateRank": 10,
+          "baseTop3": [
+            "test/evals/promptfoo-poc/README.md",
+            "test/evals/promptfoo-poc/evals.md",
+            "test/evals/promptfoo-poc/fix/promptfooconfig.yaml"
+          ],
+          "candidateTop3": [
+            "test/evals/promptfoo-poc/README.md",
+            "test/evals/promptfoo-poc/evals.md",
+            "test/evals/promptfoo-poc/fix/promptfooconfig.yaml"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-24",
+          "expected": [
+            "app/scripts/cmd/provider/gen_provider.go"
+          ],
+          "baseRank": 2,
+          "candidateRank": 2,
+          "baseTop3": [
+            "app/scripts/cmd/gen/gen.go",
+            "app/scripts/cmd/provider/gen_provider.go",
+            "app/scripts/cmd/gen/gen.go"
+          ],
+          "candidateTop3": [
+            "app/scripts/cmd/gen/gen.go",
+            "app/scripts/cmd/provider/gen_provider.go",
+            "app/scripts/cmd/gen/gen.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-25",
+          "expected": [
+            "scripts/merge_from_reflog.sh"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "scripts/merge_from_reflog.sh",
+            "scripts/merge_from_reflog.sh",
+            "app/server/db/git.go"
+          ],
+          "candidateTop3": [
+            "scripts/merge_from_reflog.sh",
+            "scripts/merge_from_reflog.sh",
+            "app/server/db/git.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-26",
+          "expected": [
+            ".github/workflows/docker-publish.yml"
+          ],
+          "baseRank": 4,
+          "candidateRank": 3,
+          "baseTop3": [
+            "app/cli/install.sh",
+            "app/cli/install.sh",
+            "docs/docs/hosting/self-hosting/advanced-self-hosting.md"
+          ],
+          "candidateTop3": [
+            "app/cli/install.sh",
+            "app/cli/install.sh",
+            ".github/workflows/docker-publish.yml"
+          ],
+          "delta": -1
+        },
+        {
+          "id": "plandex-27",
+          "expected": [
+            "app/docker-compose.yml"
+          ],
+          "baseRank": 3,
+          "candidateRank": 3,
+          "baseTop3": [
+            "app/server/db/db.go",
+            "app/server/db/db.go",
+            "app/docker-compose.yml"
+          ],
+          "candidateTop3": [
+            "app/server/db/db.go",
+            "app/server/db/db.go",
+            "app/docker-compose.yml"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-28",
+          "expected": [
+            "app/cli/install.sh"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/cli/install.sh",
+            "app/start_local.sh",
+            "app/cli/install.sh"
+          ],
+          "candidateTop3": [
+            "app/cli/install.sh",
+            "app/start_local.sh",
+            "app/cli/install.sh"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-29",
+          "expected": [
+            "app/cli/fs/paths.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/cli/fs/paths.go",
+            "app/cli/fs/paths.go",
+            "app/cli/fs/fs.go"
+          ],
+          "candidateTop3": [
+            "app/cli/fs/paths.go",
+            "app/cli/fs/paths.go",
+            "app/cli/fs/fs.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-30",
+          "expected": [
+            "app/cli/lib/legacy_files.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/cli/lib/legacy_files.go",
+            "app/server/migrations/2025051600_custom_models_refactor.up.sql",
+            "app/server/migrations/2025012600_update_custom_models.up.sql"
+          ],
+          "candidateTop3": [
+            "app/cli/lib/legacy_files.go",
+            "app/server/migrations/2025051600_custom_models_refactor.up.sql",
+            "app/server/migrations/2025012600_update_custom_models.up.sql"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-31",
+          "expected": [
+            "app/cli/lib/apply_cgroup_linux.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/cli/lib/apply_cgroup_linux.go",
+            "app/cli/lib/apply_proc.go",
+            "app/cli/lib/apply.go"
+          ],
+          "candidateTop3": [
+            "app/cli/lib/apply_cgroup_linux.go",
+            "app/cli/lib/apply_proc.go",
+            "app/cli/lib/apply.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-32",
+          "expected": [
+            "app/cli/lib/claude_max.go"
+          ],
+          "baseRank": 3,
+          "candidateRank": 3,
+          "baseTop3": [
+            "app/cli/types/types.go",
+            "app/server/litellm_proxy.py",
+            "app/cli/lib/claude_max.go"
+          ],
+          "candidateTop3": [
+            "app/cli/types/types.go",
+            "app/server/litellm_proxy.py",
+            "app/cli/lib/claude_max.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-33",
+          "expected": [
+            "app/cli/lib/editor.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/cli/lib/editor.go",
+            "app/cli/lib/context_shared.go",
+            "app/cli/lib/editor.go"
+          ],
+          "candidateTop3": [
+            "app/cli/lib/editor.go",
+            "app/cli/lib/context_shared.go",
+            "app/cli/lib/editor.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-34",
+          "expected": [
+            "app/cli/upgrade.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/cli/upgrade.go",
+            "app/cli/version/version.go",
+            "app/cli/cmd/version.go"
+          ],
+          "candidateTop3": [
+            "app/cli/upgrade.go",
+            "app/cli/version/version.go",
+            "app/cli/cmd/version.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-35",
+          "expected": [
+            "app/cli/format/time.go"
+          ],
+          "baseRank": 1,
+          "candidateRank": 1,
+          "baseTop3": [
+            "app/cli/format/time.go",
+            "app/cli/format/time.go",
+            "app/server/model/prompts/user_prompt.go"
+          ],
+          "candidateTop3": [
+            "app/cli/format/time.go",
+            "app/cli/format/time.go",
+            "app/server/model/prompts/user_prompt.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-36",
+          "expected": [
+            "app/cli/api/clients.go"
+          ],
+          "baseRank": 10,
+          "candidateRank": 10,
+          "baseTop3": [
+            "app/cli/api/methods.go",
+            "app/cli/url/url.go",
+            "app/server/handlers/auth_helpers.go"
+          ],
+          "candidateTop3": [
+            "app/cli/api/methods.go",
+            "app/cli/url/url.go",
+            "app/server/handlers/auth_helpers.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-37",
+          "expected": [
+            "app/cli/url/url.go"
+          ],
+          "baseRank": 3,
+          "candidateRank": 3,
+          "baseTop3": [
+            "app/cli/cmd/diffs.go",
+            "app/cli/cmd/usage.go",
+            "app/cli/url/url.go"
+          ],
+          "candidateTop3": [
+            "app/cli/cmd/diffs.go",
+            "app/cli/cmd/usage.go",
+            "app/cli/url/url.go"
+          ],
+          "delta": 0
+        },
+        {
+          "id": "plandex-38",
+          "expected": [
+            "app/cli/lib/apply.go"
+          ],
+          "baseRank": 50,
+          "candidateRank": 48,
+          "baseTop3": [
+            "app/shared/rbac.go",
+            "app/server/types/auth.go",
+            "app/server/handlers/auth_helpers.go"
+          ],
+          "candidateTop3": [
+            "app/shared/rbac.go",
+            "app/server/types/auth.go",
+            "app/server/handlers/auth_helpers.go"
+          ],
+          "delta": -2
+        },
+        {
+          "id": "plandex-39",
+          "expected": [
+            "app/server/model/plan/stop.go"
+          ],
+          "baseRank": null,
+          "candidateRank": null,
+          "baseTop3": [
+            "app/server/syntax/file_map/examples/typescript_example.ts",
+            "app/server/handlers/plans_exec.go",
+            "app/server/model/plan/tell_stream_store.go"
+          ],
+          "candidateTop3": [
+            "app/server/syntax/file_map/examples/typescript_example.ts",
+            "app/server/handlers/plans_exec.go",
+            "app/server/model/plan/tell_stream_store.go"
+          ],
+          "delta": 0
+        }
+      ]
+    }
+  ],
+  "sourceArchives": {
+    "mem0": {
+      "repository": "https://github.com/mem0ai/mem0",
+      "commit": "abb81c88e1f738a8117d8293530fbc31a5ef8fd9",
+      "includedPaths": [
+        "mem0/",
+        "mem0-ts/"
+      ],
+      "note": "Pinned Git tree has no openmemory/ path. The separate repository revision was not pinned, so this artifact cannot claim to reproduce any historical openmemory-inclusive corpus."
+    },
+    "plandex": {
+      "repository": "https://github.com/plandex-ai/plandex",
+      "commit": "e2d772072efadbe41d2946d97d79be55532dbab5"
+    }
+  },
+  "execution": {
+    "node": "24.21.0",
+    "thirdPartyCodeExecuted": false,
+    "indexer": "BBrainX indexProject; no package install, build, or third-party program execution"
+  },
+  "selfGate": {
+    "snapshot": "8fbab13887ca2f300fa32542dfa2adbae7ea1e218265fdd4f9c89da34821eaa2",
+    "indexedFiles": 239,
+    "fixtures": {
+      "natural": {
+        "thresholds": {
+          "hit3": 0.6,
+          "hit10": 0.85
+        },
+        "base": {
+          "total": {
+            "cases": 36,
+            "hit1": 0.25,
+            "hit3": 0.5833333333333334,
+            "hit10": 0.8611111111111112,
+            "mrr": 0.44538284368328224
+          },
+          "byKind": {
+            "natural": {
+              "cases": 36,
+              "hit1": 0.25,
+              "hit3": 0.5833333333333334,
+              "hit10": 0.8611111111111112,
+              "mrr": 0.44538284368328224
+            }
+          }
+        },
+        "candidate": {
+          "total": {
+            "cases": 36,
+            "hit1": 0.3611111111111111,
+            "hit3": 0.6944444444444444,
+            "hit10": 0.8611111111111112,
+            "mrr": 0.5385079041329041
+          },
+          "byKind": {
+            "natural": {
+              "cases": 36,
+              "hit1": 0.3611111111111111,
+              "hit3": 0.6944444444444444,
+              "hit10": 0.8611111111111112,
+              "mrr": 0.5385079041329041
+            }
+          }
+        }
+      },
+      "self": {
+        "thresholds": {
+          "identifierHit1": 0.9,
+          "wordsHit3": 0.8,
+          "totalMrr": 0.6
+        },
+        "base": {
+          "total": {
+            "cases": 24,
+            "hit1": 0.7083333333333334,
+            "hit3": 0.9583333333333334,
+            "hit10": 0.9583333333333334,
+            "mrr": 0.8157051282051281
+          },
+          "byKind": {
+            "identificador": {
+              "cases": 12,
+              "hit1": 1,
+              "hit3": 1,
+              "hit10": 1,
+              "mrr": 1
+            },
+            "palavras": {
+              "cases": 5,
+              "hit1": 0.8,
+              "hit3": 1,
+              "hit10": 1,
+              "mrr": 0.9
+            },
+            "natural": {
+              "cases": 7,
+              "hit1": 0.14285714285714285,
+              "hit3": 0.8571428571428571,
+              "hit10": 0.8571428571428571,
+              "mrr": 0.4395604395604395
+            }
+          }
+        },
+        "candidate": {
+          "total": {
+            "cases": 24,
+            "hit1": 0.7916666666666666,
+            "hit3": 0.9583333333333334,
+            "hit10": 1,
+            "mrr": 0.8657407407407406
+          },
+          "byKind": {
+            "identificador": {
+              "cases": 12,
+              "hit1": 1,
+              "hit3": 1,
+              "hit10": 1,
+              "mrr": 1
+            },
+            "palavras": {
+              "cases": 5,
+              "hit1": 0.8,
+              "hit3": 1,
+              "hit10": 1,
+              "mrr": 0.9
+            },
+            "natural": {
+              "cases": 7,
+              "hit1": 0.42857142857142855,
+              "hit3": 0.8571428571428571,
+              "hit10": 1,
+              "mrr": 0.611111111111111
+            }
+          }
+        }
+      }
+    }
+  }
+}

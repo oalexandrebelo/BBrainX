@@ -1,0 +1,66 @@
+{
+  "observedAt": "2026-10-08T04:42:55.659Z",
+  "revision": "a21f42ccab511da82906d0a9034389c8478a8d3c",
+  "baselineFailedCi": "https://github.com/oalexandrebelo/BBrainX/actions/runs/37727059465",
+  "localEnvironment": {
+    "platform": "darwin",
+    "architecture": "arm64"
+  },
+  "tests": [
+    {
+      "node": "24.21.0",
+      "passed": 402,
+      "failed": 0,
+      "skipped": 0
+    },
+    {
+      "node": "22.20.0",
+      "passed": 402,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "build": "passed; existing React Flow use-client bundler warning",
+  "installedSharedContext": 5,
+  "installedProjectIsolation": 16,
+  "installedRunnerTests": 14,
+  "nativeCodexBackends": 2,
+  "modelRequests": 0,
+  "sourceSha256": {
+    "bin/bbrainx.mjs": "43920ad6e91fb8fa8e83aa78aa0cd6460e8e1428814598220eee240edbf15899",
+    "extensions/vscode/media/icon.svg": "33cd24b5edd58378283a43c8df49e75e9ce0201626f92dbc40192b311814b42c",
+    "extensions/vscode/package.json": "df4e4268bbd16429a1a54c85c0a2101dd21c1945f70bd60d737def3b881ec1fc",
+    "src/context-import.mjs": "09cbfa2d195f8f62a26e6959ad8769d6d015a38c738ed6734df4a3167b641f1c",
+    "src/control-cli.mjs": "f5afe813a4c562b7a800ea70512d50295954f0dc315cb381813a83b575f40de1",
+    "src/control.mjs": "639e36d3827e89636ab73b8afc1039f6eccb4441aa1e5b53e04cbacb09abe65f",
+    "src/integrations.mjs": "53abc7573425ebcc5857e87466f91084980218526b87226377099ab5dedf48d3",
+    "src/store.mjs": "e640e7d93c34e465ddbbbf734ff8c2af51b312f11da0348eda016656a3766900",
+    "src/workspace.mjs": "72b9ae1c8cfa849b96a97475ec622cb16f0cdf301af6f0d5e65ffcb977a9be80",
+    "test/context-import.test.mjs": "84cdf300981615e1019d30bea7d7712cf475fd9df001c9f08558b6be799b35b1",
+    "test/control.test.mjs": "233db206529f7f35e70e4419b5a06a963a2d8ff0aab21711b373282e3465ee4e",
+    "test/extension.test.mjs": "57f4e552b294145593d7c1a92f82363e3e9bba489002e3f3934cc968ce22ab1d",
+    "test/fixtures/lane-setup.mjs": "d71d0bc21abba9bd5b5a03207bdfc086a8847be517762e1a6b98e30fb338bf5b",
+    "test/godmode.test.mjs": "3bfa798837abeb589d5e3498c54d11e7a87371926a88e0adb7d1dfe0463ffc71",
+    "test/integration-node-path.test.mjs": "3c33445a7d1c54ce7f93854c27a81231614dcb9328444ea3d0f662ba13fdee8e",
+    "test/integrations.test.mjs": "c0d51a5d43a684db6edd554dc080889d557763d48f8e731b607aaeb91bca818c",
+    "test/retrieval-safety.test.mjs": "ab812f96a53cd3d06bfd825eaeca3766e8cc9fefcbfbc0a2248ebc5b7c2a4672",
+    "test/store-open.test.mjs": "ba06f6c71b7480ae7b51c0403ae37ceee47d991122dd08153406de550709a071",
+    "test/test-runner.test.mjs": "fe51a2d5c59d4d293ed7f846266ee74d44bda8d6bd7f7f08fa025c8ea4fa958b",
+    "test/workspace.test.mjs": "8630f53d6bfff6adfcfe6a95dd445061ceb694eb718a114f71f1df8bad0aac29"
+  },
+  "logSha256": {
+    "bbrainx-final-node24.log": "bfa835ee59256b316ad4209e5fbb25e6b0b12120a1660b1a72e9740e3cac0399",
+    "bbrainx-final-node22.log": "4c83e407ed53d837c16497520ef08ae99a78205c51d78a3ab9a52908667b1c96",
+    "bbrainx-final-build.log": "afc7a12535a5d724076a33d52b50293ef94230d85a1255833e036d72579d3b97",
+    "bbrainx-final-runner.log": "bebab15f296eac4daf7c231e85a1fd2c0f76020dc512b338110a32988949420b"
+  },
+  "limits": [
+    "Local execution was macOS; Windows requires the new CI run linked from PR15.",
+    "Tests and build do not establish measured speed, provider savings or commercial readiness.",
+    "Previous 18 browser cases and broader collectors belong to their recorded revisions; current CI reexecutes these gates."
+  ],
+  "secondFailedCi": "https://github.com/oalexandrebelo/BBrainX/actions/runs/37728293826",
+  "secondFailure": "Legacy up command compared plain and native path spellings; corrected in a22954f with real CLI regression.",
+  "runnerWindowsPolicy": "Root-redirection test now uses a junction on Windows; only POSIX descendant termination remains platform-specific.",
+  "extension": "0.1.1 installed; transparent BX Activity Bar glyph verified in VS Code"
+}

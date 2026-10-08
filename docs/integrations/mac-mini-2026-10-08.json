@@ -1,0 +1,366 @@
+{
+  "observedAt": "2026-10-08T04:42:55.659Z",
+  "runtimeRevision": "a21f42ccab511da82906d0a9034389c8478a8d3c",
+  "node": "v24.21.0",
+  "lockSha256": "aa6cdd6625a87b634ac9c60ddb962d22d24d1c9322ad686af40fad977bc44a99",
+  "sourceTarSha256": "081a2cba7cc680707316bc58af7b23017a0e7af559bd581116b95bb978dfab3b",
+  "projects": [
+    {
+      "id": "omniway-its",
+      "indexedFiles": 163,
+      "configScopes": [
+        "codex-project",
+        "claude-project",
+        "vscode-project",
+        "kilo-project"
+      ]
+    },
+    {
+      "id": "donefitt",
+      "indexedFiles": 2590,
+      "configScopes": [
+        "codex-project",
+        "claude-project",
+        "vscode-project",
+        "kilo-project"
+      ]
+    },
+    {
+      "id": "ab-gestor",
+      "indexedFiles": 637,
+      "configScopes": [
+        "codex-project",
+        "claude-project",
+        "vscode-project",
+        "kilo-project"
+      ]
+    }
+  ],
+  "sharedContextChecks": [
+    {
+      "name": "two-installed-stdio-clients-six-tools",
+      "status": "passed"
+    },
+    {
+      "name": "checkpoint-written-by-first-client",
+      "status": "passed"
+    },
+    {
+      "name": "same-project-checkpoint-read-by-second-client",
+      "status": "passed"
+    },
+    {
+      "name": "foreign-project-refused",
+      "status": "passed"
+    },
+    {
+      "name": "wrong-startup-workspace-refused",
+      "status": "passed"
+    }
+  ],
+  "projectIsolation": {
+    "observedAt": "2026-10-08T04:42:56.392Z",
+    "checks": [
+      {
+        "project": "bbrainx",
+        "check": "own-project-read",
+        "status": "passed"
+      },
+      {
+        "project": "bbrainx",
+        "foreign": "omniway-its",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "bbrainx",
+        "foreign": "donefitt",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "bbrainx",
+        "foreign": "ab-gestor",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "omniway-its",
+        "check": "own-project-read",
+        "status": "passed"
+      },
+      {
+        "project": "omniway-its",
+        "foreign": "bbrainx",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "omniway-its",
+        "foreign": "donefitt",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "omniway-its",
+        "foreign": "ab-gestor",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "donefitt",
+        "check": "own-project-read",
+        "status": "passed"
+      },
+      {
+        "project": "donefitt",
+        "foreign": "bbrainx",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "donefitt",
+        "foreign": "omniway-its",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "donefitt",
+        "foreign": "ab-gestor",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "ab-gestor",
+        "check": "own-project-read",
+        "status": "passed"
+      },
+      {
+        "project": "ab-gestor",
+        "foreign": "bbrainx",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "ab-gestor",
+        "foreign": "omniway-its",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      },
+      {
+        "project": "ab-gestor",
+        "foreign": "donefitt",
+        "check": "foreign-project-denied",
+        "status": "passed"
+      }
+    ],
+    "passed": 16,
+    "modelRequests": 0
+  },
+  "installedTests": {
+    "id": "d67fae70-6d15-4db4-b302-f989f86123dd",
+    "status": "passed",
+    "passed": 14,
+    "failed": 0,
+    "total": 14,
+    "revision": "a21f42ccab511da82906d0a9034389c8478a8d3c"
+  },
+  "nativeCodex": {
+    "observedAt": "2026-10-08T04:42:54.553Z",
+    "cwd": "<HOME>/Documents/Projetos/BBrainX/release-audit",
+    "scope": "Actual native Codex app-server configuration and isolated BBrainX MCP discovery; no threads, prompts, tool calls or inference",
+    "projectConfigSha256": "bfe285cd8db1ec1b565aac82f63e35b296eeda8ed17d73062ec95c9b98d549d6",
+    "backends": {
+      "standalone": {
+        "binary": "/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex",
+        "version": "codex-cli 0.162.0-alpha.2",
+        "initialized": true,
+        "originalConfiguration": {
+          "effectiveBbrainxPresent": true,
+          "command": "/opt/homebrew/opt/node@24/bin/node",
+          "entry": "<HOME>/Library/Application Support/BBrainX/app/current/bin/bbrainx.mjs",
+          "project": "bbrainx",
+          "workspace": "<HOME>/Documents/Projetos/BBrainX/release-audit",
+          "harness": "codex",
+          "workspaceGuardMatches": true,
+          "harnessGuardMatches": true,
+          "projectLayerPresent": true,
+          "envValuesOmitted": true
+        },
+        "originalRequestedMethods": [
+          "initialize",
+          "config/read"
+        ],
+        "probeConfiguration": {
+          "effectiveBbrainxPresent": true,
+          "command": "/opt/homebrew/opt/node@24/bin/node",
+          "entry": "<HOME>/Library/Application Support/BBrainX/app/current/bin/bbrainx.mjs",
+          "project": "bbrainx",
+          "workspace": "<HOME>/Documents/Projetos/BBrainX/release-audit",
+          "harness": "codex",
+          "workspaceGuardMatches": true,
+          "harnessGuardMatches": true,
+          "projectLayerPresent": true,
+          "envValuesOmitted": true
+        },
+        "otherMcpServersTemporarilyDisabled": 2,
+        "probeIsolationConfirmed": true,
+        "bbrainx": [
+          {
+            "name": "bbrainx",
+            "authStatus": "unsupported",
+            "runtimeStatus": null,
+            "runtimeStatusReturned": false,
+            "toolsErrorPresent": false,
+            "toolNames": [
+              "context_bootstrap",
+              "context_index",
+              "context_search",
+              "memory_propose",
+              "session_checkpoint",
+              "session_get"
+            ],
+            "toolCount": 6,
+            "allExpectedToolsPresent": true,
+            "serverInfo": {
+              "name": "bbrainx",
+              "version": "0.4.0",
+              "title": "BBrainX · bbrainx",
+              "icons": [
+                {
+                  "mimeType": "image/svg+xml",
+                  "srcKind": "data-uri",
+                  "srcSha256": "cbf9a16156d361e5e033e8fd39b7933f5cb0cab1fc878ce34f9c6e0f4b184613"
+                }
+              ]
+            }
+          }
+        ],
+        "paginationComplete": true,
+        "nativeToolsLoaded": true,
+        "nativeActiveThreadStatus": "unknown-no-thread-started",
+        "statusRequestedMethods": [
+          "initialize",
+          "config/read",
+          "mcpServerStatus/list"
+        ],
+        "stderrBytes": 897
+      },
+      "vscodeEmbedded": {
+        "binary": "<HOME>/.vscode/extensions/openai.chatgpt-26.5928.31416-darwin-arm64/bin/macos-aarch64/codex",
+        "version": "codex-cli 0.159.2",
+        "initialized": true,
+        "originalConfiguration": {
+          "effectiveBbrainxPresent": true,
+          "command": "/opt/homebrew/opt/node@24/bin/node",
+          "entry": "<HOME>/Library/Application Support/BBrainX/app/current/bin/bbrainx.mjs",
+          "project": "bbrainx",
+          "workspace": "<HOME>/Documents/Projetos/BBrainX/release-audit",
+          "harness": "codex",
+          "workspaceGuardMatches": true,
+          "harnessGuardMatches": true,
+          "projectLayerPresent": true,
+          "envValuesOmitted": true
+        },
+        "originalRequestedMethods": [
+          "initialize",
+          "config/read"
+        ],
+        "probeConfiguration": {
+          "effectiveBbrainxPresent": true,
+          "command": "/opt/homebrew/opt/node@24/bin/node",
+          "entry": "<HOME>/Library/Application Support/BBrainX/app/current/bin/bbrainx.mjs",
+          "project": "bbrainx",
+          "workspace": "<HOME>/Documents/Projetos/BBrainX/release-audit",
+          "harness": "codex",
+          "workspaceGuardMatches": true,
+          "harnessGuardMatches": true,
+          "projectLayerPresent": true,
+          "envValuesOmitted": true
+        },
+        "otherMcpServersTemporarilyDisabled": 2,
+        "probeIsolationConfirmed": true,
+        "bbrainx": [
+          {
+            "name": "bbrainx",
+            "authStatus": "unsupported",
+            "runtimeStatus": null,
+            "runtimeStatusReturned": false,
+            "toolsErrorPresent": false,
+            "toolNames": [
+              "context_bootstrap",
+              "context_index",
+              "context_search",
+              "memory_propose",
+              "session_checkpoint",
+              "session_get"
+            ],
+            "toolCount": 6,
+            "allExpectedToolsPresent": true,
+            "serverInfo": {
+              "name": "bbrainx",
+              "version": "0.4.0",
+              "title": "BBrainX · bbrainx",
+              "icons": [
+                {
+                  "mimeType": "image/svg+xml",
+                  "srcKind": "data-uri",
+                  "srcSha256": "cbf9a16156d361e5e033e8fd39b7933f5cb0cab1fc878ce34f9c6e0f4b184613"
+                }
+              ]
+            }
+          }
+        ],
+        "paginationComplete": true,
+        "nativeToolsLoaded": true,
+        "nativeActiveThreadStatus": "unknown-no-thread-started",
+        "statusRequestedMethods": [
+          "initialize",
+          "config/read",
+          "mcpServerStatus/list"
+        ],
+        "stderrBytes": 897
+      }
+    },
+    "limitations": [
+      "Status probe uses temporary overrides disabling unrelated MCP servers; no configuration file is modified.",
+      "Tool discovery does not prove an active conversation, loaded editor window or model use.",
+      "runtimeStatus null/absent is unknown; no thread was started.",
+      "Configuration credentials, environment values, unrelated servers and raw stderr are omitted."
+    ],
+    "projectConfigAfterSha256": "bfe285cd8db1ec1b565aac82f63e35b296eeda8ed17d73062ec95c9b98d549d6",
+    "projectConfigUnchanged": true,
+    "installedRuntime": "<HOME>/Library/Application Support/BBrainX/app/releases/a21f42ccab511da82906d0a9034389c8478a8d3c"
+  },
+  "editorExtension": {
+    "version": "0.1.1",
+    "vsixSha256": "345823599dc6979c3b37b7c9cf46320f9c4701f5c5700fbec4b61c3ede668a43",
+    "installed": [
+      "vscode",
+      "antigravity"
+    ],
+    "vscodeUi": "Transparent BX glyph, Activity Bar, status bar and project root observed after reload",
+    "antigravityUi": "Editor workspace receipt observed; Activity Bar not separately verified"
+  },
+  "antigravityMcp": {
+    "state": "global-entry-removed",
+    "otherServersPreserved": 7,
+    "reason": "Per-request calling-workspace attestation unavailable; startup cwd alone is insufficient for global reuse"
+  },
+  "omniroute": "Pending operator Base URL and model/combo; no provider configuration or inference requests",
+  "trust": "Only prior release-audit trust retained; no new trust granted to other projects",
+  "panel": "Loopback 127.0.0.1:4317; started explicitly, no boot daemon configured",
+  "runtimeUpgrade": "Previous BBrainX processes terminated; panel restarted and release-audit VS Code window reloaded. Native clients reconnect through existing project configuration.",
+  "nativeReconnected": [
+    {
+      "harness": "kilo",
+      "status": "connected",
+      "startedAt": "2026-10-08T04:43:04.532Z"
+    },
+    {
+      "harness": "claude",
+      "status": "connected",
+      "startedAt": "2026-10-08T04:43:03.899Z"
+    }
+  ]
+}

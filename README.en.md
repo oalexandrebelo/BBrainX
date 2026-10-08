@@ -21,10 +21,23 @@ node bin/bbrainx.mjs up --root /path/to/your/project
 `setup` checks the host, installs exactly the lockfile without lifecycle scripts, runs the tests and builds the panel. `up` registers the folder, indexes it and prints the next step for each harness. `node bin/bbrainx.mjs doctor` reports the best scenario for this machine; it only observes, and never runs the tools it finds.
 
 ```sh
-node bin/bbrainx.mjs config --project my-project --client claude   # or codex, cursor, vscode, gemini
+node bin/bbrainx.mjs integrate --root /path/to/your/project
+node bin/bbrainx.mjs integrate --root /path/to/your/project --apply
 ```
 
-The command **prints** the configuration. No BBrainX command edits harness configuration, credentials or approval settings. `npm start` opens the panel at http://127.0.0.1:4317.
+Without `--apply`, `integrate` reports paths, hashes and pending steps. With `--apply`, it registers the root, writes the project's MCP entry with private backups and indexes files. It preserves credentials, providers, workspace trust and approvals. Discovery inspects local installation metadata without running clients; Codex, Claude Code, VS Code and Kilo have automatic project configuration. Antigravity IDE remains manual, with no global all-project registration. `--clients codex,claude,vscode,kilo` selects targets even if absent. `--adopt-existing` migrates only an exact previous-generator configuration. `integrations rollback --id RECEIPT_ID` restores original bytes unless a later edit conflicts. See the [installer contract](docs/integrations/INSTALLER.md).
+
+`config --project my-project --client cursor` still prints manual fragments (also claude, codex, vscode and gemini). Configuration is not evidence of a native connection. `npm start` serves the panel at http://127.0.0.1:4317.
+
+The [own BBrainX extension](extensions/vscode/README.md) adds a workspace tree, brand and Detect/Connect commands. Package it with `node scripts/package-extension.mjs` (Python 3 for ZIP packaging only), install the local preview VSIX and set a trusted executable in user settings. VS Code uses official workspace APIs; Antigravity VSIX activation and MCP loading require separate native verification. Trusted open folders emit metadata heartbeats every 30 seconds with a 90-second lease, without automatically registering/indexing projects. `discover --root /path/to/project` separates reported open folders, registered projects and validated historical sessions; it does not observe every IDE's live sessions.
+
+```sh
+node bin/bbrainx.mjs test --project my-project --file test/auth.test.mjs --timeout 300000
+node bin/bbrainx.mjs control --project my-project
+node bin/bbrainx.mjs import-context --project my-project --harness claude --file /absolute/path/session.jsonl
+```
+
+The runner executes concrete `node:test` files under the registered root, with bounded progress/diagnostics and local user permissions; it is not an OS sandbox. Explicit context import supports validated Claude, Codex and Cursor native JSONL formats and creates an untrusted `review_needed` checkpoint, not access grants or approved memory. Sources stay private in local state. Other history formats are refused. Cursor without embedded cwd requires `--confirm-workspace /canonical/root`, remains source-unverified and rejects ambiguous folder names.
 
 To let the agent do the wiring itself, paste [docs/prompts/ACTIVATE.md](docs/prompts/ACTIVATE.md) into its session. Anyone taking over the project starts at [docs/HANDOFF.md](docs/HANDOFF.md). Both are in Brazilian Portuguese.
 

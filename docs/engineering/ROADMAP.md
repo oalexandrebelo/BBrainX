@@ -1,6 +1,6 @@
 # Fila de evolução com critérios de aceite
 
-Ordem orientada a risco e evidência, revisada em 07/10/2026. Os itens são contratos de trabalho, não promessa de prazo. Antes de assumir, conferir [CONTINUITY.md](CONTINUITY.md), alterações em andamento e CI. Responsáveis abaixo são papéis, não atribuições fictícias a pessoas. “Implementado” descreve o código desta rodada; a aprovação para integração depende dos checks associados à revisão entregue na PR, não do status escrito nesta tabela.
+Ordem orientada a risco e evidência, revisada em 08/10/2026. Os itens são contratos de trabalho, não promessa de prazo. Antes de assumir, conferir [CONTINUITY.md](CONTINUITY.md), alterações em andamento e CI. Responsáveis abaixo são papéis, não atribuições fictícias a pessoas. “Implementado” descreve o código desta rodada; a aprovação para integração depende dos checks associados à revisão entregue na PR, não do status escrito nesta tabela.
 
 O [norte de otimização](OPTIMIZATION_NORTH.md) define como começar EV-05 e os experimentos seguintes, com arquivos, testes e critérios de decisão. Esta fila continua sendo a fonte de prioridade e estado.
 
@@ -17,9 +17,10 @@ O [norte de otimização](OPTIMIZATION_NORTH.md) define como começar EV-05 e os
 | EV-09 / P2 — limites do broker Laya | Planejado, perfil opt-in | Integrações | Frames/filas bounded, deadline total e geração isolada, resposta tardia rejeitada; inferência real e benefício de tarefa antes de ativação no núcleo. |
 | EV-10 / P2 — cliente piloto e aquisição | Depende EV-03/05/07 | Produto/mantenedor | Instalação e rollback por terceiro, problema/aceite definidos com piloto, direitos/notices revisados, custos de suporte registrados; decisões de preço, licença e venda feitas pelo titular. |
 | EV-11 / P2 — backpressure no transporte stdio | Reproduzido, correção planejada | Protocolo/runtime | Respeitar consumidor lento sem fila ilimitada, preservar framing/cancelamento e declarar limites do host; ensaiar EOF, EPIPE e batches. A reprodução com streams reais acumulou 743.360 bytes com high-water mark de 65.536. |
+| EV-12 / P1 — integração e controle por projeto | Implementado/testado e instalado no Mac mini; lacunas nativas explícitas | Integrações + painel + revisor independente | [Escopo](../integrations/SCOPE.md): roots/grants isolados, lanes/tasks preservadas, plano readOnly, aplicação e rollback CAS com backup privado; histórico Claude/Cursor/Codex limitado e não aprovado; metadata de pastas abertas distinta de histórico; observação MCP sem conteúdo, testes explícitos com arquivo recuperável, custos desconhecidos honestos. Gates locais 402/402 Nodes 24/22.20 e 18 E2E da entrega inicial e provas CLI/MCP reais constam em CONTINUITY; conferir CI da revisão entregue e exigir evidência nativa por cliente antes de certificação. Antigravity IDE manual-required, sem fallback global. |
 
 ## Como alterar a fila
 
 Para promover um item: indicar revisão-base, hipótese, arquivos, teste que demonstrará a falha ou custo, comando reproduzível e rollback. Para concluir: apontar commit/PR/CI e resultado observado, incluindo limites. Bloqueio deve nomear dependência concreta; outro colaborador pode assumir a próxima ação sem reconstruir o chat. Não usar contagem de commits, linhas, ferramentas ou agentes como proxy de valor entregue.
 
-Os itens EV-05 e EV-07 antecedem qualquer promessa comercial de economia ou recuperação garantida. A continuidade técnica não exige escolher antecipadamente entre licenciar o produto e vendê-lo a outra empresa.
+Os itens EV-05 e EV-07 antecedem qualquer promessa comercial de economia ou recuperação garantida. EV-12 facilita instalação, retomada e observação; não conclui esses gates nem mede vantagem de produto automaticamente. A continuidade técnica não exige escolher antecipadamente entre licenciar o produto e vendê-lo a outra empresa.
