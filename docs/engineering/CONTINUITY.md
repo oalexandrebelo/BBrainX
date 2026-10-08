@@ -54,3 +54,5 @@ O mantenedor decide prioridade de produto, licença, versão/release e critério
 - Não copiar banco SQLite em uso com `cp`. Usar o mecanismo de backup aplicável e ensaiar a restauração em diretório isolado. O backup do núcleo não inclui automaticamente os bancos separados de usage/lanes.
 
 Decisão de continuidade: [ADR-0001](../decisions/0001-evidence-and-continuity.md). Preparação de produto e comercialização: [critérios](COMMERCIAL_READINESS.md). A rotina é acionada em cada contribuição; não depende de uma conversa, serviço pago ou agente permanentemente ativo.
+
+Operação entre clientes no Mac mini: [guia de harnesses](../MAC_MINI_HARNESSES.md). Os geradores incluem Antigravity IDE e Kilo Code atual. Configuração, handshake, conexão nativa e tarefa com LLM têm critérios separados; uma instalação local não promove os itens EV-05/06/07 nem certifica todos os clientes.
