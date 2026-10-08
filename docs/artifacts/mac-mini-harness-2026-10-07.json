@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "observedAt": "2026-10-08T00:54:35.448117+00:00",
+  "runtime": {
+    "revision": "f782a9faa7368ce0c4877b1186e517550ecd1d0d",
+    "productVersion": "0.4.0 developer preview",
+    "node": "v24.21.0",
+    "platform": "darwin arm64",
+    "lockSha256": "b3226cef26d1447853eb0526f0bcacb03900b8028103d087518dda842b48477c",
+    "sourceTarSha256": "8d93aed1fcd7dd05ad1e3d672db9921b74f84da8c58daf390c9c94ed99ab5d7a"
+  },
+  "ci": {
+    "runId": 37708640777,
+    "headSha": "f782a9faa7368ce0c4877b1186e517550ecd1d0d",
+    "conclusion": "success",
+    "url": "https://github.com/oalexandrebelo/BBrainX/actions/runs/37708640777"
+  },
+  "localVerification": {
+    "tests": 310,
+    "passed": 310,
+    "build": "passed",
+    "npmCiAuditVulnerabilities": 0,
+    "sdkSmoke": {
+      "schemaVersion": 1,
+      "observedAt": "2026-10-08T00:37:02.113Z",
+      "nodeVersion": "24.21.0",
+      "result": "passed",
+      "checks": [
+        {
+          "name": "tools-list-six-expected",
+          "status": "passed"
+        },
+        {
+          "name": "session-get-readonly",
+          "status": "passed"
+        },
+        {
+          "name": "foreign-project-denied",
+          "status": "passed"
+        },
+        {
+          "name": "disconnect",
+          "status": "passed"
+        },
+        {
+          "name": "reconnect-tools-list",
+          "status": "passed"
+        },
+        {
+          "name": "reconnect-readonly-call",
+          "status": "passed"
+        },
+        {
+          "name": "reconnect-disconnect",
+          "status": "passed"
+        }
+      ]
+    }
+  },
+  "project": {
+    "id": "bbrainx",
+    "rootRole": "release-audit source checkout only",
+    "initialIndexedFiles": 208,
+    "sharedPrivateState": true,
+    "stateDirectoryMode": "0700",
+    "coreDatabaseMode": "0600"
+  },
+  "harnesses": [
+    {
+      "name": "Codex CLI",
+      "version": "0.160.1",
+      "discoveryScope": "trusted project",
+      "nativeDiscoveryTools": 6,
+      "toolsError": null,
+      "conversationRuntimeStatus": null,
+      "uiVerified": false
+    },
+    {
+      "name": "Codex for VS Code",
+      "extensionVersion": "26.5928.31416",
+      "backendVersion": "0.159.2",
+      "discoveryScope": "trusted project",
+      "nativeDiscoveryTools": 6,
+      "toolsError": null,
+      "conversationRuntimeStatus": null,
+      "uiObserved": "bbrainx enabled in MCP servers"
+    },
+    {
+      "name": "Claude Code CLI",
+      "version": "2.1.286",
+      "discoveryScope": "local project",
+      "nativeObserved": "mcp get bbrainx: Connected"
+    },
+    {
+      "name": "Claude Code for VS Code",
+      "version": "2.1.286",
+      "discoveryScope": "local project",
+      "nativeObserved": "embedded CLI mcp get: Connected",
+      "uiObserved": "MCP servers: bbrainx Connected"
+    },
+    {
+      "name": "Kilo Code for VS Code",
+      "version": "7.8.8",
+      "discoveryScope": "project .kilo/kilo.json",
+      "uiObserved": "bbrainx connected",
+      "modelRoute": "OmniRoute requested; endpoint/model still missing"
+    },
+    {
+      "name": "Antigravity IDE",
+      "version": "2.5.5",
+      "discoveryScope": "user configuration; server grant fixed to bbrainx",
+      "uiObserved": "bbrainx: 6 tools enabled",
+      "toolNames": [
+        "context_bootstrap",
+        "context_search",
+        "context_index",
+        "session_get",
+        "session_checkpoint",
+        "memory_propose"
+      ],
+      "workspaceFileDiscovered": false,
+      "workspacePluginDiscovered": false,
+      "existingGlobalServersPreserved": 7
+    }
+  ],
+  "authorization": {
+    "trustedProjectAdded": "release-audit only; explicit operator approval",
+    "parentTrustAdded": false,
+    "credentialsModified": false,
+    "tlsSettingsModified": false,
+    "toolAutoApprovalEnabled": false
+  },
+  "limitations": [
+    "No task with an LLM was used to validate tool selection or business outcomes.",
+    "OmniRoute endpoint and model/combo were not supplied; no provider route was fabricated.",
+    "Codex backend discovery without a conversation returned runtimeStatus null; this is not a persistent-session readiness claim.",
+    "Antigravity user MCP registration is visible outside the source workspace, while the BBrainX server rejects foreign project IDs.",
+    "These setup observations do not establish throughput, token savings, restore guarantees or commercial readiness."
+  ],
+  "nextAction": "Obtain sanitized OmniRoute Base URL and model/combo, configure its supported Kilo provider without moving credentials, then verify the model catalog and an explicitly scoped task. Continue EV-05/06/07 separately."
+}

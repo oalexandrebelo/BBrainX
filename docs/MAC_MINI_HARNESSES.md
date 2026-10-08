@@ -2,6 +2,8 @@
 
 Guia reutilizável, com formatos consultados em 07/10/2026. Os caminhos abaixo são parâmetros, não o inventário de uma máquina. O relatório local da instalação deve registrar versões, revisão Git, arquivos efetivamente carregados e verificações realizadas. Este documento não certifica conexão em todos os clientes nem execução de tarefas com modelos.
 
+A [evidência da instalação de 07/10](artifacts/mac-mini-harness-2026-10-07.json) identifica a revisão instalada e os níveis efetivamente observados. Codex CLI/backend VS Code descobriram seis ferramentas; as interfaces Codex, Claude, Kilo e Antigravity reconheceram o BBrainX. A configuração de inferência Kilo → OmniRoute aguarda Base URL e modelo/combo do operador. Nenhuma tarefa de teste com LLM foi executada.
+
 Leia [AGENTS.md](../AGENTS.md), [modelo de segurança](SECURITY_MODEL.md) e [continuidade](engineering/CONTINUITY.md) antes de operar. Não altere credenciais, TLS, aprovações ou gateways para fazer uma conexão funcionar.
 
 ## Runtime e estado
@@ -77,6 +79,10 @@ A documentação atual prevê `<PROJECT_ROOT>/.agents/mcp_config.json`; o arquiv
 Confirme que a versão instalada reconhece o arquivo de workspace. No painel do agente, abra **MCP Servers → Manage MCP Servers → View raw config** e confira o caminho efetivamente carregado. O schema local pode confirmar o formato sem demonstrar descoberta do arquivo. Versões com guia embutido anterior podem documentar apenas configuração global/plugins; não declare isolamento de workspace apenas porque o JSON é válido.
 
 Após editar, use a atualização/reconexão disponível no gerenciador e confira o estado e a lista de ferramentas. Se a versão exigir reinício da janela, registre esse procedimento. Não há necessidade de enviar um prompt ao modelo para conferir a descoberta e conexão. [Documentação oficial do Antigravity](https://antigravity.google/docs/mcp?tab=ide).
+
+**Compatibilidade observada:** no Antigravity IDE 2.5.5 para macOS, o arquivo de workspace não foi descoberto. Um plugin mínimo sob `.agents/plugins/`, inclusive com registro explícito em `.agents/plugins.json`, também não apareceu após recarga da janela e do servidor de linguagem. Esses caminhos não são certificados para essa instalação. O cadastro de usuário em `~/.gemini/config/mcp_config.json` aceita o mesmo objeto `mcpServers` emitido pelo gerador. Ao usar esse destino, a descoberta é global ao cliente e o grant continua limitado a `mcp --project ID`; não descreva isso como isolamento de visibilidade por workspace. Preserve todos os servidores existentes e confirme o resultado no gerenciador nativo. O guia embutido do IDE e a documentação web podem corresponder a capacidades diferentes.
+
+Na instalação observada, **Customizations → Installed MCP Servers → Refresh** mostrou `bbrainx` com seis ferramentas habilitadas após esse cadastro de usuário. Os sete servidores anteriores foram preservados. Os arquivos locais de descoberta não utilizados foram retirados com backup para não criar registros duplicados em uma atualização futura.
 
 ### Kilo Code 7 no VS Code
 
