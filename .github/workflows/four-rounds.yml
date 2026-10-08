@@ -17,6 +17,10 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Preserve the exact source reviewed by this run
+        run: |
+          mkdir -p artifacts/four-rounds
+          git archive --format=zip --output=artifacts/four-rounds/BBrainX-Source.zip HEAD
       - uses: actions/setup-node@v4
         with:
           node-version: 24
