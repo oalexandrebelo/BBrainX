@@ -2,17 +2,20 @@
 
 Este é o contexto operacional para quem assume o BBrainX. Leia com `AGENTS.md`, execute `npm run project:status` e confira a revisão remota antes de trabalhar. O [handoff de outubro](../HANDOFF.md) conserva o histórico; não define sozinho a prioridade atual.
 
+Quem for otimizar começa pelo [norte de otimização](OPTIMIZATION_NORTH.md), que transforma a fila em experimentos delimitados, com invariantes e critérios de decisão.
+
 ## Estado conhecido e identidade
 
-- Base desta rodada: `38904c38f1d27b84afaeb56fed702d233ad4e25f`, [PR #13](https://github.com/oalexandrebelo/BBrainX/pull/13), sobre a [consolidação #12](https://github.com/oalexandrebelo/BBrainX/pull/12). As PRs #6–#11 já são ancestrais de #12. Verificar se foram incorporadas antes de abrir outra branch; não reaplicar ZIPs antigos.
-- Evidência da base: [run 37675622182](https://github.com/oalexandrebelo/BBrainX/actions/runs/37675622182), 289 testes distintos em cada SO e no Node mínimo. Isso descreve essa revisão, não revisões futuras.
+- Baseline funcional validada para retomada: `7329ece31adb5b23aa50ba42bde9cf7553b764bd`, [PR #14](https://github.com/oalexandrebelo/BBrainX/pull/14), [run 37703988565](https://github.com/oalexandrebelo/BBrainX/actions/runs/37703988565): 310 testes por ambiente, 15 E2E, 15 controles negativos e 3 testes de distribuição; laboratórios separados 34/35. O merge de teste `bcc138da46248852240ac00555ebdce406743da4` tinha árvore idêntica ao HEAD. Antes de derivar trabalho, conferir a ponta remota e os checks de qualquer commit posterior.
+- Base histórica da PR #14: `38904c38f1d27b84afaeb56fed702d233ad4e25f`, [PR #13](https://github.com/oalexandrebelo/BBrainX/pull/13), sobre a [consolidação #12](https://github.com/oalexandrebelo/BBrainX/pull/12). As PRs #6–#11 já são ancestrais de #12. Verificar se foram incorporadas antes de abrir outra branch; não reaplicar ZIPs antigos nem ramificar automaticamente da base histórica.
+- Evidência histórica da PR #13: [run 37675622182](https://github.com/oalexandrebelo/BBrainX/actions/runs/37675622182), 289 testes distintos em cada SO e no Node mínimo. Isso descreve aquela revisão, não a evolução seguinte.
 - Versão declarada: 0.4.0 developer preview; Node mínimo 22.20, Node 24 recomendado. A tag publicada anteriormente não representa automaticamente os novos commits.
 - Repositório consultado em 07/10/2026: **público**. O registro histórico de que era privado está desatualizado. Consultar o GitHub antes de qualquer decisão de publicação ou de compartilhar informação confidencial.
 - Registre o estado de trabalho com `npm run project:status`. O comando informa HEAD, branch, alterações, lockfile e se o relatório local corresponde à revisão limpa. Não consulta o remoto e não autentica o relatório: CI e revisão humana continuam necessárias para promover uma versão.
 
 ## Evolução entregue nesta rodada
 
-Sobre a base acima: ownership MCP contra IDs em voo duplicados; replay de checkpoint sem Git e writer transaction redundantes; distribuição pelos blobs Git com manifesto v2 e ZIP verificável; SBOMs separados; status/contexto/roadmap versionados. A justificativa e os custos de desempenho estão no [livro de experimentos](PERFORMANCE.md). Consulte os checks da PR/revisão atual antes de integrar; os 289 testes da base não certificam esta evolução.
+Na baseline funcional acima: ownership MCP contra IDs em voo duplicados; replay de checkpoint sem Git e writer transaction redundantes; distribuição pelos blobs Git com manifesto v2 e ZIP verificável; SBOMs separados; status/contexto/roadmap versionados. A justificativa e os custos de desempenho estão no [livro de experimentos](PERFORMANCE.md). Consulte os checks da PR/revisão atual antes de integrar; os resultados da baseline não certificam commits posteriores.
 
 Próximo trabalho prioritário: EV-05 (corpus fixado e tarefas aceitas), EV-06 (trabalho síncrono limitado) e EV-07 (restauração do conjunto de bancos). EV-11 documenta a reprodução de saída MCP acumulada com consumidor lento. Não apresentar esses itens como concluídos.
 

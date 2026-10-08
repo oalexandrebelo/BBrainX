@@ -2,6 +2,8 @@
 
 Ordem orientada a risco e evidência, revisada em 07/10/2026. Os itens são contratos de trabalho, não promessa de prazo. Antes de assumir, conferir [CONTINUITY.md](CONTINUITY.md), alterações em andamento e CI. Responsáveis abaixo são papéis, não atribuições fictícias a pessoas. “Implementado” descreve o código desta rodada; a aprovação para integração depende dos checks associados à revisão entregue na PR, não do status escrito nesta tabela.
 
+O [norte de otimização](OPTIMIZATION_NORTH.md) define como começar EV-05 e os experimentos seguintes, com arquivos, testes e critérios de decisão. Esta fila continua sendo a fonte de prioridade e estado.
+
 | Item / prioridade | Estado nesta rodada | Responsável | Aceite / evidência necessária |
 | --- | --- | --- | --- |
 | EV-01 / P1 — ownership de requisições MCP | Implementado nesta rodada | Protocolo + revisor independente | ID duplicado em voo não substitui controlador nem executa outro efeito; cancelamento/EOF preservados nas duas eras; teste vermelho/verde e fonte do contrato. |
