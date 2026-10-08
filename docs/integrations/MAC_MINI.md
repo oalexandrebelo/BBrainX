@@ -1,6 +1,6 @@
 # Operação atual no Mac mini — 08/10/2026
 
-Runtime instalado: `4a9e45372088309cae395e3756aa490eabaf1caa`, Node 24.21.0.
+Runtime instalado: `a21f42ccab511da82906d0a9034389c8478a8d3c`, Node 24.21.0.
 Esta revisão substitui a aplicação inicial descrita em `docs/MAC_MINI_HARNESSES.md`.
 O estado existente foi preservado. Releases anteriores continuam disponíveis para rollback.
 Evidência sanitizada: [mac-mini-2026-10-08.json](mac-mini-2026-10-08.json).
@@ -16,7 +16,7 @@ O launcher `~/.local/bin/bbrainx` usa Node absoluto e exporta `BBRAINX_HOME`,
 | --- | --- | --- |
 | Codex CLI/app-server e backend VS Code | Configuração de projeto, seis ferramentas, título e ícone BBrainX, verificados novamente no runtime atual | Nenhuma thread ou inferência iniciada; runtimeStatus nulo |
 | Claude e Kilo | Configuração por projeto e conexões reais no registro de atividade | Uso da ferramenta por modelo não foi exercitado |
-| Extensão BBrainX no VS Code | Ícone próprio, barra de status, raiz detectada e comando de detecção observados | Configuração detectada não equivale a conexão MCP |
+| Extensão BBrainX 0.1.1 no VS Code | Ícone BX transparente próprio, barra de status, raiz detectada e comando de detecção observados | Configuração detectada não equivale a conexão MCP |
 | Extensão BBrainX no Antigravity | VSIX instalado e recibo real de workspace emitido | Activity Bar não foi verificada separadamente |
 | MCP Antigravity | Entrada global BBrainX retirada com backup; sete outros servidores preservados | Falta comprovar configuração e identidade da chamada por workspace |
 | Kilo usando OmniRoute | Integração MCP BBrainX pronta | Falta Base URL e modelo/combo; credenciais e gateway preservados |
@@ -33,7 +33,7 @@ Os testes reais de isolamento fizeram quatro leituras no próprio projeto e doze
 tentativas entre projetos, todas recusadas com `FORBIDDEN`. Dois clientes MCP
 leram o mesmo checkpoint BBrainX; um processo iniciado no cwd errado foi recusado.
 O runner instalado gravou uma execução com 14 testes aprovados, zero falhas e a
-revisão `4a9e453`. O painel foi inspecionado com os quatro projetos disponíveis,
+revisão `a21f42c`. O painel foi inspecionado com os quatro projetos disponíveis,
 sem mistura de dados ao selecionar um deles. Custos sem recibos aparecem como
 desconhecidos; orçamento é acompanhamento, sem controle sobre chamadas externas.
 

@@ -1,9 +1,9 @@
 {
-  "observedAt": "2026-10-08T04:33:01.124Z",
-  "runtimeRevision": "4a9e45372088309cae395e3756aa490eabaf1caa",
+  "observedAt": "2026-10-08T04:42:55.659Z",
+  "runtimeRevision": "a21f42ccab511da82906d0a9034389c8478a8d3c",
   "node": "v24.21.0",
   "lockSha256": "aa6cdd6625a87b634ac9c60ddb962d22d24d1c9322ad686af40fad977bc44a99",
-  "sourceTarSha256": "862766dfd98b24fb01eb7210c9e2220a3af4ed1e8d1652a4598e2bf482223ae9",
+  "sourceTarSha256": "081a2cba7cc680707316bc58af7b23017a0e7af559bd581116b95bb978dfab3b",
   "projects": [
     {
       "id": "omniway-its",
@@ -59,7 +59,7 @@
     }
   ],
   "projectIsolation": {
-    "observedAt": "2026-10-08T04:33:01.809Z",
+    "observedAt": "2026-10-08T04:42:56.392Z",
     "checks": [
       {
         "project": "bbrainx",
@@ -158,15 +158,15 @@
     "modelRequests": 0
   },
   "installedTests": {
-    "id": "09762bc3-f324-4a7c-b4c6-4c8e1ecace45",
+    "id": "d67fae70-6d15-4db4-b302-f989f86123dd",
     "status": "passed",
     "passed": 14,
     "failed": 0,
     "total": 14,
-    "revision": "4a9e45372088309cae395e3756aa490eabaf1caa"
+    "revision": "a21f42ccab511da82906d0a9034389c8478a8d3c"
   },
   "nativeCodex": {
-    "observedAt": "2026-10-08T04:33:02.798Z",
+    "observedAt": "2026-10-08T04:42:54.553Z",
     "cwd": "<HOME>/Documents/Projetos/BBrainX/release-audit",
     "scope": "Actual native Codex app-server configuration and isolated BBrainX MCP discovery; no threads, prompts, tool calls or inference",
     "projectConfigSha256": "bfe285cd8db1ec1b565aac82f63e35b296eeda8ed17d73062ec95c9b98d549d6",
@@ -330,16 +330,16 @@
     ],
     "projectConfigAfterSha256": "bfe285cd8db1ec1b565aac82f63e35b296eeda8ed17d73062ec95c9b98d549d6",
     "projectConfigUnchanged": true,
-    "installedRuntime": "<HOME>/Library/Application Support/BBrainX/app/releases/4a9e45372088309cae395e3756aa490eabaf1caa"
+    "installedRuntime": "<HOME>/Library/Application Support/BBrainX/app/releases/a21f42ccab511da82906d0a9034389c8478a8d3c"
   },
   "editorExtension": {
-    "version": "0.1.0",
-    "vsixSha256": "087d2fa5439f2b45ca707b3a10a102ae39b5b7cace7e3dfe386c6fcf27a43084",
+    "version": "0.1.1",
+    "vsixSha256": "345823599dc6979c3b37b7c9cf46320f9c4701f5c5700fbec4b61c3ede668a43",
     "installed": [
       "vscode",
       "antigravity"
     ],
-    "vscodeUi": "Activity bar, status bar, root and detect command observed",
+    "vscodeUi": "Transparent BX glyph, Activity Bar, status bar and project root observed after reload",
     "antigravityUi": "Editor workspace receipt observed; Activity Bar not separately verified"
   },
   "antigravityMcp": {
@@ -355,17 +355,12 @@
     {
       "harness": "kilo",
       "status": "connected",
-      "startedAt": "2026-10-08T04:34:00.968Z"
+      "startedAt": "2026-10-08T04:43:04.532Z"
     },
     {
       "harness": "claude",
       "status": "connected",
-      "startedAt": "2026-10-08T04:33:59.925Z"
-    },
-    {
-      "harness": "claude",
-      "status": "connected",
-      "startedAt": "2026-10-08T04:33:59.912Z"
+      "startedAt": "2026-10-08T04:43:03.899Z"
     }
   ]
 }
