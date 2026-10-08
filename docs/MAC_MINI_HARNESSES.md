@@ -1,5 +1,7 @@
 # BBrainX no Mac mini: operação entre harnesses
 
+Estado operacional atualizado em 08/10/2026: [integração por projeto e instalação atual](integrations/MAC_MINI.md). O runtime atual é `abbdd0d`. O procedimento preferido agora é `bbrainx integrate` com plano, aplicação e rollback. O cadastro **global** BBrainX no Antigravity descrito abaixo pertence à observação histórica de 07/10 e foi retirado para preservar isolamento entre projetos; não reaplicá-lo como substituto de configuração por workspace.
+
 Guia reutilizável, com formatos consultados em 07/10/2026. Os caminhos abaixo são parâmetros, não o inventário de uma máquina. O relatório local da instalação deve registrar versões, revisão Git, arquivos efetivamente carregados e verificações realizadas. Este documento não certifica conexão em todos os clientes nem execução de tarefas com modelos.
 
 A [evidência da instalação de 07/10](artifacts/mac-mini-harness-2026-10-07.json) identifica a revisão instalada e os níveis efetivamente observados. Codex CLI/backend VS Code descobriram seis ferramentas; as interfaces Codex, Claude, Kilo e Antigravity reconheceram o BBrainX. A configuração de inferência Kilo → OmniRoute aguarda Base URL e modelo/combo do operador. Nenhuma tarefa de teste com LLM foi executada.

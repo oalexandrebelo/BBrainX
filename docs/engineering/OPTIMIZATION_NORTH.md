@@ -86,3 +86,7 @@ Para dados que sustentam uma alegação histórica, versionar amostras compactad
 ## Critério de valor para comercialização
 
 Antes de promover números ao material comercial, demonstrar instalação/retomada por terceiro, tarefas aceitas com baseline comparável, recuperação ensaiada e custo de suporte/operação. Manter direitos e notices rastreáveis. [COMMERCIAL_READINESS.md](COMMERCIAL_READINESS.md) detalha os gates; EV-10 depende dessas evidências. A direção é construir vantagem verificável e transferível; benchmark isolado, número de agentes e volume de código não estimam valor de venda.
+
+## Operação EV-12 confirmada em 08/10/2026
+
+Runtime `abbdd0d` instalado com isolamento de quatro projetos e 12 recusas cruzadas; documentação operacional em [MAC_MINI.md](../integrations/MAC_MINI.md). Antes de ampliar automação, provar a identidade do workspace em chamadas nativas Antigravity; sua entrada global foi retirada. Preservar os parsers CLI sob warnings do Node mínimo e testar o painel com evidências estruturadas reais, não somente listas vazias. A busca usa prior de docs `.5`, validado em 79 casos independentes: cinco ranks melhores, nenhum pior no top 50; isso não demonstra economia de API nem aceleração. Os casos tornam-se corpus de regressão observado: a próxima seleção de parâmetro precisa de novo holdout.

@@ -1,5 +1,8 @@
 # Ponto de retomada da engenharia
 
+Estado entregue EV-12: implementação `e36e712`, correção final e runtime instalado `abbdd0d88fb5e53499c787b2f50f1cfb23648b40`. Operação atual e pendências: [MAC_MINI.md](../integrations/MAC_MINI.md). Node 24 e Node mínimo 22.20: 397/397 testes; navegador: 18/18, com os três casos do painel repetidos após a correção visual. Quinze controles negativos detectados em cópia isolada. O MCP global Antigravity foi retirado; OmniRoute aguarda URL/modelo. A publicação comercial permanece pendente dos critérios próprios.
+
+
 Este é o contexto operacional para quem assume o BBrainX. Leia com `AGENTS.md`, execute `npm run project:status` e confira a revisão remota antes de trabalhar. O [handoff de outubro](../HANDOFF.md) conserva o histórico; não define sozinho a prioridade atual.
 
 Quem for otimizar começa pelo [norte de otimização](OPTIMIZATION_NORTH.md), que transforma a fila em experimentos delimitados, com invariantes e critérios de decisão.
@@ -7,7 +10,7 @@ Quem for otimizar começa pelo [norte de otimização](OPTIMIZATION_NORTH.md), q
 ## Estado conhecido e identidade
 
 - Baseline histórica validada: `7329ece31adb5b23aa50ba42bde9cf7553b764bd`, [PR #14](https://github.com/oalexandrebelo/BBrainX/pull/14), [run 37703988565](https://github.com/oalexandrebelo/BBrainX/actions/runs/37703988565): 310 testes por ambiente, 15 E2E, 15 controles negativos e 3 testes de distribuição; laboratórios separados 34/35. O merge de teste `bcc138da46248852240ac00555ebdce406743da4` tinha árvore idêntica àquela baseline. Esses checks não aprovam automaticamente os commits posteriores.
-- EV-12 começou em 08/10/2026 sobre `3bb09b0ea68763cc5dd708446ed9d8a4fab5b3bb`, branch `feat/continuous-evolution-2026-10-07`, checkout `release-audit`. A fatia descrita abaixo está em árvore de trabalho; este documento não inventa SHA/PR/CI para alterações ainda não entregues. Antes de retomar, conferir HEAD/diff, ponta remota e evidência da revisão que efetivamente será integrada.
+- EV-12 começou em 08/10/2026 sobre `3bb09b0ea68763cc5dd708446ed9d8a4fab5b3bb`, branch `feat/continuous-evolution-2026-10-07`, checkout `release-audit`. Foi entregue na branch `feat/project-control-plane-2026-10-08`, commits `e36e712` e `abbdd0d`; a evidência local está nos documentos ligados acima. Antes de retomar, conferir HEAD/diff, ponta remota e evidência da revisão que efetivamente será integrada.
 - Base histórica da PR #14: `38904c38f1d27b84afaeb56fed702d233ad4e25f`, [PR #13](https://github.com/oalexandrebelo/BBrainX/pull/13), sobre a [consolidação #12](https://github.com/oalexandrebelo/BBrainX/pull/12). As PRs #6–#11 já são ancestrais de #12. Verificar se foram incorporadas antes de abrir outra branch; não reaplicar ZIPs antigos nem ramificar automaticamente da base histórica.
 - Evidência histórica da PR #13: [run 37675622182](https://github.com/oalexandrebelo/BBrainX/actions/runs/37675622182), 289 testes distintos em cada SO e no Node mínimo. Isso descreve aquela revisão, não a evolução seguinte.
 - Versão declarada: 0.4.0 developer preview; Node mínimo 22.20, Node 24 recomendado. A tag publicada anteriormente não representa automaticamente os novos commits.
@@ -18,7 +21,7 @@ Quem for otimizar começa pelo [norte de otimização](OPTIMIZATION_NORTH.md), q
 
 Na baseline funcional acima: ownership MCP contra IDs em voo duplicados; replay de checkpoint sem Git e writer transaction redundantes; distribuição pelos blobs Git com manifesto v2 e ZIP verificável; SBOMs separados; status/contexto/roadmap versionados. A justificativa e os custos de desempenho estão no [livro de experimentos](PERFORMANCE.md). Consulte os checks da PR/revisão atual antes de integrar; os resultados da baseline não certificam commits posteriores.
 
-Próxima ação nesta rodada: concluir a validação e entrega da EV-12 contra sua revisão exata. A prioridade de otimização permanece EV-05 (corpus fixado e tarefas aceitas), EV-06 (trabalho síncrono limitado) e EV-07 (restauração do conjunto de bancos). EV-11 documenta a reprodução de saída MCP acumulada com consumidor lento. Não apresentar esses itens como concluídos.
+Próxima ação: conferir a CI da ponta remota, revisar a entrega EV-12 e tratar as lacunas nativas documentadas. A prioridade de otimização permanece EV-05 (corpus fixado e tarefas aceitas), EV-06 (trabalho síncrono limitado) e EV-07 (restauração do conjunto de bancos). EV-11 documenta a reprodução de saída MCP acumulada com consumidor lento. Não apresentar esses itens como concluídos.
 
 ## EV-12 — integração e controle por projeto
 
@@ -30,7 +33,7 @@ Limites que o próximo colaborador deve preservar: overview de 16 lanes ativas/3
 
 Evidência focada observada nesta árvore, Node 24.21.0: `test/context-import.test.mjs` 22/22; importer+workspace 40/40 antes da fatia final de control; `test/control.test.mjs` 11/11 após correção e novo teste real do entrypoint legado; conjunto final `test/control.test.mjs test/control-cli.test.mjs test/workspace.test.mjs test/lanes-mcp.test.mjs` 41/41. A reprodução vermelha demonstrou que `integrate --lane` criava estado ao mostrar um plano; agora consulta registry readOnly e só abre LaneStore depois de --apply. Teste real confirma que openWorkspaces exclui receipt de outro projeto e mantém lanes do mesmo projeto. Esses resultados não substituem `npm test`, build, E2E e CI da revisão entregue; a consolidação mantém responsabilidade por esses gates e pela implantação. Não atribuir resultado de outro commit a esta árvore.
 
-Retomada concreta: conferir diff/ownership e revisão independente, executar gates completos na árvore consolidada, registrar os artefatos e commit/PR reais, verificar clientes instalados com seus scopes e só então aplicar a instalação autorizada. Rollback de configuração usa recibos/fingerprints; não restaura bancos. Backup do núcleo ainda não inclui automaticamente usage, registry, lanes, control-v1, imports-v1 ou backups do instalador. EV-07 continua necessária antes de prometer recuperação do conjunto.
+Retomada concreta: conferir revisão instalada e CI remota, estabilizar o escopo nativo Antigravity e validar Kilo/OmniRoute quando houver URL e modelo/combo. Rollback de configuração usa recibos/fingerprints; não restaura bancos. Backup do núcleo ainda não inclui automaticamente usage, registry, lanes, control-v1, imports-v1 ou backups do instalador. EV-07 continua necessária antes de prometer recuperação do conjunto.
 
 ## O que sustentar
 
@@ -73,6 +76,6 @@ Operação entre clientes no Mac mini: [guia de harnesses](../MAC_MINI_HARNESSES
 
 ## Verificação EV-12 — 08/10/2026
 
-A árvore da entrega passou 397/397 testes no Node 24.21.0, build e 18/18 testes de navegador (9 Workbench/Atlas, 6 Observatory, 3 painel). Os 13 testes de CLI/runner também passaram no Node mínimo 22.20.0; a validação independente completa e a instalação do novo runtime são etapas separadas. Manifesto de arquivos e limites: [verification-2026-10-08.json](../integrations/verification-2026-10-08.json).
+A árvore da entrega passou 397/397 testes no Node 24.21.0, build e 18/18 testes de navegador (9 Workbench/Atlas, 6 Observatory, 3 painel). A suíte completa também passou 397/397 no Node mínimo 22.20.0, sem silenciar warnings; os controles independentes e a instalação são descritos separadamente. Manifesto de arquivos e limites: [verification-2026-10-08.json](../integrations/verification-2026-10-08.json).
 
 Próximo colaborador: verificar a revisão instalada e o último recibo operacional antes de alterar configs; fechar a prova nativa de escopo do Antigravity por workspace, mantendo falha fechada; ampliar importadores somente com fixtures de formatos oficiais e provas de isolamento. Depois retomar EV-05/06/07 com corpus congelado. Nunca confundir cache de contexto BBrainX com cache KV ou cobrança do provedor.
