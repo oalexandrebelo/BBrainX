@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "completedAt": "2026-10-08T06:54:06.220Z",
+  "observedHead": "971390aa6c0412a54bec92eee05bad513b2769a9",
+  "scope": "Frozen uncommitted SDD implementation; documentation and final commit are owned by parent.",
+  "node24": {
+    "version": "v24.21.0",
+    "command": "npm test (Node24.21.0 selected in PATH)",
+    "exitCode": 0,
+    "tests": 451,
+    "suites": 0,
+    "pass": 451,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 11061.115791,
+    "log": "node24.log"
+  },
+  "node22": {
+    "version": "v22.20.0",
+    "command": "node --test test/*.test.mjs",
+    "exitCode": 0,
+    "tests": 451,
+    "suites": 0,
+    "pass": 451,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0,
+    "duration_ms": 10728.723291,
+    "log": "node22.log"
+  },
+  "build": {
+    "exitCode": 0,
+    "log": "build.log",
+    "warning": "Existing @xyflow/react module-level use client bundler warning."
+  },
+  "e2e": {
+    "default": {
+      "passed": 24,
+      "failed": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "durationMs": 9597.703000000001,
+      "log": "e2e-default.log",
+      "report": "e2e-default.json"
+    },
+    "usage": {
+      "passed": 6,
+      "failed": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "durationMs": 2439.851,
+      "log": "e2e-usage.log",
+      "report": "e2e-usage.json"
+    },
+    "control": {
+      "passed": 3,
+      "failed": 0,
+      "skipped": 0,
+      "flaky": 0,
+      "durationMs": 1580.979,
+      "log": "e2e-control.log",
+      "report": "e2e-control.json"
+    }
+  },
+  "totalE2ePassed": 33,
+  "ports": {
+    "default": 4379,
+    "usage": 4329,
+    "control": 4331
+  },
+  "evidenceLimits": "Real SDD UI assess verified no implicit creation. UI ensure and exceptional reports use explicitly labeled contract fixtures; backend SDD tests inspect and create real isolated temporary files. No GPU/model inference executed.",
+  "sourceHashes": {
+    "src/sdd.mjs": "ef289b981de659bfb61d0ddb8dbbbc2d15d161aac263d6b12a4e2f93783cb0c0",
+    "src/engine.mjs": "fc71acbeb9ea7fadd9c8fc0b90a6373ba57d6997d32f46eb7b8f5572359d395b",
+    "src/server.mjs": "70ccbd158b5370a1ed461f421abb4cb27160f47532f488bf670a1296aa57c76d",
+    "bin/bbrainx.mjs": "7bf6fd205ef3f1aa7115e0431070c3b4517f18c58deafa017c7440ef34be6a1f",
+    "web/SddPanel.jsx": "7dec1c6e611dee27631dba7fc507aea77d3f7c23f1a3671f0c127da94456e7fb",
+    "web/main.jsx": "982c026ac18c79cabc2540f33d3f6a8b0c72edc8380619f82cad25a63a44fe74",
+    "web/style.css": "0df12b449b7fa99d5a38fd45ca500a4a8a965637bbabd2888b990128cae8986f",
+    "test/sdd.test.mjs": "73e3b1170bae82ce8be1f7d7d935a9f50df78b971dbb7621b2558e9ea972eda5",
+    "test/sdd-integration.test.mjs": "8cce13053b77b39823884427edd4eff245ab363fe4260f24a082a7716f22fbd5",
+    "e2e/sdd-panel.spec.mjs": "7a65e1ef3b0247c0887651962977884f902a5ca8a42cb5b6719867401df0c173"
+  },
+  "negativeControls": {
+    "exclusiveExistingSddGuardRemoved": "caught in disposable copy",
+    "hostProjectGrantRemoved": "caught in disposable copy"
+  },
+  "logHashes": {
+    "node24.log": "0d9dad78226ef66d7a79e15ccebf3a29e3ae16234bd62a521d8d2867e032bf94",
+    "node22.log": "d68c729824f078348876efa1da3f6047ef5137a4bef0d517d3df93d91aef7214",
+    "build.log": "e74f4d23696faab7e95c7a444bf519c17e56ccb75a20fd06a2d2d462500ef7bc",
+    "e2e-default.log": "bfeb9cbdc7627f87b5b78f6ca189e1f775525d6fe090a681a7166e45a8dd5aa8",
+    "e2e-usage.log": "46a23152d5d8cf6f3d36d169547722354e4120865ed84b5227a14e8859694dae",
+    "e2e-control.log": "cf7f7b98769d83facb6b9164334bea256a94c83fbc76da2e380665cba9a1d40c"
+  }
+}

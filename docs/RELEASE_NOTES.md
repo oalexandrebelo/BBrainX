@@ -1,3 +1,7 @@
+# Alinhamento SDD por projeto — 08/10/2026
+
+Detecção de artefatos Spec Kit e SDD genérico, avaliação de cobertura documental por feature e criação exclusiva de rascunho técnico quando ausente. Inclui CLI, HTTP/painel e MCP opt-in `--sdd`, quotas, fontes por hash e testes de escopo/concorrência. A nota não é avaliação semântica ou certificação de qualidade. [Especificação](specs/sdd-alignment.md), [operação](integrations/SDD.md) e [ADR](decisions/0002-sdd-coverage.md). Nenhum runtime MetaGPT/Spec Kit ou chamada paga foi incorporado.
+
 # Decisões locais Laya — 08/10/2026
 
 Capacidade opcional no painel, CLI e MCP, com cache exato isolado, limites do broker, cancelamento e abstenção por perda de entrada. Perfil Python recuperável com seleção explícita de runtime compatível. O núcleo de contexto continua determinístico: o benchmark com janela maior ainda não superou a baseline lexical. [Contratos](integrations/LAYA.md) e [evidência](engineering/LAYA_2026-10-08.md). Sem alteração de pesos, API paga ou comparação vencedora com JEV.
