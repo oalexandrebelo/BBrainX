@@ -8,7 +8,7 @@ import { parse as parseJsonc } from 'jsonc-parser';
 import { discoverIntegrations, planIntegrations, applyIntegrationPlan, rollbackIntegration } from '../src/integrations.mjs';
 
 function fixture(t){
-  const temp=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-integration-')));
+  const temp=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-integration-')));
   t.after(()=>fs.rmSync(temp,{recursive:true,force:true}));
   const root=path.join(temp,'project'),home=path.join(temp,'state'),userHome=path.join(temp,'user');
   for(const directory of [root,userHome])fs.mkdirSync(directory);
@@ -19,15 +19,34 @@ function fixture(t){
 
 test('discovery inspects installed names without executing binaries or reading settings',t=>{
   const f=fixture(t),bin=path.join(f.userHome,'bin');fs.mkdirSync(bin);
-  const marker=path.join(f.temp,'executed'),binary=path.join(bin,'codex');fs.writeFileSync(binary,'#!/bin/sh\ntouch '+marker+'\n',{mode:0o700});
+  const marker=path.join(f.temp,'executed'),binary=path.join(bin,process.platform==='win32'?'codex.EXE':'codex');
+  fs.writeFileSync(binary,'#!/bin/sh\ntouch "'+marker+'"\n',{mode:0o700});
   const extension=path.join(f.userHome,'.vscode','extensions','anthropic.claude-code-2.1.0');fs.mkdirSync(extension,{recursive:true});
   const secret=path.join(f.userHome,'.claude.json');fs.writeFileSync(secret,'PRIVATE_CONFIGURATION');
-  const report=discoverIntegrations({userHome:f.userHome,env:{PATH:bin}});
+  const report=discoverIntegrations({userHome:f.userHome,env:{PATH:bin,PATHEXT:'.EXE;.CMD;.BAT'}});
   assert.equal(report.clients.find(x=>x.id==='codex').detected,true);
   assert.equal(report.clients.find(x=>x.id==='claude').detected,true);
   assert.equal(report.clients.find(x=>x.id==='kilo').detected,false);
   assert.equal(fs.existsSync(marker),false);assert(!JSON.stringify(report).includes('PRIVATE_CONFIGURATION'));
   assert.equal(report.clients.find(x=>x.id==='codex').version,null);
+});
+
+test('Windows inventory honors PATH order and PATHEXT without accepting extensionless files or directories',t=>{
+  const f=fixture(t),first=path.join(f.userHome,'first bin'),second=path.join(f.userHome,'second bin');
+  fs.mkdirSync(first);fs.mkdirSync(second);
+  const wrapper=path.join(first,'codex.CMD'),executable=path.join(second,'codex.EXE'),extensionless=path.join(first,'codex');
+  fs.writeFileSync(wrapper,'@echo off\r\nexit /b 99\r\n');fs.writeFileSync(executable,'inventory fixture; must not execute');
+  fs.writeFileSync(extensionless,'extensionless executable is not Windows PATH evidence',{mode:0o700});
+  fs.mkdirSync(path.join(first,'kilo.EXE'));
+  const discover=PATHEXT=>discoverIntegrations({userHome:f.userHome,platform:'win32',env:{PATH:first+';'+second,PATHEXT}});
+  const all=discover('.EXE;.CMD;.BAT');
+  assert.equal(all.clients.find(x=>x.id==='codex').evidence.find(x=>x.kind==='binary').path,wrapper);
+  assert.equal(all.clients.find(x=>x.id==='kilo').detected,false);
+  const exeOnly=discover('.EXE');
+  assert.equal(exeOnly.clients.find(x=>x.id==='codex').evidence.find(x=>x.kind==='binary').path,executable);
+  fs.unlinkSync(wrapper);fs.unlinkSync(executable);
+  assert.equal(discover('.EXE;.CMD;.BAT').clients.find(x=>x.id==='codex').detected,false);
+  assert.equal(fs.existsSync(f.home),false);
 });
 
 test('macOS discovery records ChatGPT/Codex desktop aliases and separates Antigravity IDE',t=>{
@@ -43,6 +62,7 @@ test('macOS discovery records ChatGPT/Codex desktop aliases and separates Antigr
 test('planning is read-only, excludes secrets, and explicit absent clients can be configured',t=>{
   const f=fixture(t);const target=f.write('.mcp.json','{"mcpServers":{"other":{"env":{"API_KEY":"PRIVATE_KEY"}}},"trust":false}\n');
   const initial=fs.readFileSync(target),plan=planIntegrations(f.options);
+  assert.equal(plan.root,fs.realpathSync.native(f.root));
   assert.equal(plan.files.length,4);assert(plan.files.every(x=>!x.detected));assert(!JSON.stringify(plan).includes('PRIVATE_KEY'));
   assert.deepEqual(fs.readFileSync(target),initial);assert.equal(fs.existsSync(f.home),false);
   const codex=plan.files.find(x=>x.client==='codex');assert.equal(codex.status,'create');

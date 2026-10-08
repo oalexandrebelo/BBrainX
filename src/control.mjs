@@ -7,6 +7,7 @@ import { usageOverview } from './usage/summary.mjs';
 import { readWorkspaceOverview } from './workspace.mjs';
 import { discoverIntegrations } from './integrations.mjs';
 import { budgetOverview } from './budget.mjs';
+import { verifyRoot } from './source-root.mjs';
 
 const MAX_RECORD=65536, MAX_SESSIONS=256, MAX_RUNS=128, LEASE_MS=90000;
 function directory(home,...parts){
@@ -123,7 +124,7 @@ export function archiveTestRun(brain,project,id){
 /** A trusted editor extension reports its current folders, not chat history. No project grant is created. */
 export function workspaceSeen(home,{root,harness,session}){
   identifier(harness);identifier(session);ensure(['vscode','antigravity'].includes(harness),'UNKNOWN_EDITOR');
-  ensure(path.isAbsolute(root),'ABSOLUTE_WORKSPACE_REQUIRED');const workspace=fs.realpathSync(root);
+  ensure(path.isAbsolute(root),'ABSOLUTE_WORKSPACE_REQUIRED');const workspace=fs.realpathSync.native(root);
   ensure(fs.statSync(workspace).isDirectory()&&workspace!==path.parse(workspace).root,'UNSAFE_PROJECT_ROOT');
   const dir=directory(home,'editors'),id=hash({workspace,harness,session}).slice(0,32);
   const current=records(home,['editors'],256);
@@ -141,11 +142,12 @@ export function controlOverview(brain,project){
   const identity=brain.project(project),key=projectKey(project), sessions=records(brain.home,[key,'sessions'],MAX_SESSIONS),runs=records(brain.home,[key,'runs'],MAX_RUNS);
   const memories=brain.db.prepare('SELECT status,count(*) n FROM memories WHERE project=? GROUP BY status').all(project);
   const workspaces=readWorkspaceOverview(brain,project),usage=usageOverview(brain,project);
-  const roots=new Set([identity.root,...workspaces.lanes.map(x=>x.root)]),open=discoverOpenWorkspaces(brain.home);
+  const canonicalRoot=root=>{try{verifyRoot(root);return fs.realpathSync.native(root);}catch{return null;}};
+  const roots=new Set([identity.root,...workspaces.lanes.map(x=>x.root)].map(canonicalRoot).filter(Boolean)),open=discoverOpenWorkspaces(brain.home);
   return {schemaVersion:1,project:identity,generatedAt:stamp(),workspaces,tasks:workspaces.primary.tasks,
     memories:Object.fromEntries(['approved','proposed','revoked'].map(k=>[k,memories.find(x=>x.status===k)?.n??0])),
     activity:sessions.items.filter(x=>x.project===project).sort((a,b)=>Date.parse(b.lastSeen)-Date.parse(a.lastSeen)).map(x=>({...x,status:x.status==='closed'?'closed':Date.now()-Date.parse(x.lastSeen)>LEASE_MS?'stale':x.status})),
     runs:runs.items.filter(x=>x.project===project).sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)).slice(0,50),
-    usage,budget:budgetOverview(brain,project,usage.usage),integrations:discoverIntegrations(),openWorkspaces:{...open,items:open.items.filter(x=>roots.has(x.workspace))},
+    usage,budget:budgetOverview(brain,project,usage.usage),integrations:discoverIntegrations(),openWorkspaces:{...open,items:open.items.flatMap(x=>{const workspace=canonicalRoot(x.workspace);return workspace&&roots.has(workspace)?[{...x,workspace}]:[];})},
     coverage:{activity:'Somente processos MCP BBrainX instrumentados; presença de configuração não confirma conexão.',tests:'Até 50 resultados da janela ativa de 128; terminais antigos são arquivados localmente. Código local não está em sandbox de SO.',retention:'Metadados de conexão: janela cooperativa de 256, com substituição de encerrados/stale. Arquivos de testes arquivados são preservados; não é quota global de disco.',costs:'Somente recibos importados; gastos de outras chamadas permanecem desconhecidos.',sessionLeaseMs:LEASE_MS,truncated:sessions.truncated||runs.truncated||runs.items.length>50||workspaces.truncated,invalidRecords:sessions.invalid+runs.invalid}};
 }

@@ -41,18 +41,25 @@ test('workspace binding rejects a legacy child directory assigned to a different
   f.store.db.prepare('INSERT INTO projects(id,root,created) VALUES(?,?,?)').run('child',fs.realpathSync(child),'fixture');
   assert.throws(()=>assertWorkspaceBinding(f.store,{project:'one',workspace:f.root},child),{code:'WORKSPACE_PROJECT_CONFLICT'});
 });
+test('legacy project root aliases cannot evade the nested project scope refusal',t=>{
+  const f=fixture(t),child=path.join(f.root,'child'),alias=path.join(f.temp,'child-alias');fs.mkdirSync(child);fs.symlinkSync(child,alias,process.platform==='win32'?'junction':'dir');
+  f.store.db.prepare('INSERT INTO projects(id,root,created) VALUES(?,?,?)').run('child',alias,'fixture');
+  assert.throws(()=>assertWorkspaceBinding(f.store,{project:'one',workspace:f.root},child),{code:'WORKSPACE_PROJECT_CONFLICT'});
+});
 test('workspace binding rejects a root replaced by a symlink',t=>{
   const f=fixture(t),moved=path.join(f.temp,'moved');fs.renameSync(f.root,moved);fs.symlinkSync(f.sibling,f.root,process.platform==='win32'?'junction':'dir');
   assert.throws(()=>assertWorkspaceBinding(f.store,{project:'one',workspace:f.root},f.root),{code:'PROJECT_ROOT_CHANGED'});
 });
 test('workspace binding verifies the lane identity and active host binding',t=>{
-  const f=laneFixture(t),store=new LaneStore(f.home,'product','alpha');t.after(()=>store.close());
+  const f=laneFixture(t),store=new LaneStore(f.home,'product','alpha');
+  try{
   const args={project:'product',workspace:f.alpha,lane:'alpha'};
   assert.equal(assertWorkspaceBinding(store,args,f.alpha).epoch,store.binding.epoch);
   assert.throws(()=>assertWorkspaceBinding(store,{...args,lane:'beta'},f.alpha),{code:'WORKSPACE_LANE_MISMATCH'});
   assert.throws(()=>assertWorkspaceBinding(store,{...args,workspace:f.beta},f.beta),{code:'WORKSPACE_BINDING_MISMATCH'});
   f.registry.retire('product','alpha',store.binding.epoch);
   assert.throws(()=>assertWorkspaceBinding(store,args,f.alpha),{code:'LANE_NOT_ACTIVE'});
+  }finally{store.close();}
 });
 for(const client of ['kilo','antigravity'])test(client+' lane fragment is workspace-bound and does not change tool approvals',()=>{
   const base=path.resolve(os.tmpdir()),binding={project:'product',id:'alpha',root:path.join(base,'workspace')};
@@ -67,10 +74,18 @@ for(const client of ['kilo','antigravity'])test(client+' lane fragment is worksp
 });
 test('project registration refuses overlapping roots while preserving idempotency and siblings',t=>{
   const f=fixture(t),child=path.join(f.root,'child');fs.mkdirSync(child);
-  assert.equal(f.store.register('one',f.root).root,fs.realpathSync(f.root));
+  assert.equal(f.store.register('one',f.root).root,fs.realpathSync.native(f.root));
   assert.equal(f.store.register('two',f.sibling).id,'two');
   assert.throws(()=>f.store.register('child',child),{code:'PROJECT_ROOT_OVERLAP'});
   assert.throws(()=>f.store.register('parent',f.temp),{code:'PROJECT_ROOT_OVERLAP'});
+  assert.equal(f.store.projects().length,2);
+});
+test('legacy canonical aliases preserve registration identity and cannot duplicate or overlap it',t=>{
+  const f=fixture(t),legacy=fs.realpathSync(f.root),actual=fs.realpathSync.native(f.root),child=path.join(f.root,'child');fs.mkdirSync(child);
+  f.store.db.prepare('UPDATE projects SET root=? WHERE id=?').run(legacy,'one');
+  assert.equal(f.store.register('one',actual).id,'one');assert.equal(f.store.project('one').root,legacy);
+  assert.throws(()=>f.store.register('duplicate',actual),{code:'PROJECT_ROOT_ALREADY_REGISTERED'});
+  assert.throws(()=>f.store.register('child',child),{code:'PROJECT_ROOT_OVERLAP'});
   assert.equal(f.store.projects().length,2);
 });
 test('workspace overview does not initialize missing registry or lane databases',t=>{

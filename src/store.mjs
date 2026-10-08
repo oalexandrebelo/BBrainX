@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { canonical, ensure, hash, identifier, newId, now, text } from './primitives.mjs';
 import { gitState, safeDirectory, stateHome } from './host.mjs';
+import { verifyRoot } from './source-root.mjs';
 
 // Estado durável: não pode ser reconstruído a partir da worktree.
 const durable = `
@@ -129,15 +130,20 @@ export class BrainStore {
   }
   register(project, root) {
     identifier(project);
-    const actual = fs.realpathSync(path.resolve(root));
+    const actual = fs.realpathSync.native(path.resolve(root));
     ensure(fs.statSync(actual).isDirectory() && actual !== path.parse(actual).root, 'UNSAFE_PROJECT_ROOT');
     return this.transaction(()=>{
       const existing = this.db.prepare('SELECT * FROM projects WHERE id=?').get(project);
-      ensure(!existing || existing.root === actual, 'PROJECT_ROOT_CONFLICT');
-      const owner = this.db.prepare('SELECT id FROM projects WHERE root=?').get(actual);
+      if(existing)verifyRoot(existing.root);
+      ensure(!existing || fs.realpathSync.native(existing.root) === actual, 'PROJECT_ROOT_CONFLICT');
+      const roots=this.db.prepare('SELECT id,root FROM projects').all().map(other=>{
+        let resolved;try{resolved=fs.realpathSync.native(other.root);}catch{resolved=other.root;}
+        return {...other,root:resolved};
+      });
+      const owner = roots.find(other=>other.root===actual);
       ensure(!owner || owner.id === project, 'PROJECT_ROOT_ALREADY_REGISTERED', 'Esta pasta já está registrada como "' + owner?.id + '". Use esse nome ou registre outra raiz.');
       const inside=(parent,child)=>{const relative=path.relative(parent,child);return relative===''||(!path.isAbsolute(relative)&&relative!=='..'&&!relative.startsWith('..'+path.sep));};
-      ensure(this.db.prepare('SELECT id,root FROM projects').all().every(other=>other.id===project||(!inside(other.root,actual)&&!inside(actual,other.root))),'PROJECT_ROOT_OVERLAP');
+      ensure(roots.every(other=>other.id===project||(!inside(other.root,actual)&&!inside(actual,other.root))),'PROJECT_ROOT_OVERLAP');
       this.db.prepare('INSERT OR IGNORE INTO projects(id,root,created) VALUES(?,?,?)').run(project, actual, now());
       return this.project(project);
     });

@@ -64,10 +64,18 @@ test('control open workspace receipts exclude other projects and retain this pro
  receipt(f.primary,'primary-open');receipt(f.alpha,'lane-open');receipt(foreign,'FOREIGN_SESSION_PRIVATE');
  assert.equal(discoverOpenWorkspaces(f.home).items.length,3);
  const product=controlOverview(f.authority,'product'),other=controlOverview(f.authority,'foreign');
- assert.deepEqual(product.openWorkspaces.items.map(x=>x.workspace).sort(),[fs.realpathSync(f.primary),fs.realpathSync(f.alpha)].sort());
- assert.deepEqual(other.openWorkspaces.items.map(x=>x.workspace),[fs.realpathSync(foreign)]);
+ assert.deepEqual(product.openWorkspaces.items.map(x=>x.workspace).sort(),[fs.realpathSync.native(f.primary),fs.realpathSync.native(f.alpha)].sort());
+ assert.deepEqual(other.openWorkspaces.items.map(x=>x.workspace),[fs.realpathSync.native(foreign)]);
  assert(!JSON.stringify(product.openWorkspaces).includes('FOREIGN_SESSION_PRIVATE'));assert(!JSON.stringify(product.openWorkspaces).includes(foreign));
  assert(!JSON.stringify(other.openWorkspaces).includes('lane-open'));assert(!fs.existsSync(path.join(f.home,'lanes')));
+});
+test('legacy editor root spelling matches OS identity while redirected receipts remain excluded',t=>{
+ const f=laneFixture(t),receipt=workspaceSeen(f.home,{root:f.alpha,harness:'vscode',session:'legacy-spelling'}),file=path.join(f.home,'control-v1','editors',receipt.id+'.json');
+ const value=JSON.parse(fs.readFileSync(file,'utf8')),legacy=fs.realpathSync(path.join(os.tmpdir(),path.basename(f.root),'alpha feature'));
+ fs.writeFileSync(file,JSON.stringify({...value,workspace:legacy}));
+ assert.equal(controlOverview(f.authority,'product').openWorkspaces.items[0].workspace,fs.realpathSync.native(f.alpha));
+ const alias=path.join(f.root,'redirected receipt');fs.symlinkSync(f.alpha,alias,process.platform==='win32'?'junction':'dir');
+ fs.writeFileSync(file,JSON.stringify({...value,workspace:alias}));assert.equal(controlOverview(f.authority,'product').openWorkspaces.items.length,0);
 });
 test('integrate lane CLI plan verifies registered binding without creating its workspace database',t=>{
  const f=laneFixture(t),entry=fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),env={...process.env,BBRAINX_HOME:f.home};
@@ -86,7 +94,7 @@ test('legacy lanes MCP advertises BBrainX and records the real lane connection',
  try{
   await client.connect(transport);assert.equal(client.getServerVersion().name,'bbrainx');assert.equal(client.getServerVersion().title,'BBrainX · product');assert.match(client.getServerVersion().icons[0].src,/^data:image\/svg\+xml;base64,/);
   await client.callTool({name:'session_get',arguments:{project:'product',task:'continuation'}});
-  const observed=controlOverview(f.authority,'product').activity.find(x=>x.lane==='alpha');assert.equal(observed.harness,'codex');assert.equal(observed.workspace,fs.realpathSync(f.alpha));assert.equal(observed.status,'connected');assert.equal(observed.calls,1);
+  const observed=controlOverview(f.authority,'product').activity.find(x=>x.lane==='alpha');assert.equal(observed.harness,'codex');assert.equal(observed.workspace,fs.realpathSync.native(f.alpha));assert.equal(observed.status,'connected');assert.equal(observed.calls,1);
  }finally{await client.close();await transport.close();}
  assert.equal(controlOverview(f.authority,'product').activity.find(x=>x.lane==='alpha').status,'closed');
 });

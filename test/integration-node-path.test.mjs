@@ -15,7 +15,7 @@ function stderrError(stderr,expected){
   return JSON.parse(line);
 }
 function fixture(t){
-  const directory=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-stable-node-'))),root=path.join(directory,'project'),home=path.join(directory,'state');
+  const directory=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-stable-node-'))),root=path.join(directory,'project'),home=path.join(directory,'state');
   fs.mkdirSync(root);fs.writeFileSync(path.join(root,'README.md'),'# Project\n');
   t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
   const run=(node,args=[])=>spawnSync(process.execPath,[entry,'integrate','--root',root,'--project','sample','--clients','claude',...args],{
@@ -31,7 +31,7 @@ test('CLI retains a validated stable Node alias and adopts only its exact legacy
     if(process.platform!=='win32'||error.code!=='EPERM')throw error;
     alias=path.dirname(process.execPath)+path.sep+'.'+path.sep+path.basename(process.execPath);
   }
-  assert.equal(fs.realpathSync(alias),fs.realpathSync(process.execPath));
+  assert.equal(fs.realpathSync.native(alias),fs.realpathSync.native(process.execPath));
   const target=path.join(f.root,'.mcp.json'),before=JSON.stringify({mcpServers:{bbrainx:{command:alias,args:[entry,'mcp','--project','sample'],env:{BBRAINX_HOME:f.home}}}})+'\n';
   fs.writeFileSync(target,before);
   const withoutOptIn=f.run(alias);assert.equal(withoutOptIn.status,0,withoutOptIn.stderr);assert.equal(JSON.parse(withoutOptIn.stdout).files[0].status,'blocked');

@@ -60,9 +60,19 @@ function *records(buffer,{prefixTruncated=false}={}){
 }
 function canonicalWorkspace(value){ensure(typeof value==='string'&&path.isAbsolute(value),'CLAUDE_WORKSPACE_INVALID');return fs.realpathSync.native(value);}
 const warning=error=>error.name==='BrainError'?error.code:'CLAUDE_SOURCE_UNREADABLE';
+/** @internal Exposed so format tests can check Windows spellings on any host. */
+export function cursorWorkspaceFolderNames(workspace){
+  // Match Codex's Cursor decoder: https://github.com/openai/codex/blob/e974aad3b1a8f144273e882c614aefe69eaef615/codex-rs/external-agent-migration/src/detect/sessions/cur.rs
+  const windowsDrive=/^[A-Za-z]:[\\/]/.test(workspace);
+  const encoded=workspace.replaceAll('\\','-').replaceAll('/','-');
+  const storageName=windowsDrive?encoded.replace(':','-'):encoded;
+  const names=[storageName,storageName.replace(/^-/,'')];
+  if(windowsDrive)names.push(storageName.replace(/^([A-Za-z])--/,'$1-'));
+  return [...new Set(names)];
+}
 function cursorFolderMatches(base,file,workspace){
-  const encoded=workspace.replace(/^([A-Za-z]):/,'$1').replaceAll('\\','-').replaceAll('/','-'),folder=path.relative(base,file).split(path.sep)[0];
-  return folder===encoded||folder===encoded.replace(/^-/,'');
+  const folder=path.relative(base,file).split(path.sep)[0];
+  return cursorWorkspaceFolderNames(workspace).includes(folder);
 }
 function metadata(record,harness){
   if(harness!=='codex')return record;

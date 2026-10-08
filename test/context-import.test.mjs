@@ -5,7 +5,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {BrainStore} from '../src/store.mjs';
 import {compileContext} from '../src/context.mjs';
-import {CLAUDE_IMPORT_LIMITS,HARNESS_CONTEXT_CATALOG,discoverClaudeSessions,importClaudeSession,discoverHarnessContexts,importHarnessContext} from '../src/context-import.mjs';
+import {CLAUDE_IMPORT_LIMITS,HARNESS_CONTEXT_CATALOG,cursorWorkspaceFolderNames,discoverClaudeSessions,importClaudeSession,discoverHarnessContexts,importHarnessContext} from '../src/context-import.mjs';
 
 function fixture(t){
   const temp=fs.mkdtempSync(path.join(fs.realpathSync.native(os.tmpdir()),'bb-import-')),userHome=path.join(temp,'user'),root=path.join(temp,'repo'),foreign=path.join(temp,'other');
@@ -19,6 +19,12 @@ function fixture(t){
   };
   return {temp,userHome,root,foreign,store,session};
 }
+test('Cursor storage folder fixtures follow Codex Windows drive and separator encoding',()=>{
+  assert.deepEqual(cursorWorkspaceFolderNames('C:\\Users\\fixture\\repo'),['C--Users-fixture-repo','C-Users-fixture-repo']);
+  assert.deepEqual(cursorWorkspaceFolderNames('C:/Users/fixture/repo'),['C--Users-fixture-repo','C-Users-fixture-repo']);
+  assert.deepEqual(cursorWorkspaceFolderNames('/Users/fixture/repo'),['-Users-fixture-repo','Users-fixture-repo']);
+  assert.deepEqual(cursorWorkspaceFolderNames('/Users/fixture:repo'),['-Users-fixture:repo','Users-fixture:repo']);
+});
 const message=(cwd,type,content,extra={})=>({cwd,type,message:{content},...extra});
 test('Claude discovery returns historical metadata without conversation text',t=>{
   const f=fixture(t),file=f.session([message(f.root,'user','PRIVATE_CHAT'),message(f.root,'assistant','PRIVATE_ANSWER')]);
@@ -120,7 +126,7 @@ test('Cursor embedded workspace transcripts share the bounded importer without S
   const result=importHarnessContext(f.store,{harness:'cursor',project:'project',file,userHome:f.userHome});assert(result.task.startsWith('cursor-'));assert(f.store.task('project',result.task).content.done.some(item=>item.includes('Cursor answer')));
 });
 test('Cursor missing cwd requires a separate explicit confirmation and stays unverified',t=>{
-  const f=fixture(t),folder=f.root.replaceAll('/','-').replace(/^-/,'');
+  const f=fixture(t),folder=cursorWorkspaceFolderNames(f.root)[0];
   const file=f.session([{role:'user',message:{content:'Cursor without cwd'}}],{harness:'cursor',folder});
   assert.equal(discoverHarnessContexts({harness:'cursor',userHome:f.userHome}).sessions.length,0);
   const detected=discoverHarnessContexts({harness:'cursor',userHome:f.userHome,root:f.root});assert.equal(detected.sessions.length,0);assert(detected.warnings.includes('CURSOR_WORKSPACE_UNVERIFIED'));
@@ -130,7 +136,7 @@ test('Cursor missing cwd requires a separate explicit confirmation and stays unv
 });
 test('Cursor lossy folder encoding never decides ownership between registered projects',t=>{
   const f=fixture(t),one=path.join(f.temp,'a-b','c'),two=path.join(f.temp,'a','b-c');fs.mkdirSync(one,{recursive:true});fs.mkdirSync(two,{recursive:true});f.store.register('one',one);f.store.register('two',two);
-  const folder=one.replaceAll('/','-').replace(/^-/,'');assert.equal(folder,two.replaceAll('/','-').replace(/^-/,''));
+  const folder=cursorWorkspaceFolderNames(one)[0];assert.equal(folder,cursorWorkspaceFolderNames(two)[0]);
   const file=f.session([{role:'user',message:{content:'Ambiguous objective'}}],{harness:'cursor',folder});
   for(const [project,confirmedWorkspace] of [['one',one],['two',two]])assert.throws(()=>importHarnessContext(f.store,{harness:'cursor',project,file,userHome:f.userHome,confirmedWorkspace}),{code:'CURSOR_WORKSPACE_AMBIGUOUS'});
   assert.equal(f.store.tasks('one').length,0);assert.equal(f.store.tasks('two').length,0);

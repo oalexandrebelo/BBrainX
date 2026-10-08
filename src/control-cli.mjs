@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { BrainStore } from './store.mjs';
 import { stateHome } from './host.mjs';
 import { ensure,identifier } from './primitives.mjs';
+import { verifyRoot } from './source-root.mjs';
 import { LANE_SCHEMA,LANE_SCHEMA_HASH,gitWorkspace } from './lanes/registry.mjs';
 import { planIntegrations,applyIntegrationPlan,rollbackIntegration,discoverIntegrations } from './integrations.mjs';
 import { workspaceSeen,discoverOpenWorkspaces,controlOverview,saveTestRun,archiveTestRun } from './control.mjs';
@@ -13,15 +14,18 @@ export const CONTROL_COMMANDS=['integrate','integrations','discover','workspace-
 function catalog(home){
   const file=path.join(home,'brain.sqlite');if(!fs.existsSync(file))return [];
   ensure(!fs.lstatSync(file).isSymbolicLink(),'UNSAFE_DB_PATH');
-  const db=new DatabaseSync(file,{readOnly:true});try{return db.prepare('SELECT id,root FROM projects LIMIT 10001').all();}finally{db.close();}
+  const db=new DatabaseSync(file,{readOnly:true});try{return db.prepare('SELECT id,root FROM projects LIMIT 10001').all().map(record=>{
+    let root;try{verifyRoot(record.root);root=fs.realpathSync.native(record.root);}catch{root=record.root;}
+    return {...record,root};
+  });}finally{db.close();}
 }
 function projectId(root,known,requested){return requested||known.find(x=>x.root===root)?.id||path.basename(root).replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^[^A-Za-z0-9]+/,'').slice(0,80).replace(/[^A-Za-z0-9]+$/,'')||'project';}
 function integrationNode(){
   const node=process.env.BBRAINX_NODE??process.execPath;
   ensure(path.isAbsolute(node)&&!/[\u0000-\u001f\u007f]/.test(node),'INVALID_INTEGRATION_NODE');
   let resolved;
-  try{resolved=fs.realpathSync(node);}catch{ensure(false,'INVALID_INTEGRATION_NODE');}
-  ensure(resolved===fs.realpathSync(process.execPath),'INTEGRATION_NODE_MISMATCH');
+  try{resolved=fs.realpathSync.native(node);}catch{ensure(false,'INVALID_INTEGRATION_NODE');}
+  ensure(resolved===fs.realpathSync.native(process.execPath),'INTEGRATION_NODE_MISMATCH');
   return node;
 }
 function readLaneBinding(home,project,lane,root,known){
@@ -54,7 +58,7 @@ export async function controlCommand(command,v,args){
   }
   if(command==='integrate'){
     const node=integrationNode();
-    const root=fs.realpathSync(path.resolve(v.root||process.cwd())),known=catalog(home),project=projectId(root,known,v.project);
+    const root=fs.realpathSync.native(path.resolve(v.root||process.cwd())),known=catalog(home),project=projectId(root,known,v.project);
     let laneStore,binding;
     try{
       if(v.lane){

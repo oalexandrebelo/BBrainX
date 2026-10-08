@@ -30,11 +30,11 @@ function readFile(anchor,target){
     const bytes=fs.readFileSync(fd);ensure(bytes.length<=MAX_BYTES,'INTEGRATION_FILE_TOO_LARGE');return {bytes,sha:hash(bytes),mode:stat.mode&0o777};
   }finally{fs.closeSync(fd);}
 }
-function canonicalAnchor(value){const resolved=absolute(value),stat=exists(resolved);ensure(stat&&(stat.isDirectory()||stat.isSymbolicLink()),'INTEGRATION_DIRECTORY_REQUIRED');const canonical=fs.realpathSync(resolved);ensure(fs.statSync(canonical).isDirectory(),'INTEGRATION_DIRECTORY_REQUIRED');return canonical;}
+function canonicalAnchor(value){const resolved=absolute(value),stat=exists(resolved);ensure(stat&&(stat.isDirectory()||stat.isSymbolicLink()),'INTEGRATION_DIRECTORY_REQUIRED');const canonical=fs.realpathSync.native(resolved);ensure(fs.statSync(canonical).isDirectory(),'INTEGRATION_DIRECTORY_REQUIRED');return canonical;}
 function stateAnchor(home){
   let ancestor=absolute(home),parts=[];
   while(!exists(ancestor)){parts.unshift(path.basename(ancestor));ancestor=path.dirname(ancestor);}
-  const anchor=fs.realpathSync(ancestor),target=path.join(anchor,...parts);safePath(anchor,target);
+  const anchor=fs.realpathSync.native(ancestor),target=path.join(anchor,...parts);safePath(anchor,target);
   ensure(!exists(target)||exists(target).isDirectory(),'INTEGRATION_DIRECTORY_REQUIRED');return {anchor,target};
 }
 function privateDirectory(anchor,target){

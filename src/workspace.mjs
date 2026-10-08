@@ -22,7 +22,11 @@ export function assertWorkspaceBinding(store,{project,workspace,lane},cwd=proces
   ensure(selected===root,'WORKSPACE_BINDING_MISMATCH');
   ensure(inside(root,current),'WORKSPACE_CWD_MISMATCH');
   const authority=store.authority??store;
-  ensure(authority.projects().every(other=>other.id===project||!inside(other.root,current)),'WORKSPACE_PROJECT_CONFLICT');
+  ensure(authority.projects().every(other=>{
+    if(other.id===project)return true;
+    let otherRoot;try{otherRoot=fs.realpathSync.native(other.root);}catch{otherRoot=other.root;}
+    return !inside(otherRoot,current);
+  }),'WORKSPACE_PROJECT_CONFLICT');
   if(store.binding){
     ensure(lane===undefined||lane===store.binding.id,'WORKSPACE_LANE_MISMATCH');
     store.registry.verifyBinding(project,store.binding.id,store.binding.epoch);
