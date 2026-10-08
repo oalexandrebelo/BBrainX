@@ -1,0 +1,36 @@
+name: Verify Four Engineering Rounds
+on:
+  push:
+    branches: [feat/four-rounds-engineering]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: four-rounds-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - run: |
+          mkdir -p artifacts/four-rounds
+          set -o pipefail
+          npm test 2>&1 | tee artifacts/four-rounds/tests.log
+      - run: npm run build
+      - name: Read pinned reference sources without executing them
+        run: python3 scripts/four-rounds-references.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-Four-Rounds
+          path: artifacts/four-rounds/
+          retention-days: 14
