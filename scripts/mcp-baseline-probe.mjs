@@ -7,10 +7,10 @@ const before=fs.readFileSync(path.join(root,'src/mcp.mjs')),results=[];
 for(const variant of ['baseline','candidate']){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bb-mcp-probe-'));
  try{
-  fs.cpSync(path.join(root,'src'),path.join(dir,'src'),{recursive:true});fs.mkdirSync(path.join(dir,'test/probes'),{recursive:true});fs.mkdirSync(path.join(dir,'test/fixtures'),{recursive:true});
-  for(const f of ['probes/mcp-before-after.mjs','fixtures/contract-engine.mjs'])fs.copyFileSync(path.join(root,'test',f),path.join(dir,'test',f));
+  fs.cpSync(path.join(root,'src'),path.join(dir,'src'),{recursive:true});fs.mkdirSync(path.join(dir,'test/artifacts'),{recursive:true});fs.mkdirSync(path.join(dir,'test/fixtures'),{recursive:true});
+  for(const f of ['artifacts/mcp-before-after.mjs','fixtures/contract-engine.mjs'])fs.copyFileSync(path.join(root,'test',f),path.join(dir,'test',f));
   if(variant==='baseline')fs.writeFileSync(path.join(dir,'src/mcp.mjs'),original);
-  const run=spawnSync(process.execPath,['--test','--test-reporter=tap','test/probes/mcp-before-after.mjs'],{cwd:dir,encoding:'utf8',timeout:10000,maxBuffer:2*1024*1024});
+  const run=spawnSync(process.execPath,['--test','--test-reporter=tap','test/artifacts/mcp-before-after.mjs'],{cwd:dir,encoding:'utf8',timeout:10000,maxBuffer:2*1024*1024});
   const log=(run.stdout??'')+(run.stderr??'');fs.writeFileSync(path.join(out,variant+'.log'),log);
   const metric=k=>Number([...log.matchAll(new RegExp('^# '+k+' (\\d+)$','gm'))].at(-1)?.[1]);
   const assertions=(log.match(/code: 'ERR_ASSERTION'/g)??[]).length;

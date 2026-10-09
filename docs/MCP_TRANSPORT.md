@@ -55,6 +55,8 @@ O teste de tamanho de linha enviava três pings com ID 1 sem esperar respostas. 
 
 O gabarito da pergunta `what stops a client that never sends a newline` foi atualizado de `src/mcp.mjs` para `src/mcp-flow.mjs`, onde o limite e o acumulador agora são implementados. Nenhum piso, peso do ranking ou consulta foi alterado. O resultado anterior à remarcação é preservado no acervo de evidências; isso não é anunciado como ganho do algoritmo de busca.
 
+O ensaio diferencial que executa a implementação antiga e a candidata fica em `test/artifacts/`, fora do corpus operacional pela política de exclusão de `artifacts` que já existia. Ele continua versionado e é executado explicitamente por `mcp-baseline-probe.mjs`. Os novos testes de contrato e o documento operacional continuam indexáveis. Esse isolamento corrige mistura de corpus, não melhora o algoritmo de recuperação.
+
 ## Fontes e escopo de compatibilidade
 
 - Node 24.21.0, Streams: https://nodejs.org/download/release/v24.21.0/docs/api/stream.html

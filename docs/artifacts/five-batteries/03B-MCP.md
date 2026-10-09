@@ -61,3 +61,7 @@ Os hashes e estado efetivo da publicação serão registrados no relatório de e
 ## Próxima fronteira
 
 O transporte permanece no event loop: não preempta indexação síncrona, getters de código hostil ou operações externas iniciadas por um handler não cooperativo. O próximo bloco é indexação por geração com preparação fora da transação longa e promoção verificada. Não colocar execução automática de modelo, busca vetorial e daemon global na mesma alteração e perder atribuição das regressões.
+
+## Observação após compor a documentação
+
+A primeira execução com documentação e scripts completos teve 446/447: o piso de recuperação hit@10 caiu para 30/36 (0,8333). A consulta sobre o catálogo encontrou o ensaio diferencial antes de `src/engine.mjs`. O ensaio que alterna código histórico/candidato foi classificado em `test/artifacts/`, seguindo a exclusão operacional já existente, e continua executado explicitamente. Não alteramos pesos/pisos nem ampliamos o gabarito dessa consulta. O documento operacional e todos os testes novos permanecem no corpus. Preservamos o log da falha e os ranks; separar experimento histórico de fonte operacional não é anúncio de melhoria de busca.
