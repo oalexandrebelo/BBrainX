@@ -1,5 +1,8 @@
 import { createHash } from 'node:crypto';
 import { EngineError, ERROR_CODES } from './capability.mjs';
+import { performance } from 'node:perf_hooks';
+import { McpRateWindow, positiveLimit } from './mcp-flow.mjs';
+import { serveBoundedStdio, validMcpRequestId } from './mcp-transport.mjs';
 
 /**
  * Servidor MCP próprio sobre stdio: JSON-RPC 2.0, uma mensagem por linha, só a superfície de ferramentas.
@@ -41,7 +44,7 @@ function failure(error){
   const known=error instanceof EngineError&&ERROR_CODES.includes(error.code);
   return refusal(known?{code:error.code,message:error.message,...(error.publicDetails===undefined?{}:{publicDetails:error.publicDetails})}:EXECUTION_FAILED);
 }
-const validId=id=>typeof id==='string'||Number.isInteger(id);
+const validId=validMcpRequestId;
 const plainObject=value=>typeof value==='object'&&value!==null&&!Array.isArray(value);
 const rpcError=(id,code,message,data)=>({jsonrpc:'2.0',id:id??null,error:{code,message,...(data===undefined?{}:{data})}});
 
@@ -51,21 +54,23 @@ const rpcError=(id,code,message,data)=>({jsonrpc:'2.0',id:id??null,error:{code,m
  * `isFailure` diz quando um resultado válido representa uma recusa do domínio: ela segue com `isError`.
  * `rateLimit` é o teto de chamadas de ferramenta por janela, contra um agente em laço.
  */
-export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instructions,isFailure,rateLimit={calls:300,perMs:60000},now=Date.now}={}){
-  const catalog=toolCatalog(engine), running=new Map(), recent=[], serverInfo={name:engine.name,version:engine.version};
-  function allowed(){
-    const time=now();while(recent.length&&time-recent[0]>=rateLimit.perMs)recent.shift();
-    if(recent.length>=rateLimit.calls)return false;
-    recent.push(time);return true;
-  }
+export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instructions,isFailure,rateLimit={calls:300,perMs:60000},now=()=>performance.now(),maxInFlightCalls=8}={}){
+  const catalog=toolCatalog(engine), running=new Map(), serverInfo={name:engine.name,version:engine.version};
+  const quota=new McpRateWindow({...rateLimit,now});
+  positiveLimit(maxInFlightCalls,'maxInFlightCalls',128);
+  principal=structuredClone(principal);
+  let peakRunning=0,admitted=0,busy=0,limited=0,cancelled=0;
+  function allowed(){return quota.take();}
   async function call(id,params,reply){
     if(typeof params?.name!=='string')return rpcError(id,INVALID_PARAMS,'Tool name is required.');
     const capabilityId=catalog.capabilityFor(params.name);
     if(capabilityId===undefined)return rpcError(id,INVALID_PARAMS,'Unknown tool: '+params.name);
     const args=params.arguments??{};
     if(!plainObject(args))return rpcError(id,INVALID_PARAMS,'Tool arguments must be an object.');
-    if(!allowed())return reply(refusal({code:'RATE_LIMITED',message:'More than '+rateLimit.calls+' tool calls in '+Math.round(rateLimit.perMs/1000)+' s. Wait and try again.'}));
-    const entry={controller:new AbortController(),cancelled:false};running.set(id,entry);
+    if(running.has(id))return rpcError(id,INVALID_REQUEST,'Request id is already active.');
+    if(running.size>=maxInFlightCalls){busy++;return reply(refusal({code:'MCP_BUSY',message:'Concurrent tool-call limit reached. Wait for a prior operation to settle.'}));}
+    if(!allowed()){limited++;return reply(refusal({code:'RATE_LIMITED',message:'More than '+rateLimit.calls+' tool calls in '+Math.round(rateLimit.perMs/1000)+' s. Wait and try again.'}));}
+    const entry={controller:new AbortController(),cancelled:false};running.set(id,entry);admitted++;peakRunning=Math.max(peakRunning,running.size);
     try{
       const structuredContent=await engine.invoke(capabilityId,args,{principal,source,signal:entry.controller.signal});
       // Requisição cancelada pelo cliente não recebe mais nenhuma mensagem.
@@ -101,7 +106,7 @@ export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instr
     const {id,method,params}=message;
     if(typeof method!=='string')return 'result' in message||'error' in message?undefined:rpcError(validId(id)?id:null,INVALID_REQUEST,'Invalid JSON-RPC message.');
     if(id===undefined){
-      if(method==='notifications/cancelled'){const entry=running.get(params?.requestId);if(entry){entry.cancelled=true;entry.controller.abort(new Error('Cancelled by the client.'));}}
+      if(method==='notifications/cancelled'){const entry=running.get(params?.requestId);if(entry&&!entry.cancelled){entry.cancelled=true;cancelled++;entry.controller.abort(new Error('Cancelled by the client.'));}}
       return undefined;
     }
     if(!validId(id))return rpcError(null,INVALID_REQUEST,'Request id must be a string or an integer.');
@@ -109,47 +114,13 @@ export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instr
     const meta=plainObject(params)&&plainObject(params._meta)?params._meta:null;
     return meta&&META+'protocolVersion' in meta?modern(id,method,params,meta):legacy(id,method,params);
   }
-  return {handle,cancelAll(){for(const entry of running.values()){entry.cancelled=true;entry.controller.abort(new Error('Server is closing.'));}}};
+  return {handle,stats:()=>({running:running.size,peakRunning,admitted,busy,limited,cancelled,maxInFlightCalls,rate:quota.stats(),scope:'handler-invocations-not-physical-work'}),cancelAll(){for(const entry of running.values()){entry.cancelled=true;entry.controller.abort(new Error('Server is closing.'));}}};
 }
 
-/**
- * Serve até a entrada fechar; nesse momento cancela o que estiver em andamento e termina, sem esperar.
- * Linha maior que `maxLineBytes` encerra o servidor com erro: é o limite contra um cliente que nunca envia
- * a quebra de linha. A saída padrão só recebe mensagens do protocolo.
+/** Transporte com correlação e quotas por conexão. EOF solicita cancelamento e
+ * aguarda somente shutdownMs; não promete preemptar trabalho síncrono do domínio.
+ * Limites vêm do host, nunca de argumentos de ferramenta. Ver docs/MCP_TRANSPORT.md.
  */
-export async function serveMcpStdio(engine,{maxLineBytes=1048576,input=process.stdin,output=process.stdout,...options}={}){
-  if(!Number.isSafeInteger(maxLineBytes)||maxLineBytes<=0)throw new TypeError('maxLineBytes must be a positive safe integer.');
-  const handler=createMcpHandler(engine,options), pending=new Set();
-  let buffered=[],bufferedBytes=0,closed=false,fail;
-  const send=message=>{if(!closed&&message!==undefined&&!(Array.isArray(message)&&!message.length))output.write(JSON.stringify(message)+'\n');};
-  async function receive(line){
-    let message;
-    try{message=JSON.parse(line);}catch{return send(rpcError(null,PARSE_ERROR,'Parse error.'));}
-    if(!Array.isArray(message))return send(await handler.handle(message));
-    if(!message.length)return send(rpcError(null,INVALID_REQUEST,'Empty batch.'));
-    send((await Promise.all(message.map(item=>handler.handle(item)))).filter(response=>response!==undefined));
-  }
-  function dispatch(bytes){
-    const line=bytes.toString('utf8').replace(/\r$/,'');if(!line.trim())return;
-    const work=receive(line).catch(()=>{}).finally(()=>pending.delete(work));pending.add(work);
-  }
-  await new Promise(resolve=>{
-    const tooLong=()=>new Error('The MCP stdio read buffer exceeded the configured limit of '+maxLineBytes+' bytes.');
-    const end=error=>{fail??=error;input.off('data',onData);resolve();};
-    function onData(chunk){
-      let start=0;
-      for(let newline=chunk.indexOf(10,start);newline!==-1&&!fail;newline=chunk.indexOf(10,start)){
-        bufferedBytes+=newline-start;if(bufferedBytes>maxLineBytes)return end(tooLong());
-        buffered.push(chunk.subarray(start,newline));dispatch(Buffer.concat(buffered));buffered=[];bufferedBytes=0;start=newline+1;
-      }
-      if(start<chunk.length){buffered.push(chunk.subarray(start));bufferedBytes+=chunk.length-start;}
-      if(bufferedBytes>maxLineBytes)end(tooLong());
-    }
-    input.on('data',onData);input.once('end',()=>end());input.once('close',()=>end());input.once('error',error=>end(error));
-    output.on('error',error=>{closed=true;end(error.code==='EPIPE'?undefined:error);});
-  });
-  // Entrada fechada é o sinal de encerramento: o que ainda roda é cancelado e não recebe resposta.
-  closed=true;handler.cancelAll();
-  if(fail){input.destroy?.();throw fail;}
-  await Promise.allSettled([...pending]);
+export function serveMcpStdio(engine,options={}){
+  return serveBoundedStdio(createMcpHandler(engine,options),options);
 }

@@ -188,9 +188,9 @@ test('stdio: a line at the limit is served, one byte more stops the server; inpu
     output.setEncoding('utf8').on('data',chunk=>{buffer+=chunk;for(let at=buffer.indexOf('\n');at!==-1;at=buffer.indexOf('\n')){lines.push(JSON.parse(buffer.slice(0,at)));buffer=buffer.slice(at+1);}});
     return {input,lines,done:serveMcpStdio(engine,{input,output,maxLineBytes})};
   }
-  const padded=bytes=>{const body=JSON.stringify({jsonrpc:'2.0',id:1,method:'ping'});return body+' '.repeat(bytes-Buffer.byteLength(body));};
-  const exact=open(120);exact.input.write(padded(119)+'\r\n');exact.input.write(padded(60)+'\n'+padded(120)+'\n');exact.input.end();
-  await exact.done;assert.deepEqual(exact.lines,[{jsonrpc:'2.0',id:1,result:{}},{jsonrpc:'2.0',id:1,result:{}},{jsonrpc:'2.0',id:1,result:{}}]);
+  const padded=(bytes,id=1)=>{const body=JSON.stringify({jsonrpc:'2.0',id,method:'ping'});return body+' '.repeat(bytes-Buffer.byteLength(body));};
+  const exact=open(120);exact.input.write(padded(119)+'\r\n');exact.input.write(padded(60,2)+'\n'+padded(120,3)+'\n');exact.input.end();
+  await exact.done;assert.deepEqual(exact.lines,[{jsonrpc:'2.0',id:1,result:{}},{jsonrpc:'2.0',id:2,result:{}},{jsonrpc:'2.0',id:3,result:{}}]);
   // Sem o limite, o servidor seguiria esperando: o teste precisa reprovar em vez de travar.
   const outcome=promise=>Promise.race([promise.then(()=>'served',error=>error.message),new Promise(resolve=>setTimeout(()=>resolve('still open'),2000))]);
   const over=open(120);over.input.write(padded(60)+'\n'+padded(121)+'\n');

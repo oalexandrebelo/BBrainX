@@ -9,7 +9,7 @@
  {"kind":"natural","query":"onde o prazo de uma capacidade vira erro de tempo esgotado","expect":["src/capability.mjs"]},
  {"kind":"natural","query":"how are capability ids turned into tool names","expect":["src/mcp.mjs"]},
  {"kind":"natural","query":"negociação da versão do protocolo na abertura da sessão","expect":["src/mcp.mjs"]},
- {"kind":"natural","query":"what stops a client that never sends a newline","expect":["src/mcp.mjs"]},
+ {"kind":"natural","query":"what stops a client that never sends a newline","expect":["src/mcp-flow.mjs"]},
  {"kind":"natural","query":"where git commit and branch are read without running repository filters","expect":["src/host.mjs"]},
  {"kind":"natural","query":"pasta onde o banco fica em cada sistema operacional","expect":["src/host.mjs"]},
  {"kind":"natural","query":"diagnóstico da máquina: versão do node e suporte a busca textual","expect":["src/host.mjs"]},
