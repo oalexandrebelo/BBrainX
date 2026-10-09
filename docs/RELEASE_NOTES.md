@@ -130,3 +130,10 @@ Download the source ZIP and verify SHA256SUMS. Read docs/QUICKSTART.md. Run npm 
 This is a developer preview, not a notarized Mac application or a production multi-tenant service. No model inference, provider cache savings, automatic desktop control or individual IDE certification is claimed. Optional model profiles remain opt-in research. The validation report names the exact tested revision and environment.
 
 Source, screenshots, locks and the original video are included; installed node_modules, upstream reference checkouts, credentials and font files are not redistributed. Remotion has separate licensing. No private project data was used in tests.
+
+
+## State 03B — alterações do contrato MCP (candidato incremental)
+
+Limites de invocações e de frames por conexão, bytes de saída com backpressure e escrita com prazo. IDs em voo não podem ser reutilizados; duplicata encerra a conexão sem resposta concorrente. IDs numéricos precisam ser inteiros seguros e strings têm teto de 1024 bytes. UTF-8 inválido e cauda incompleta são recusados, não normalizados/descartados silenciosamente. EOF cancela tools e drena respostas concluídas sob prazo. O suporte de batch existente continua como extensão limitada a 32 membros.
+
+A superfície de ferramentas, versões anunciadas, memória, credenciais e allowlist não mudam. O rate limiter continua 300 chamadas por minuto, agora com relógio monotônico e ring exato. Quota MCP é por conexão/engine promise, não um limite físico global. Consulte `MCP_TRANSPORT.md` para parâmetros, erros, limites e escopo da verificação.
