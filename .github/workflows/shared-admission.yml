@@ -1,0 +1,41 @@
+name: Shared Admission Verification
+on:
+  pull_request:
+  push:
+    branches: [feat/four-rounds-engineering, 'feat/shared-admission*']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: admission-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4, pinned reference
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Full runtime, observed receipt and build
+        run: node scripts/verify-shared-admission.mjs
+      - name: Six independent mutation controls
+        if: runner.os == 'Linux'
+        run: node scripts/shared-admission-negative.mjs
+      - name: Scoped SQLite microbenchmark
+        if: runner.os == 'Linux'
+        run: node scripts/benchmark-shared-admission.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: shared-admission-${{ matrix.os }}
+          path: artifacts/shared-admission/
+          retention-days: 14
