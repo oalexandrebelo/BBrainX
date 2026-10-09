@@ -1,4 +1,5 @@
 import { performance } from 'node:perf_hooks';
+import { createWriteStream } from 'node:fs';
 import { McpFlowError, McpLineBuffer, McpOutputQueue, positiveLimit, guardLateError } from './mcp-flow.mjs';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -17,6 +18,11 @@ export async function serveBoundedStdio(handler, { maxLineBytes = 1048576, input
   positiveLimit(maxPendingMessages, 'maxPendingMessages', 1024);
   positiveLimit(maxBatchItems, 'maxBatchItems', 128);
   positiveLimit(shutdownMs, 'shutdownMs', 30000);
+  // O stdout de pipe do Node é síncrono no Windows. A variante fs assíncrona
+  // mantém o event loop disponível para o prazo; não modifica métodos internos
+  // de process.stdout e não fecha o descritor herdado do host.
+  const ownsOutputAdapter = process.platform === 'win32' && output === process.stdout && !output.isTTY;
+  if (ownsOutputAdapter) output = createWriteStream(null, { fd: output.fd, autoClose: false });
   const decoder = new McpLineBuffer(maxLineBytes), pending = new Set(), ids = new Map();
   let ending = false, terminated = false, fatal = null, scheduled = null, finishInput;
   let peakPending = 0, peakIds = 0, frames = 0, inputBytes = 0;
@@ -138,6 +144,9 @@ export async function serveBoundedStdio(handler, { maxLineBytes = 1048576, input
   terminated = true; detachInput(); writer.abort(); decoder.clear();
   // A stream é exclusiva; bytes já entregues ao kernel/cliente não podem ser retraídos.
   if (fatal) { input.destroy?.(); output.destroy?.(); }
+  else if (ownsOutputAdapter) output.destroy();
+  // Um write nativo já iniciado pode continuar aguardando o leitor mesmo após
+  // a recusa do protocolo. O host ainda precisa observar exit/close do processo.
   const report = { frames, inputBytes, peakPending, peakIds, unsettledMessages: pending.size,
     drained, elapsedMs: performance.now() - began, handler: handler.stats(), output: writer.stats(),
     scope: 'per-stdio-connection', physicalWorkStopped: null, error: fatal?.code ?? null };
