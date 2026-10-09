@@ -1,0 +1,50 @@
+{
+  "scope": "six-deliberate-regressions-not-general-mutation-score",
+  "observedAt": "2026-10-09T03:29:42.041Z",
+  "node": "v24.21.0",
+  "sourceSha256": "70395e620df731a87fa601959dd0465767a703a958e8189791f49fcf5dbb1824",
+  "results": [
+    {
+      "id": "slot-limit-removed",
+      "detected": true,
+      "assertionFailures": 1,
+      "exitCode": 1,
+      "mutantSha256": "9bd5f1d06b8fb3d873e9e8971e4e21bf3d34af9ef77d932661e1afe38dfd81ab"
+    },
+    {
+      "id": "byte-limit-removed",
+      "detected": true,
+      "assertionFailures": 2,
+      "exitCode": 1,
+      "mutantSha256": "d83cefb0d5d9aa2119628886272766ca4ac813f400ba5c1959849bc9e9ca2829"
+    },
+    {
+      "id": "token-not-checked",
+      "detected": true,
+      "assertionFailures": 1,
+      "exitCode": 1,
+      "mutantSha256": "caae5af14beb06bf993315d8b6bc503ee1e5a53f50c641f3f112954957e9bf2e"
+    },
+    {
+      "id": "close-frees-work",
+      "detected": true,
+      "assertionFailures": 1,
+      "exitCode": 1,
+      "mutantSha256": "564333eec9d3b6ed46899202bf3a69b66af28374a4081be4ab578d125b5445b6"
+    },
+    {
+      "id": "acquire-audit-omitted",
+      "detected": true,
+      "assertionFailures": 1,
+      "exitCode": 1,
+      "mutantSha256": "bf52c6c266019a363649bd4b1c02ebd51fcbd2a1cc4f61274cc3ad7e36320eaa"
+    },
+    {
+      "id": "unknown-ordinary-release",
+      "detected": true,
+      "assertionFailures": 1,
+      "exitCode": 1,
+      "mutantSha256": "b5699c57b1ac65f11f8c9e32696f8fb7080f93a9832b1f7047dbf58e066fd54f"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "revision": "54c20025107303b5327b639b336fd343b5ccb956",
+  "commands": {
+    "types": [
+      "tsc",
+      "--strict",
+      "--noEmit",
+      "--module",
+      "nodenext",
+      "--target",
+      "es2022",
+      "test/types/shared-admission.mts"
+    ],
+    "typesExitCode": 0,
+    "typescript": "5.8.3",
+    "typesScope": "public declaration consumer; not static checking of every implementation file"
+  },
+  "sourceTree": "d05a0450dce08c698ed7505ea99d14dcf83171b4",
+  "sourceBase": "b8d2c4730b797828244e914675890990eb1f2558",
+  "remotePublished": false,
+  "newRemoteCiRun": false,
+  "browserReexecuted": false,
+  "newDependencies": 0,
+  "modelInference": false,
+  "currentRound": "State03A; subset of Battery 3"
+}

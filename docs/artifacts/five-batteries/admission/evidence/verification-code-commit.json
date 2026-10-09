@@ -1,0 +1,114 @@
+{
+  "schemaVersion": 1,
+  "scope": "shared-admission-plus-complete-existing-runtime",
+  "observedAt": "2026-10-09T03:28:55.135Z",
+  "baseline": {
+    "remoteRevision": "b8d2c4730b797828244e914675890990eb1f2558",
+    "tree": "e483c824bd2fc2f980b9a9a1a5a3137c5d1bed63",
+    "tests": 342
+  },
+  "candidate": {
+    "revision": "54c20025107303b5327b639b336fd343b5ccb956",
+    "tree": "d05a0450dce08c698ed7505ea99d14dcf83171b4",
+    "sourceBefore": "60b7d5d823804d844a966e4dc03c88fef868ac23def4f4d941be102028bc01ac",
+    "sourceAfter": "60b7d5d823804d844a966e4dc03c88fef868ac23def4f4d941be102028bc01ac",
+    "unchanged": true
+  },
+  "environment": {
+    "node": "v24.21.0",
+    "sqlite": "3.53.4",
+    "platform": "linux",
+    "architecture": "x64",
+    "release": "6.18.44",
+    "logicalCpus": 5,
+    "memoryBytes": 6236880896
+  },
+  "commands": {
+    "test": [
+      "node",
+      "--test",
+      "--test-reporter=tap",
+      "test/atlas.test.mjs",
+      "test/codex-project.test.mjs",
+      "test/consolidated-integration.test.mjs",
+      "test/contracts-regression.test.mjs",
+      "test/domain.test.mjs",
+      "test/engine.test.mjs",
+      "test/four-rounds-composition.test.mjs",
+      "test/four-rounds-evidence.test.mjs",
+      "test/four-rounds-followup.test.mjs",
+      "test/four-rounds-worker.test.mjs",
+      "test/godmode.test.mjs",
+      "test/http.test.mjs",
+      "test/index-policy.test.mjs",
+      "test/lanes-host.test.mjs",
+      "test/lanes-mcp.test.mjs",
+      "test/lanes-path.test.mjs",
+      "test/mcp-wire.test.mjs",
+      "test/mcp.test.mjs",
+      "test/native-memory.test.mjs",
+      "test/replay.test.mjs",
+      "test/research-archive.test.mjs",
+      "test/retention.test.mjs",
+      "test/shared-admission-cli.test.mjs",
+      "test/shared-admission-model.test.mjs",
+      "test/shared-admission-process.test.mjs",
+      "test/shared-admission.test.mjs",
+      "test/shared-laya-broker.test.mjs",
+      "test/store-open.test.mjs",
+      "test/study.test.mjs",
+      "test/turbo.test.mjs",
+      "test/usage-contract.test.mjs",
+      "test/usage-integration.test.mjs",
+      "test/usage-store.test.mjs",
+      "test/workstation.test.mjs"
+    ],
+    "commandSha256": "af67063623d6d994b9d8677f11cc33354388d84a1671bfe50a0655662c65c001",
+    "lockSha256": "b3226cef26d1447853eb0526f0bcacb03900b8028103d087518dda842b48477c"
+  },
+  "tests": {
+    "counts": {
+      "tests": 393,
+      "pass": 393,
+      "fail": 0,
+      "cancelled": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "passed": true,
+    "exitCode": 0,
+    "signal": null,
+    "durationMs": 7748.591097
+  },
+  "build": {
+    "passed": true,
+    "exitCode": 0,
+    "signal": null,
+    "durationMs": 309.845499,
+    "warningsRetainedInLog": true
+  },
+  "artifacts": [
+    {
+      "name": "runtime.log",
+      "bytes": 80032,
+      "sha256": "34ab3258f42e50df33dfdeb9761cd282970b24ea0639361aaf6e6cdc71068a1b"
+    },
+    {
+      "name": "build.log",
+      "bytes": 1764,
+      "sha256": "4e4e1920063229bbfbff8e7c44bc11c5f3c3793636d3ac60024f4562d4e3a270"
+    }
+  ],
+  "providerBillingSavings": null,
+  "modelInferenceLatencyMs": null,
+  "taskAccuracy": null,
+  "nativeMediumForegroundValidated": false,
+  "producerAuthenticated": false,
+  "limits": [
+    "Tests exercise real SQLite, pipes and owned child processes, not neural model accuracy.",
+    "Before/after hashes identify observations; they do not freeze the filesystem during the run.",
+    "A local receipt is not a signed attestation or a hosted-CI result.",
+    "Test duration is not product throughput; configured bytes are not a hard RSS or VRAM cap."
+  ],
+  "accepted": true
+}
