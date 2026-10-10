@@ -8,7 +8,18 @@ export interface EnginePort {
 export interface McpOptions {
   principal?: unknown; source?: string; instructions?: string; isFailure?: (result: unknown) => boolean;
   rateLimit?: { calls: number; perMs: number }; now?: () => number; maxInFlightCalls?: number;
+  /**
+   * Apresentação anunciada só em initialize e server/discover. Ícones: data URIs raster (png/jpeg/webp/gif),
+   * até 4 e MAX_ICON_BYTES no total. Chave desconhecida ou valor inválido falha na criação do handler.
+   */
+  serverMetadata?: {
+    title?: string; description?: string; websiteUrl?: string;
+    icons?: ReadonlyArray<{ src: string; mimeType: string; sizes: readonly string[] }>;
+  };
+  /** Observação da abertura de sessão; exceções são ignoradas e não alteram o protocolo. */
+  onConnect?: () => void;
 }
+export declare const MAX_ICON_BYTES: number;
 export interface McpStdioOptions extends McpOptions {
   input?: Readable; output?: Writable; maxLineBytes?: number; maxPendingMessages?: number; maxBatchItems?: number;
   maxResponseBytes?: number; maxOutputBytes?: number; maxOutputFrames?: number; writeTimeoutMs?: number; shutdownMs?: number;

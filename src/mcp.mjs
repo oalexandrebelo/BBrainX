@@ -3,6 +3,8 @@ import { EngineError, ERROR_CODES } from './capability.mjs';
 import { performance } from 'node:perf_hooks';
 import { McpRateWindow, positiveLimit } from './mcp-flow.mjs';
 import { serveBoundedStdio, validMcpRequestId } from './mcp-transport.mjs';
+import { serverPresentation } from './mcp-presentation.mjs';
+export { MAX_ICON_BYTES } from './mcp-presentation.mjs';
 
 /**
  * Servidor MCP próprio sobre stdio: JSON-RPC 2.0, uma mensagem por linha, só a superfície de ferramentas.
@@ -53,9 +55,11 @@ const rpcError=(id,code,message,data)=>({jsonrpc:'2.0',id:id??null,error:{code,m
  * O `principal` vem do host que iniciou o processo; nenhum argumento de ferramenta o altera.
  * `isFailure` diz quando um resultado válido representa uma recusa do domínio: ela segue com `isError`.
  * `rateLimit` é o teto de chamadas de ferramenta por janela, contra um agente em laço.
+ * `serverMetadata` (título, ícones) só aparece na abertura da sessão (initialize, server/discover); as demais respostas repetem o serverInfo enxuto.
  */
 export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instructions,isFailure,serverMetadata={},onConnect,rateLimit={calls:300,perMs:60000},now=()=>performance.now(),maxInFlightCalls=8}={}){
-  const catalog=toolCatalog(engine), running=new Map(), serverInfo={...serverMetadata,name:engine.name,version:engine.version};
+  const catalog=toolCatalog(engine), running=new Map(), serverInfo={name:engine.name,version:engine.version};
+  const presentation=serverPresentation(serverMetadata), introduction=()=>({...structuredClone(presentation),...serverInfo});
   const connected=()=>{try{onConnect?.();}catch{/* Observation cannot change the protocol. */}};
   const quota=new McpRateWindow({...rateLimit,now});
   positiveLimit(maxInFlightCalls,'maxInFlightCalls',128);
@@ -85,8 +89,8 @@ export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instr
     if(typeof version!=='string'||!plainObject(meta[META+'clientCapabilities']))return rpcError(id,INVALID_PARAMS,'Request _meta needs '+META+'protocolVersion and '+META+'clientCapabilities.');
     if(!MODERN_VERSIONS.includes(version))return rpcError(id,UNSUPPORTED_VERSION,'Unsupported protocol version',{supported:[...PROTOCOL_VERSIONS],requested:version});
     connected();
-    const complete=result=>({jsonrpc:'2.0',id,result:{resultType:'complete',...result,_meta:{[META+'serverInfo']:serverInfo}}});
-    if(method==='server/discover')return complete({supportedVersions:[...PROTOCOL_VERSIONS],capabilities:{tools:{}},...(instructions?{instructions}:{}),...CACHE});
+    const complete=(result,info=serverInfo)=>({jsonrpc:'2.0',id,result:{resultType:'complete',...result,_meta:{[META+'serverInfo']:info}}});
+    if(method==='server/discover')return complete({supportedVersions:[...PROTOCOL_VERSIONS],capabilities:{tools:{}},...(instructions?{instructions}:{}),...CACHE},introduction());
     if(method==='tools/list')return complete({tools:catalog.tools,...CACHE});
     if(method==='tools/call')return call(id,params,complete);
     return rpcError(id,METHOD_NOT_FOUND,'Method not found: '+method);
@@ -96,7 +100,7 @@ export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instr
     if(method==='initialize'){
       connected();
       const protocolVersion=LEGACY_VERSIONS.includes(params?.protocolVersion)?params.protocolVersion:LEGACY_VERSIONS[0];
-      return result({protocolVersion,capabilities:{tools:{}},serverInfo,...(instructions?{instructions}:{})});
+      return result({protocolVersion,capabilities:{tools:{}},serverInfo:introduction(),...(instructions?{instructions}:{})});
     }
     if(method==='ping')return result({});
     if(method==='tools/list')return result({tools:catalog.tools});

@@ -44,7 +44,7 @@ test('MCP handshake advertises original brand and marks the connection only when
  const {brain,root}=fixture(t),observer=observeEngine(makeEngine(brain,['alpha']),brain,{project:'alpha',harness:'claude',workspace:path.join(root,'alpha')});t.after(()=>observer.close());
  const handler=createMcpHandler(observer.engine,{principal:{id:'host'},serverMetadata:serverBrand('alpha'),onConnect:()=>observer.connected()});
  const response=await handler.handle({jsonrpc:'2.0',id:1,method:'initialize',params:{protocolVersion:'2025-11-25',capabilities:{},clientInfo:{name:'official-test',version:'1'}}});
- assert.equal(response.result.serverInfo.name,'bbrainx');assert.equal(response.result.serverInfo.title,'BBrainX · alpha');assert.match(response.result.serverInfo.icons[0].src,/^data:image\/svg\+xml;base64,/);
+ assert.equal(response.result.serverInfo.name,'bbrainx');assert.equal(response.result.serverInfo.title,'BBrainX · alpha');assert.match(response.result.serverInfo.icons[0].src,/^data:image\/png;base64,/);
  assert.equal(controlOverview(brain,'alpha').activity[0].status,'connected');
 });
 test('stale process metadata is not displayed as connected and malformed records are counted',t=>{
@@ -92,7 +92,7 @@ test('legacy lanes MCP advertises BBrainX and records the real lane connection',
  const f=laneFixture(t),entry=fileURLToPath(new URL('../scripts/lanes.mjs',import.meta.url)),client=new Client({name:'control-lane-test',version:'1'});
  const transport=new StdioClientTransport({command:process.execPath,args:[entry,'mcp','--project','product','--lane','alpha','--workspace',f.alpha,'--harness','codex'],cwd:f.alpha,env:{...process.env,BBRAINX_HOME:f.home},stderr:'pipe'});transport.stderr?.on('data',()=>{});
  try{
-  await client.connect(transport);assert.equal(client.getServerVersion().name,'bbrainx');assert.equal(client.getServerVersion().title,'BBrainX · product');assert.match(client.getServerVersion().icons[0].src,/^data:image\/svg\+xml;base64,/);
+  await client.connect(transport);assert.equal(client.getServerVersion().name,'bbrainx');assert.equal(client.getServerVersion().title,'BBrainX · product');assert.match(client.getServerVersion().icons[0].src,/^data:image\/png;base64,/);
   await client.callTool({name:'session_get',arguments:{project:'product',task:'continuation'}});
   const observed=controlOverview(f.authority,'product').activity.find(x=>x.lane==='alpha');assert.equal(observed.harness,'codex');assert.equal(observed.workspace,fs.realpathSync.native(f.alpha));assert.equal(observed.status,'connected');assert.equal(observed.calls,1);
  }finally{await client.close();await transport.close();}

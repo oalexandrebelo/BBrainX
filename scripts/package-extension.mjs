@@ -7,7 +7,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 const root=fileURLToPath(new URL('../',import.meta.url)),source=path.join(root,'extensions','vscode');
 const {values}=parseArgs({options:{out:{type:'string'}},allowPositionals:false});
-const files=['package.json','extension.cjs','media/icon.svg','README.md','LICENSE'];
+const files=['package.json','extension.cjs','media/icon.svg','media/icon.png','README.md','LICENSE'];
 for(const file of files){const stat=fs.lstatSync(path.join(source,file));if(!stat.isFile()||stat.isSymbolicLink()||stat.size>262144)throw new Error('Unsafe extension package source: '+file);}
 const manifest=JSON.parse(fs.readFileSync(path.join(source,'package.json'),'utf8'));
 if(!/^[a-z0-9-]+$/.test(manifest.name)||!/^[a-z0-9-]+$/.test(manifest.publisher)||!/^\d+\.\d+\.\d+$/.test(manifest.version))throw new Error('Invalid extension identity');
@@ -20,7 +20,7 @@ const vsix=`<?xml version="1.0" encoding="utf-8"?>
   <Identity Language="en-US" Id="${xml(manifest.name)}" Version="${xml(manifest.version)}" Publisher="${xml(manifest.publisher)}"/>
   <DisplayName>${xml(manifest.displayName)}</DisplayName>
   <Description xml:space="preserve">${xml(manifest.description)}</Description>
-  <Tags>BBrainX,local-preview</Tags><Categories>Other</Categories><GalleryFlags>Preview</GalleryFlags>
+  <Tags>BBrainX,local-preview</Tags><Icon>extension/media/icon.png</Icon><Categories>Other</Categories><GalleryFlags>Preview</GalleryFlags>
   <Properties><Property Id="Microsoft.VisualStudio.Code.Engine" Value="${xml(manifest.engines.vscode)}"/><Property Id="Microsoft.VisualStudio.Code.ExtensionKind" Value="workspace"/></Properties>
  </Metadata>
  <Installation><InstallationTarget Id="Microsoft.VisualStudio.Code"/></Installation><Dependencies/>
@@ -28,12 +28,13 @@ const vsix=`<?xml version="1.0" encoding="utf-8"?>
   <Asset Type="Microsoft.VisualStudio.Code.Manifest" Path="extension/package.json" Addressable="true"/>
   <Asset Type="Microsoft.VisualStudio.Services.Content.Details" Path="extension/README.md" Addressable="true"/>
   <Asset Type="Microsoft.VisualStudio.Services.Content.License" Path="extension/LICENSE" Addressable="true"/>
+  <Asset Type="Microsoft.VisualStudio.Services.Icons.Default" Path="extension/media/icon.png" Addressable="true"/>
  </Assets>
 </PackageManifest>`;
 const types=`<?xml version="1.0" encoding="utf-8"?>
 <Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
  <Default Extension="json" ContentType="application/json"/><Default Extension="cjs" ContentType="application/javascript"/>
- <Default Extension="svg" ContentType="image/svg+xml"/><Default Extension="md" ContentType="text/plain"/>
+ <Default Extension="svg" ContentType="image/svg+xml"/><Default Extension="png" ContentType="image/png"/><Default Extension="md" ContentType="text/plain"/>
  <Override PartName="/extension/LICENSE" ContentType="text/plain"/><Override PartName="/extension.vsixmanifest" ContentType="text/xml"/>
 </Types>`;
 const temporary=path.join(path.dirname(output),'.bbrainx-vsix-'+randomUUID()+'.tmp');

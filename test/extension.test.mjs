@@ -15,8 +15,12 @@ test('extension manifest gates execution settings at machine scope and keeps nat
   const commands=manifest.contributes.commands.map(command=>command.command);assert.deepEqual(commands,['bbrainx.detect','bbrainx.connect','bbrainx.openPanel','bbrainx.startPanel']);
   assert.equal(manifest.contributes.views.bbrainx[0].id,'bbrainx.workspaces');
   const icon=fs.readFileSync(path.join(extension,'media/icon.svg'),'utf8'),brand=fs.readFileSync(path.join(root,'public/brand/icon.svg'),'utf8');
-  const paths=svg=>[...svg.matchAll(/<path\s+d="([^"]+)"/g)].map(match=>match[1]);
-  assert.deepEqual(paths(icon),paths(brand));assert.doesNotMatch(icon,/<rect\b/,'Activity Bar uses the transparent glyph as a monochrome mask');
+  // A marca oficial desenha o fundo como path escuro e repete caminhos do glifo; a Activity Bar usa só o glifo, uma vez.
+  const glyph=svg=>[...new Set([...svg.matchAll(/<path\s+d="([^"]+)"(?:\s+fill="([^"]+)")?/g)].filter(match=>!match[2]||match[2].toUpperCase()==='#B6EFB9').map(match=>match[1]))];
+  assert.deepEqual(glyph(icon),glyph(brand));assert.ok(glyph(icon).length>0);
+  assert.doesNotMatch(icon,/<rect\b|#0C171D/i,'Activity Bar uses the transparent glyph as a monochrome mask');assert.match(icon,/fill="currentColor"/);
+  assert.equal(manifest.icon,'media/icon.png');
+  assert.deepEqual(fs.readFileSync(path.join(extension,'media/icon.png')),fs.readFileSync(path.join(root,'public/brand/icon-128.png')),'extension list icon is the 128 px brand raster');
   execFileSync(process.execPath,['--check',path.join(extension,'extension.cjs')],{timeout:10000,stdio:'pipe'});
 });
 
@@ -40,5 +44,5 @@ with zipfile.ZipFile(sys.argv[1]) as archive:
     print(json.dumps({'files': files, 'identity': identity}))
 `;
   const inspected=JSON.parse(execFileSync(process.platform==='win32'?'python':'python3',['-c',script,output],{timeout:10000,encoding:'utf8'}));
-  assert.deepEqual(inspected.files,['[Content_Types].xml','extension.vsixmanifest','extension/LICENSE','extension/README.md','extension/extension.cjs','extension/media/icon.svg','extension/package.json']);
+  assert.deepEqual(inspected.files,['[Content_Types].xml','extension.vsixmanifest','extension/LICENSE','extension/README.md','extension/extension.cjs','extension/media/icon.png','extension/media/icon.svg','extension/package.json']);
 });
