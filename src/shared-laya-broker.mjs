@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { LayaBroker, LAYA } from './laya.mjs';
+import { LayaTransportBroker, LAYA } from './laya.mjs';
 import { SharedAdmission, AdmissionError } from './shared-admission.mjs';
 
 const digest = v => createHash('sha256').update(JSON.stringify(v)).digest('hex');
@@ -14,7 +14,7 @@ export class SharedLayaBroker {
     if (typeof resource !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,79}$/.test(resource) ||
       typeof scopeDigest !== 'string' || !/^[a-f0-9]{64}$/.test(scopeDigest) || !Number.isSafeInteger(reserveBytes) || reserveBytes <= 0 || reserveBytes > 8 * 1024 ** 4)
       throw new AdmissionError('INVALID_SHARED_LAYA_CONFIG');
-    this.#inner = new LayaBroker({ home, ...workerOptions });
+    this.#inner = new LayaTransportBroker({ home, ...workerOptions });
     this.#resource = resource; this.#bytes = reserveBytes; this.#scope = scopeDigest;
     this.#ledger = new SharedAdmission(home, { historyLimit, reconcileVerifier: (row, proof) =>
       this.#lease !== null && row.generation === this.#lease.handle.generation && row.resource === this.#resource &&

@@ -1,0 +1,201 @@
+{
+  "observedAt": "2026-10-08T07:07:38.489Z",
+  "installedRevision": "f48cdccea3bd856ea7364d06376c56da920c02ac",
+  "node": "v24.21.0",
+  "checks": [
+    "Installed CLI assessment creates no file",
+    "Installed CLI creates unapproved draft when absent",
+    "Installed CLI repeat preserves draft bytes",
+    "Installed MCP advertises both optional capabilities",
+    "Installed MCP assesses existing BBrainX SDD",
+    "Installed MCP denies different registered project before creation",
+    "Installed MCP runs real Laya MPS with SDD also enabled"
+  ],
+  "results": {
+    "created": {
+      "status": "draft",
+      "score": 45,
+      "rubricVersion": "sdd-document-coverage-v1",
+      "semanticQuality": "not_assessed",
+      "documents": [
+        {
+          "path": "SDD.md",
+          "sha256": "77ef1e51bf0296cc36379da7aeac9f839050f97682d76b00dc33a12b1003a126",
+          "bytes": 1436,
+          "kind": "spec",
+          "feature": "project"
+        }
+      ]
+    },
+    "sdd": {
+      "version": 1,
+      "project": "bbrainx",
+      "status": "present",
+      "created": false,
+      "completeInspection": true,
+      "score": 100,
+      "rubricVersion": "sdd-document-coverage-v1",
+      "semanticQuality": "not_assessed",
+      "formats": [
+        "docs-specs"
+      ],
+      "documents": [
+        {
+          "path": "docs/specs/sdd-alignment.md",
+          "sha256": "fa83c8c49947bbbf5dd072da3b850d0df7f2544520ef963a576153c782461210",
+          "bytes": 6725,
+          "kind": "spec",
+          "feature": "docs:sdd-alignment"
+        }
+      ],
+      "features": [
+        {
+          "id": "docs:sdd-alignment",
+          "score": 100,
+          "dimensions": {
+            "objective": {
+              "covered": true,
+              "points": 15,
+              "max": 15
+            },
+            "requirements": {
+              "covered": true,
+              "points": 25,
+              "max": 25
+            },
+            "architecture": {
+              "covered": true,
+              "points": 15,
+              "max": 15
+            },
+            "acceptance": {
+              "covered": true,
+              "points": 20,
+              "max": 20
+            },
+            "tasks": {
+              "covered": true,
+              "points": 15,
+              "max": 15
+            },
+            "traceability": {
+              "covered": true,
+              "points": 10,
+              "max": 10
+            }
+          },
+          "gaps": [],
+          "traceability": {
+            "requirementIds": [
+              "FR-001",
+              "FR-002",
+              "FR-003",
+              "FR-004",
+              "FR-005",
+              "FR-006",
+              "FR-007",
+              "FR-008"
+            ],
+            "taskReferences": [
+              "FR-001",
+              "FR-002",
+              "FR-003",
+              "FR-004",
+              "FR-005",
+              "FR-006",
+              "FR-007",
+              "FR-008"
+            ],
+            "coveredRequirementIds": [
+              "FR-001",
+              "FR-002",
+              "FR-003",
+              "FR-004",
+              "FR-005",
+              "FR-006",
+              "FR-007",
+              "FR-008"
+            ],
+            "uncoveredRequirementIds": [],
+            "orphanTaskReferences": [],
+            "coverageRatio": 1
+          }
+        }
+      ],
+      "gaps": [],
+      "limits": {
+        "maxDepth": 4,
+        "maxDocuments": 128,
+        "maxFileBytes": 65536,
+        "maxTotalBytes": 524288,
+        "maxVisitedEntries": 2048,
+        "maxIds": 256,
+        "maxIdLength": 80,
+        "reached": []
+      },
+      "revision": {
+        "documentsSha256": "f03fe0710a4b3204ace66c51ecba05b160c8a33131778d733e8b3cc584d1481d"
+      }
+    },
+    "laya": {
+      "status": "suggested",
+      "answers": {
+        "kind": {
+          "choice": "bug",
+          "answer_confidence": 0.9966,
+          "confidence": 0.9672,
+          "probabilities": {
+            "bug": 0.9966,
+            "feature": 0.0034
+          }
+        }
+      },
+      "truncated": false,
+      "headTruncated": false,
+      "headWarnings": [],
+      "stateTokensDropped": 0,
+      "inputTokens": 33,
+      "calibrated": false,
+      "model": {
+        "package": "laya 0.3.26",
+        "checkpoint": "multilingual",
+        "revision": "1c5edc17a7acd8701df6fc341c0d179f1c62c982"
+      },
+      "runtime": {
+        "laya": "0.3.26",
+        "torch": "2.14.1",
+        "device": "mps",
+        "loadMs": 4605
+      },
+      "cache": "miss",
+      "workerMs": 343.4,
+      "elapsedMs": 5006.674959000001
+    }
+  },
+  "ok": true,
+  "scope": "Installed f48cdcc CLI/MCP with final SDD contract edits in the registered source checkout; document hashes identify the assessed content independently of runtime revision.",
+  "nativePanel": {
+    "url": "http://127.0.0.1:4317/",
+    "sdd": {
+      "project": "bbrainx",
+      "action": "assess",
+      "feature": "docs:sdd-alignment",
+      "documentaryCoverage": 100,
+      "semanticQuality": "not_assessed",
+      "created": false
+    },
+    "laya": {
+      "realInference": true,
+      "device": "mps",
+      "screenshotSha256": "1d41d84c59d789c3c55af16a69dd50f0c0fda51625adefceda56b83db60e3209"
+    },
+    "sddScreenshotSha256": "4e588fb3f478f32e91b42f32fef18577f7d145b4dce6f900e2563241ccb802f5",
+    "limits": "Screenshots kept locally because they show the operator workspace path. SDK transport checks do not certify that all native harnesses reconnected or invoked the new tools."
+  },
+  "codeCi": {
+    "revision": "f48cdccea3bd856ea7364d06376c56da920c02ac",
+    "url": "https://github.com/oalexandrebelo/BBrainX/actions/runs/37740626008",
+    "validationJobsPassed": 9,
+    "publishEvidence": "skipped by PR workflow condition"
+  }
+}

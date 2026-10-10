@@ -4,13 +4,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { LayaBroker, fetchWeights, layaPaths } from '../src/laya.mjs';
+import { LayaTransportBroker, fetchWeights, layaPaths } from '../src/laya.mjs';
 import { validLayaReply } from '../src/laya-transport.mjs';
 import { createHash } from 'node:crypto';
 const question={q:{type:'noul',instructions:'Transport contract only'}};
 function fixture(t,mode='normal',options={}){
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'bb-worker-')),audit=path.join(root,'events.jsonl');
-  const broker=new LayaBroker({command:[process.execPath,fileURLToPath(new URL('./fixtures/serial-worker.mjs',import.meta.url)),mode,audit],
+  const broker=new LayaTransportBroker({command:[process.execPath,fileURLToPath(new URL('./fixtures/serial-worker.mjs',import.meta.url)),mode,audit],
     startMs:10000,deadlineMs:1000,...options});
   t.after(async()=>{await broker.stop();fs.rmSync(root,{recursive:true,force:true});});
   const events=()=>fs.existsSync(audit)?fs.readFileSync(audit,'utf8').trim().split('\n').filter(Boolean).map(s=>JSON.parse(s)):[];
@@ -70,7 +70,7 @@ test('stop terminates an unresponsive worker and restart gets a fresh generation
 });
 test('startup refusal and missing executable return bounded failures without throwing',async t=>{
   const {broker}=fixture(t,'refuse');assert.equal((await broker.decide(['one'],question)).reason,'UNAVAILABLE');assert.equal(broker.stats().processClosedObserved,true);
-  const absent=new LayaBroker({command:[path.join(os.tmpdir(),'no-bb-worker-executable')]});
+  const absent=new LayaTransportBroker({command:[path.join(os.tmpdir(),'no-bb-worker-executable')]});
   t.after(()=>absent.stop());assert.equal((await absent.decide(['one'],question)).reason,'UNAVAILABLE');
 });
 test('three reported failures open circuit; admission refusal does not count as inference failure',async t=>{

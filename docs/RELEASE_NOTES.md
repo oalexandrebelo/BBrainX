@@ -1,4 +1,20 @@
-# Candidato — integridade de contratos (PR #10, não lançado)
+# Alinhamento SDD por projeto — 08/10/2026
+
+Detecção de artefatos Spec Kit e SDD genérico, avaliação de cobertura documental por feature e criação exclusiva de rascunho técnico quando ausente. Inclui CLI, HTTP/painel e MCP opt-in `--sdd`, quotas, fontes por hash e testes de escopo/concorrência. A nota não é avaliação semântica ou certificação de qualidade. [Especificação](specs/sdd-alignment.md), [operação](integrations/SDD.md) e [ADR](decisions/0002-sdd-coverage.md). Nenhum runtime MetaGPT/Spec Kit ou chamada paga foi incorporado.
+
+# Decisões locais Laya — 08/10/2026
+
+Capacidade opcional no painel, CLI e MCP, com cache exato isolado, limites do broker, cancelamento e abstenção por perda de entrada. Perfil Python recuperável com seleção explícita de runtime compatível. O núcleo de contexto continua determinístico: o benchmark com janela maior ainda não superou a baseline lexical. [Contratos](integrations/LAYA.md) e [evidência](engineering/LAYA_2026-10-08.md). Sem alteração de pesos, API paga ou comparação vencedora com JEV.
+
+# Candidato consolidado — ainda não lançado
+
+A PR #12 reúne Atlas, MEDIUM/replay, Observatory, contratos, lanes e os laboratórios isolados das PRs #6–#11. O estado integrado está em [research/INTEGRATION.md](research/INTEGRATION.md); as notas anteriores abaixo conservam o escopo e os resultados de suas rodadas, não descrevem sozinhas o estado atual.
+
+A revisão de lançamento acrescenta revalidação da raiz autorizada, quotas transacionais no refresh parcial, operação por teclado do Atlas e gates de CI que exigem a validação consolidada antes da publicação. Não muda o schema, não instala modelos e não incorpora automaticamente o candidato histórico de worker/cache Laya. Evidências e limites: [RELEASE_READINESS.md](RELEASE_READINESS.md).
+
+---
+
+# Histórico do candidato de integridade de contratos (PR #10)
 
 Base de estudo: 0.4.0 em `a9636e9`. As alterações abaixo só entram no produto após revisão e merge; não alteram o schema ou as configurações dos harnesses.
 

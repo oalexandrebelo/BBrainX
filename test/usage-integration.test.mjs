@@ -42,7 +42,7 @@ test('HTTP de uso aplica origem/host e não cria banco de recibos ao ler',async 
  const post=await fetch(server.url+'/api/usage?project=demo',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});assert.equal(post.status,405);
 });
 test('Importação permanece particionada e usa a correção corrente no HTTP',async t=>{
- const {brain}=setup(t);brain.register('second',path.dirname(brain.project('demo').root));
+ const {brain,root}=setup(t),second=path.join(root,'second');fs.mkdirSync(second);brain.register('second',second);
  const s=new UsageStore(brain.home);s.import('demo',[{expectedVersion:0,call:call()}]);s.close();
  const server=await startServer(brain,{port:0});t.after(()=>server.close());
  const report=await(await fetch(server.url+'/api/usage?project=demo')).json();assert.equal(report.usage.tokens.totalTokens.value,1200);

@@ -14,6 +14,7 @@ CREATE TABLE services(project TEXT NOT NULL,lane TEXT NOT NULL,name TEXT NOT NUL
 CREATE TABLE lane_events(seq INTEGER PRIMARY KEY,type TEXT NOT NULL,project TEXT NOT NULL,lane TEXT NOT NULL,body TEXT NOT NULL,created TEXT NOT NULL);
 `;
 const schemaHash = hash(schema);
+export const LANE_SCHEMA_HASH=schemaHash;
 const inside = (parent,child) => {const r=path.relative(parent,child);return r===''||(!path.isAbsolute(r)&&r!=='..'&&!r.startsWith('..'+path.sep));};
 const key = (project,lane) => hash({project,lane});
 // Use the OS resolver for short-name/case aliases; lexical case-folding can merge distinct paths.

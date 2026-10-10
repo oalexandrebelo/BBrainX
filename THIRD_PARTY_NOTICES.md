@@ -34,6 +34,20 @@ SOFTWARE.
 
 The Laya profile is installed only by the explicit command `bbrainx laya install`. It downloads the `laya` package (Apache-2.0, https://github.com/NandhaKishorM/laya) and its dependencies from PyPI into an isolated environment, and the `multilingual` checkpoint (Apache-2.0 per its model card) from `convaiinnovations/laya` on Hugging Face at a pinned revision, verified by SHA-256. None of that code or of those weights is part of this repository or of its source distribution. `profiles/laya/worker.py` is original BBrainX code that calls the package.
 
+## Configuration parsers and Codex migration research
+
+The integration installer uses `jsonc-parser` 3.3.1 (MIT, Microsoft) and
+`smol-toml` 1.9.0 (BSD-3-Clause, Squirrel Chat et al.). Their complete license
+notices are distributed in their installed package directories; preserve those
+notices in binary/runtime distributions. Exact package integrity is locked in
+`package-lock.json`.
+
+The context migration workflow was studied in OpenAI Codex, Apache-2.0,
+revision `e974aad3b1a8f144273e882c614aefe69eaef615`. BBrainX's JavaScript
+implementation is original; no upstream source or logos were copied. The
+source map and supported formats are recorded in
+`docs/integrations/CONTEXT_IMPORT.md`.
+
 ## Everything else
 
 React, React Flow, gpt-tokenizer, Zod and all installed packages retain their own licenses. The lockfile identifies exact versions and integrity hashes. The dependency inventory records the resolved graph; review package notices before redistribution.

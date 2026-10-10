@@ -20,6 +20,7 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-fund
       - name: Validate architecture data and SVG export
+        shell: bash
         run: |
           mkdir -p artifacts/atlas
           node --test --test-reporter=tap test/atlas.test.mjs | tee artifacts/atlas/unit-tests.log
