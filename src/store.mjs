@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { canonical, ensure, hash, identifier, newId, now, text } from './primitives.mjs';
 import { gitState, safeDirectory, stateHome } from './host.mjs';
-
+import { rollbackAfterFailure } from './sqlite-init.mjs';
 // Estado durável: não pode ser reconstruído a partir da worktree.
 const durable = `
 CREATE TABLE projects(id TEXT PRIMARY KEY, root TEXT NOT NULL UNIQUE, created TEXT NOT NULL, snapshot TEXT);
@@ -121,7 +121,7 @@ export class BrainStore {
   transaction(fn) {
     this.db.exec('BEGIN IMMEDIATE');
     try { const result = fn(); this.db.exec('COMMIT'); return result; }
-    catch (e) { this.db.exec('ROLLBACK'); throw e; }
+    catch (e) { rollbackAfterFailure(this); throw e; }
   }
   event(project, type, payload) {
     this.stmt('INSERT INTO events(id,project,type,payload,created) VALUES(?,?,?,?,?)').run(newId(), project, type, canonical(payload), now());

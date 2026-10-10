@@ -1,0 +1,104 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "id": "FR-001",
+      "task": "T001",
+      "checks": [
+        "startup",
+        "sqlite"
+      ]
+    },
+    {
+      "id": "FR-002",
+      "task": "T002",
+      "checks": [
+        "startup",
+        "sqlite"
+      ]
+    },
+    {
+      "id": "FR-003",
+      "task": "T003",
+      "checks": [
+        "sqlite",
+        "integration"
+      ]
+    },
+    {
+      "id": "FR-004",
+      "task": "T004",
+      "checks": [
+        "spec"
+      ]
+    },
+    {
+      "id": "FR-005",
+      "task": "T005",
+      "checks": [
+        "runtime",
+        "integration",
+        "build"
+      ]
+    },
+    {
+      "id": "FR-006",
+      "task": "T006",
+      "checks": [
+        "install"
+      ]
+    },
+    {
+      "id": "FR-007",
+      "task": "T007",
+      "checks": [
+        "browser"
+      ]
+    },
+    {
+      "id": "FR-008",
+      "task": "T008",
+      "checks": [
+        "medium"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "id": "startup",
+      "kind": "tests"
+    },
+    {
+      "id": "sqlite",
+      "kind": "tests"
+    },
+    {
+      "id": "spec",
+      "kind": "tests"
+    },
+    {
+      "id": "runtime",
+      "kind": "tests"
+    },
+    {
+      "id": "integration",
+      "kind": "tests"
+    },
+    {
+      "id": "build",
+      "kind": "build"
+    },
+    {
+      "id": "install",
+      "kind": "install"
+    },
+    {
+      "id": "browser",
+      "kind": "browser"
+    },
+    {
+      "id": "medium",
+      "kind": "native"
+    }
+  ]
+}

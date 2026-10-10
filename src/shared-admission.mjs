@@ -3,6 +3,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { types } from 'node:util';
+import { ensureWalMode } from './sqlite-init.mjs';
 
 /** @typedef {{ledgerId:string,resource:string,generation:number,token:string}} AdmissionHandle */
 /** @typedef {{id:string,physicalKey:string,slots:number,byteLimit:number}} ResourcePolicy */
@@ -78,8 +79,11 @@ function privateDirectory(directory, create) {
   if (process.platform !== 'win32') need(stat.uid === process.getuid() && (stat.mode & 0o077) === 0, 'UNSAFE_ADMISSION_DIRECTORY');
   return fs.realpathSync(directory);
 }
-function regularFile(file) {
-  const stat = fs.lstatSync(file);
+function regularFile(file, optional = false) {
+  // Sidecars podem desaparecer ao fechar a última conexão. Uma única observação; links
+  // pendentes continuam sendo lstat válidos e são recusados, não tratados como ausência.
+  const stat = fs.lstatSync(file, { throwIfNoEntry: !optional });
+  if (stat === undefined && optional) return;
   need(stat.isFile() && !stat.isSymbolicLink() && stat.nlink === 1, 'UNSAFE_ADMISSION_FILE');
   if (process.platform !== 'win32') need(stat.uid === process.getuid() && (stat.mode & 0o077) === 0, 'UNSAFE_ADMISSION_FILE');
 }
@@ -107,8 +111,7 @@ export class SharedAdmission {
     }
     regularFile(file);
     for (const suffix of ['-wal', '-shm']) {
-      try { fs.lstatSync(file + suffix); } catch (e) { if (e.code === 'ENOENT') continue; throw e; }
-      regularFile(file + suffix); // Inclui links pendentes; existsSync os ocultaria.
+      regularFile(file + suffix, true);
     }
     this.#db = new DatabaseSync(file, { readOnly, allowExtension: false });
     try {
@@ -137,7 +140,7 @@ export class SharedAdmission {
         this.#checkTotals(); this.#db.exec('COMMIT');
       } catch (e) { try { this.#db.exec('ROLLBACK'); } catch {} throw e; }
       if (!readOnly) {
-        need(this.#db.prepare('PRAGMA journal_mode=WAL').get().journal_mode === 'wal', 'ADMISSION_WAL_REQUIRED');
+        ensureWalMode(this.#db, busyTimeoutMs);
         this.#db.exec('PRAGMA synchronous=FULL; PRAGMA wal_autocheckpoint=1000;');
       }
       Object.defineProperties(this, {
