@@ -44,3 +44,18 @@ test('shared Laya CLI help is usable without weights or mutation of the host', t
   });
   assert.equal(fail.status, 1); assert(fail.stderr.includes('LAYA_NOT_INSTALLED')); assert.deepEqual(fs.readdirSync(h), []);
 });
+
+test('CLI failures name their real error code instead of a generic one, with stdout empty', t => {
+  const h = home(t);
+  for (const [args, code] of [
+    [['status', '--slots', '3'], 'UNUSED_ADMISSION_OPTION'],
+    [['register', '--resource', 'a', '--resource', 'b', '--physical-key', H('a'), '--slots', '1', '--bytes', '100'], 'DUPLICATE_ADMISSION_OPTION'],
+    [['frobnicate'], 'INVALID_ADMISSION_COMMAND'],
+    [['reconcile', '--ledger-id', 'x', '--generation', '1', '--revision', '1', '--evidence', H('d')], 'EXPLICIT_OPERATOR_CONFIRMATION_REQUIRED'],
+    [['status', '--bogus'], 'ERR_PARSE_ARGS_UNKNOWN_OPTION']
+  ]) {
+    const r = cli(h, ...args);
+    assert.equal(r.status, 1, args.join(' ')); assert.equal(r.stdout, '', args.join(' '));
+    assert.deepEqual(JSON.parse(r.stderr), { error: code }, args.join(' '));
+  }
+});

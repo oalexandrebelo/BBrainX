@@ -40,5 +40,9 @@ Nenhum token de ownership é impresso. --history-limit precisa ser o configurado
       console.log(JSON.stringify({ ...result, ...(action === 'reconcile' ? { evidenceKind: 'operator-attestation', automaticProcessVerification: false } : {}) }, null, 2));
     }
   }
-} catch (e) { console.error(JSON.stringify({ error: e.code ?? 'ADMISSION_CLI_FAILED' })); process.exitCode = 1; }
+} catch (e) {
+  // The real code (or a code-shaped message, like UNUSED_ADMISSION_OPTION); any other text stays generic so no path or detail leaks.
+  const named = typeof e?.code === 'string' ? e.code : /^[A-Z][A-Z0-9_]{2,79}$/.test(e?.message) ? e.message : 'ADMISSION_CLI_FAILED';
+  console.error(JSON.stringify({ error: named })); process.exitCode = 1;
+}
 finally { ledger?.close(); }
