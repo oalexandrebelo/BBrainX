@@ -2,7 +2,9 @@ import { performance } from 'node:perf_hooks';
 import { randomInt } from 'node:crypto';
 
 const sleeper = new Int32Array(new SharedArrayBuffer(4));
-const busy = error => Number.isInteger(error?.errcode) && [5, 6].includes(error.errcode & 255);
+/** SQLITE_BUSY (5) or SQLITE_LOCKED (6), including extended result codes. */
+export const isSqliteBusy = error => Number.isInteger(error?.errcode) && [5, 6].includes(error.errcode & 255);
+const busy = isSqliteBusy;
 
 /** Somente inicialização idempotente de journal. Nunca envolver mutações de domínio neste retry.
  * O construtor continua síncrono: a espera bloqueia esta thread, limitada entre chamadas SQLite.

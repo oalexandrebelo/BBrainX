@@ -4,6 +4,7 @@ import { indexProject, search } from './retrieval.mjs';
 import { compileContext } from './context.mjs';
 import { saveCheckpoint } from './session.mjs';
 import { decisionShape } from './decisions.mjs';
+import { isSqliteBusy } from './sqlite-init.mjs';
 
 export const VERSION='0.4.0';
 /** Enviado ao harness na abertura da sessão MCP. Descreve o uso; não concede permissão nem altera aprovações. */
@@ -30,7 +31,10 @@ export function makeEngine(store, allowedProjects, { onEvent, decisions, sdd } =
       async run({input:args,context}){
         context.signal.throwIfAborted();
         try {const result=await run(args,context);return {ok:true,data:JSON.parse(JSON.stringify(result)),error:null,detail:null};}
-        catch(e){if(e.name!=='BrainError')throw e;return {ok:false,data:null,error:e.code,detail:e.message===e.code?null:e.message};}
+        catch(e){
+          // Another process holds the database past busy_timeout: a typed, retryable refusal instead of an opaque EXECUTION_FAILED.
+          if(isSqliteBusy(e))return {ok:false,data:null,error:'STORE_BUSY',detail:'The local store is busy with another process. Retry the same call (reuse the idempotencyKey).'};
+          if(e.name!=='BrainError')throw e;return {ok:false,data:null,error:e.code,detail:e.message===e.code?null:e.message};}
       }
     });
   }
