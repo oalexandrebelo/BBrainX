@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { ensure, newId } from '../src/primitives.mjs';
-import { doctor, stateHome } from '../src/host.mjs';
+import { doctor, stateHome, stableNodePath, stableEntryPath } from '../src/host.mjs';
 import { clientConfig, CLIENTS } from '../src/clients.mjs';
 
 const {values,args}=(()=>{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};})();
@@ -63,7 +63,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
   else if(['integrate','integrations','discover','workspace-seen','control','test','test-history','import-context','budget'].includes(command)){const {controlCommand}=await import('../src/control-cli.mjs');print(await controlCommand(command,values,args));}
   else if(command==='config'){
     ensure(values.project,'PROJECT_REQUIRED');
-    console.log(clientConfig(values.client||'claude',{node:process.execPath,entry:fileURLToPath(import.meta.url),project:values.project,home:stateHome()}));
+    console.log(clientConfig(values.client||'claude',{node:stableNodePath(),entry:stableEntryPath(fileURLToPath(import.meta.url)),project:values.project,home:stateHome()}));
   }
   else if(command==='sdd'){
     ensure(values.project,'PROJECT_REQUIRED');
@@ -114,7 +114,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       });
       const project=known?.id||values.project||path.basename(root).replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^[^A-Za-z0-9]+/,'').slice(0,80).replace(/[^A-Za-z0-9]+$/,'')||'projeto';
       store.register(project,root);
-      const {indexProject}=await import('../src/retrieval.mjs'), indexed=indexProject(store,project), entry=fileURLToPath(import.meta.url);
+      const {indexProject}=await import('../src/retrieval.mjs'), indexed=indexProject(store,project), entry=stableEntryPath(fileURLToPath(import.meta.url));
       print({project,root,files:indexed.files,changed:indexed.changed,skippedByReason:indexed.skippedByReason,snapshot:indexed.snapshot,
         next:{search:'node '+entry+' search --project '+project+' --query "..."',connect:Object.fromEntries(CLIENTS.map(client=>[client,'node '+entry+' config --project '+project+' --client '+client])),panel:'node '+entry+' serve'}});
     }

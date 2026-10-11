@@ -4,7 +4,7 @@ import {parseArgs} from 'node:util';
 import {BrainStore} from '../src/store.mjs';
 import {codexProjectConfig} from '../src/codex-project.mjs';
 import {identifier} from '../src/primitives.mjs';
-import {stateHome} from '../src/host.mjs';
+import {stateHome,stableNodePath,stableEntryPath} from '../src/host.mjs';
 
 try {
   const {values}=parseArgs({options:{project:{type:'string'},help:{type:'boolean'}},strict:true,allowPositionals:false});
@@ -14,7 +14,7 @@ try {
     const store=new BrainStore();
     try{
       const {root}=store.project(values.project);
-      const config=codexProjectConfig({project:values.project,root,node:process.execPath,entry:path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../bin/bbrainx.mjs'),home:stateHome()});
+      const config=codexProjectConfig({project:values.project,root,node:stableNodePath(),entry:stableEntryPath(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../bin/bbrainx.mjs')),home:stateHome()});
       console.log(JSON.stringify(config,null,2));
     }finally{store.close();}
   }

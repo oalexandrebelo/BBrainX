@@ -12,6 +12,49 @@ export function stateHome(env = process.env, platform = process.platform) {
   if (platform === 'win32') return path.join(env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'BBrainX');
   return path.join(env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'bbrainx');
 }
+const CONTROL = /[\u0000-\u001f\u007f]/;
+const nativeRealpath = target => fs.realpathSync.native(target);
+const sameFile = (realpath, a, b) => { try { return realpath(a) === realpath(b); } catch { return false; } };
+/**
+ * Executável Node para as configs emitidas. `process.execPath` no Homebrew é `.../Cellar/<fórmula>/<versão>/bin/node`, que o
+ * próximo `brew upgrade` apaga; o alias `.../opt/<fórmula>/bin/node` sobrevive. O alias só é usado se resolver, por realpath,
+ * ao mesmo binário em execução. BBRAINX_NODE (launcher do host) vale pela mesma prova e falha fechado se não bater.
+ * `realpath` e `errors` são injetáveis (teste com caminhos fictícios; a CLI de integração mantém seus próprios códigos).
+ */
+export function stableNodePath({ env = process.env, execPath = process.execPath, realpath = nativeRealpath, errors = {} } = {}) {
+  const invalid = errors.invalid ?? 'INVALID_NODE_PATH', mismatch = errors.mismatch ?? 'NODE_PATH_MISMATCH';
+  const requested = env.BBRAINX_NODE;
+  if (requested !== undefined) {
+    ensure(typeof requested === 'string' && path.isAbsolute(requested) && !CONTROL.test(requested), invalid);
+    try { realpath(requested); } catch { ensure(false, invalid); }
+    ensure(sameFile(realpath, requested, execPath), mismatch);
+    return requested;
+  }
+  const keg = /^(.*)\/Cellar\/([^/]+)\/[^/]+\/bin\/node$/.exec(execPath);
+  if (keg) { const alias = keg[1] + '/opt/' + keg[2] + '/bin/node'; if (sameFile(realpath, alias, execPath)) return alias; }
+  return execPath;
+}
+/**
+ * Arquivo de entrada para as configs emitidas. Node resolve symlinks do módulo principal, então um processo iniciado por
+ * `app/current/bin/bbrainx.mjs` enxerga `app/releases/<sha>/bin/bbrainx.mjs`; gravar isso fixaria a release e o prune a quebraria.
+ * Prefere BBRAINX_ENTRY (se resolver ao mesmo arquivo) ou o espelho `app/current/...` (se resolver ao mesmo arquivo).
+ */
+export function stableEntryPath(selfPath, { env = process.env, realpath = nativeRealpath, errors = {} } = {}) {
+  const invalid = errors.invalid ?? 'INVALID_ENTRY_PATH', mismatch = errors.mismatch ?? 'ENTRY_PATH_MISMATCH';
+  const requested = env.BBRAINX_ENTRY;
+  if (requested !== undefined && requested !== '') {
+    ensure(typeof requested === 'string' && path.isAbsolute(requested) && !CONTROL.test(requested), invalid);
+    try { realpath(requested); } catch { ensure(false, invalid); }
+    ensure(sameFile(realpath, requested, selfPath), mismatch);
+    return requested;
+  }
+  const parts = selfPath.split(path.sep), at = parts.lastIndexOf('releases');
+  if (at > 0 && at + 2 < parts.length) {
+    const current = [...parts.slice(0, at), 'current', ...parts.slice(at + 2)].join(path.sep);
+    if (sameFile(realpath, current, selfPath)) return current;
+  }
+  return selfPath;
+}
 export function safeDirectory(directory) {
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   ensure(!fs.lstatSync(directory).isSymbolicLink(), 'UNSAFE_STATE_DIRECTORY');

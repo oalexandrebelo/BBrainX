@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import { parseArgs } from 'node:util';
 import { fileURLToPath } from 'node:url';
 import { BrainStore } from '../src/store.mjs';
-import { stateHome } from '../src/host.mjs';
+import { stateHome,stableNodePath,stableEntryPath } from '../src/host.mjs';
 import { ensure } from '../src/primitives.mjs';
 import { LaneRegistry } from '../src/lanes/registry.mjs';
 import { LaneStore,bindLaneEngine } from '../src/lanes/store.mjs';
@@ -61,7 +61,7 @@ Serviços Node cooperativos usam startLaneHttpServer; processos arbitrários exi
       const b=registry.active(v.project,v.lane);console.log(JSON.stringify(registry.retire(v.project,v.lane,b.epoch),null,2));
     }else{
       const b=registry.verifyBinding(v.project,v.lane);
-      console.log(JSON.stringify(laneConfig(v.client??'generic',{node:process.execPath,entry:fileURLToPath(import.meta.url),home,binding:b}),null,2));
+      console.log(JSON.stringify(laneConfig(v.client??'generic',{node:stableNodePath(),entry:stableEntryPath(fileURLToPath(import.meta.url),{env:{}}),home,binding:b}),null,2));
     }
   }finally{authority?.close();registry.close();}
 }
