@@ -5,6 +5,7 @@ import { performance } from 'node:perf_hooks';
 import { infrastructurePlan, mediumEvidenceGate, CORE_REFERENCE } from '../src/infrastructure.mjs';
 import { replayWorld, REPLAY_LIMITS } from '../src/replay.mjs';
 import { ResourceAdmission } from '../src/resource-admission.mjs';
+import { isMainModule } from '../src/main-module.mjs';
 
 /** Lê no máximo max+1 bytes de um arquivo regular; não aceita symlink como entrada de replay. */
 export function readBoundedJson(filename, max = REPLAY_LIMITS.bytes) {
@@ -56,8 +57,7 @@ export async function workstationMain(argv) {
     return { ...result, infrastructure:plan, admissionScope:'this-replay-process', residentMemoryBytes:process.memoryUsage().rss };
   } finally { process.removeListener('SIGINT', interrupt); admission.release(lease.token); }
 }
-import { pathToFileURL } from 'node:url';
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   workstationMain(process.argv.slice(2)).then(result=>console.log(JSON.stringify(result,null,2))).catch(error=>{
     // Não imprime o arquivo recebido, a árvore de busca nem dados de configuração globais.
     console.error(JSON.stringify({ok:false,error:error.code ?? error.message})); process.exitCode=1;

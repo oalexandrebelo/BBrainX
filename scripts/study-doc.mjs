@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { situations, tools, measuredOn } from '../web/study-map.js';
+import { isMainModule } from '../src/main-module.mjs';
 
 // uso: node scripts/study-doc.mjs          (grava docs/STUDY_MAP.md a partir de web/study-map.js)
 // O painel e o documento saem da mesma fonte; o teste test/study.test.mjs reprova se divergirem.
@@ -22,7 +23,7 @@ export function renderStudy(){
   }
   return lines.join('\n');
 }
-if(process.argv[1]===fileURLToPath(import.meta.url)){
+if(isMainModule(import.meta.url)){
   const target=fileURLToPath(new URL('../docs/STUDY_MAP.md',import.meta.url));
   fs.writeFileSync(target,renderStudy());console.log('gravado: '+target+' ('+tools.length+' itens)');
 }

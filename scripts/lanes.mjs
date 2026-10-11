@@ -8,6 +8,7 @@ import { ensure } from '../src/primitives.mjs';
 import { LaneRegistry } from '../src/lanes/registry.mjs';
 import { LaneStore,bindLaneEngine } from '../src/lanes/store.mjs';
 import { laneConfig,LANE_CLIENTS } from '../src/lanes/clients.mjs';
+import { isMainModule } from '../src/main-module.mjs';
 
 export async function main(argv=process.argv.slice(2)){
   const {values:v,positionals}=parseArgs({args:argv,allowPositionals:true,strict:true,options:{
@@ -65,4 +66,4 @@ Serviços Node cooperativos usam startLaneHttpServer; processos arbitrários exi
     }
   }finally{authority?.close();registry.close();}
 }
-if(process.argv[1]===fileURLToPath(import.meta.url))main().catch(e=>{console.error(JSON.stringify({error:e.code??'LANES_FAILED',detail:e.code?e.message:undefined}));process.exitCode=1;});
+if(isMainModule(import.meta.url))main().catch(e=>{console.error(JSON.stringify({error:e.code??'LANES_FAILED',detail:e.code?e.message:undefined}));process.exitCode=1;});

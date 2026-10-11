@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {fileURLToPath} from 'node:url';
+import {isMainModule} from '../src/main-module.mjs';
 
 const startHere=['AGENTS.md','docs/engineering/CONTINUITY.md','docs/engineering/ROADMAP.md','docs/RELEASE_READINESS.md'];
 /** Read-only handoff: a local report is evidence to inspect, never an attestation or merge permission. */
@@ -33,4 +33,4 @@ export function projectStatus(root=process.cwd()){
     limitations:['Local evidence is not authenticated; inspect the CI run and its tested tree before promotion.','Revision equality does not establish recency: inspect observedAt, environment and current dependency advisories.','No fetch is performed: branch names and local refs do not establish the current remote state.'],
     nextCommands:['node scripts/consolidated-evidence.mjs','npm run build']};
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))console.log(JSON.stringify(projectStatus(),null,2));
+if(isMainModule(import.meta.url))console.log(JSON.stringify(projectStatus(),null,2));
