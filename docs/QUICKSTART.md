@@ -209,6 +209,7 @@ Não copie a cópia por cima do `brain.sqlite` em uso: os arquivos `brain.sqlite
 | Lockfile ausente | Atualize para uma revisão publicada após CI bem-sucedida; não use dependências flutuantes sem revisão. |
 | `STATE_HOME_SYNCED` | `BBRAINX_HOME` está em pasta sincronizada ou volume de rede. Use um disco local (padrão no macOS: `~/Library/Application Support/BBrainX`), mova os dados com `backup` ou, sob sua responsabilidade, `BBRAINX_ALLOW_SYNCED_HOME=1`. |
 | `PROJECT_NOT_REGISTERED` | Registre o ID e raiz pelo CLI no mesmo `BBRAINX_HOME`. |
+| `INTEGRATION_PRIVATE_DIRECTORY_REQUIRED` | `BBRAINX_HOME` já existe com permissão para grupo ou outros. Use uma pasta nova (o BBrainX a cria com 0700) ou aplique `chmod 700` nela. |
 | `PROJECT_ROOT_ALREADY_REGISTERED` | A pasta já tem um nome; a mensagem diz qual. Use esse nome. |
 | `STALE_INDEX` | Só ocorre com `--strict` ou quando o arquivo muda sem parar. Reindexe; não aceite código antigo como atual. |
 | `INDEX_FILE_LIMIT` / `INDEX_BYTE_LIMIT` | Registre uma raiz menor, ignore diretórios pelo Git ou aumente o teto pela variável indicada na mensagem. |

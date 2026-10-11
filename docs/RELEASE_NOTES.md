@@ -1,3 +1,16 @@
+# BBrainX 1.5.0 — Developer Preview — 10/10/2026
+
+| Medida | Valor |
+|---|---|
+| `context_search`, média por resposta, 36 consultas | 17.778 → 3.666 tokens (−79,4 %); arquivo localizado 31/36 → 31/36 |
+| Piso de recuperação (godmode), hit@10 | 0,889 |
+| Testes automatizados | 735/735 no Node 24.21.0 e no Node 22.22.2 (macOS arm64) |
+| Playwright (painel · uso · controle) | 24/24 · 6/6 · 3/3 |
+| Controles negativos MCP | 7/7 detectados |
+| Clientes reais | Claude Code e Codex chamam `context_search` |
+
+Oportunidades: gate MEDIUM em dois Macs; ícone por ferramenta e na barra de status do VS Code; favicon próprio de 16 px; wordmark para fundo claro; resultado enviado em `content` e `structuredContent`; eco do checkpoint; corrida rara do ledger de admissão Laya (2 em 9.000 aberturas). Detalhes em [HOMOLOGACAO_2026-10-10.md](HOMOLOGACAO_2026-10-10.md).
+
 # Custo em tokens do que o agente lê — 10/10/2026
 
 Base `5acad77`. Medido em payload com o200k_base (`gpt-tokenizer`), um proxy: não é cobrança do provedor, `billingSavings` continua `null`. Cada item abaixo traz o teste que o fixa; mudanças de contrato público estão marcadas.
@@ -17,7 +30,7 @@ Detecção de artefatos Spec Kit e SDD genérico, avaliação de cobertura docum
 
 Capacidade opcional no painel, CLI e MCP, com cache exato isolado, limites do broker, cancelamento e abstenção por perda de entrada. Perfil Python recuperável com seleção explícita de runtime compatível. O núcleo de contexto continua determinístico: o benchmark com janela maior ainda não superou a baseline lexical. [Contratos](integrations/LAYA.md) e [evidência](engineering/LAYA_2026-10-08.md). Sem alteração de pesos, API paga ou comparação vencedora com JEV.
 
-# Candidato consolidado — ainda não lançado
+# Candidato consolidado (PR #12) — incorporado na 1.5.0
 
 A PR #12 reúne Atlas, MEDIUM/replay, Observatory, contratos, lanes e os laboratórios isolados das PRs #6–#11. O estado integrado está em [research/INTEGRATION.md](research/INTEGRATION.md); as notas anteriores abaixo conservam o escopo e os resultados de suas rodadas, não descrevem sozinhas o estado atual.
 

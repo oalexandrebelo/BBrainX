@@ -15,7 +15,7 @@ BBrainX runs on your machine and gives a coding agent what it needs to continue 
 | VS Code | **Partly verified.** The generated `.vscode/mcp.json` was exercised by an MCP SDK client the way VS Code launches it. Starting it from the VS Code UI is manual |
 | Cursor, Gemini CLI | **Not verified.** Only prints the configuration fragments (`config --client cursor` and `--client gemini`) |
 
-**1.5.0 is a developer preview.** The automated suite has **734 tests** and passed 734/734 on Node 24.21.0 and Node 22.22.2 (macOS arm64) at the published revision. What was not measured is stated as not measured. Most of the documentation is in Brazilian Portuguese. Numbers and next steps: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md) (pt-BR).
+**1.5.0 is a developer preview.** The automated suite has **735 tests** and passed 735/735 on Node 24.21.0 and Node 22.22.2 (macOS arm64) at the published revision. What was not measured is stated as not measured. Most of the documentation is in Brazilian Portuguese. Numbers and next steps: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md) (pt-BR).
 
 ## Start in three commands
 
@@ -78,7 +78,7 @@ Blind questions: measured on the 0.4 search (revision 4785d4d, 4 October 2026). 
 
 Retrieval floor (`test/godmode.test.mjs`, 36 queries over this repository, one hit per file): expected file among the first 10 in **0.889** (32/36); the test requires 0.85.
 
-Source: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md) (pt-BR), base `5acad77`. Repeated on revision 90f37e8 with `node scripts/measure-search-tokens.mjs`: 17,742 → 3,721 (−79.0%), located 31/36 → 31/36, with body 31/36 → 21/36. The value changes with the indexed corpus. Tokens are `o200k_base` over the payload, not provider billing. The response carries the same JSON in `content` and in `structuredContent`; that duplication is not addressed (task T1: 10,125 tokens on the wire against 4,978 of text).
+Source: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md) (pt-BR), base `5acad77`. Repeated on revision 77e6ddd (1.5.0) with `node scripts/measure-search-tokens.mjs`: 17,778 → 3,666 (−79.4%), located 31/36 → 31/36, with body 31/36 → 20/36. The value changes with the indexed corpus. Tokens are `o200k_base` over the payload, not provider billing. The response carries the same JSON in `content` and in `structuredContent`; that duplication is not addressed (task T1: 10,125 tokens on the wire against 4,978 of text).
 
 ## Six tools, one scope
 
@@ -143,7 +143,7 @@ npm run build
 npm run test:e2e    # panel in the browser
 ```
 
-In 1.5.0: 734/734 tests on Node 24.21.0 and Node 22.22.2 (macOS arm64); Playwright 24/24 (panel), 6/6 (usage) and 3/3 (control); MCP negative controls 7/7 detected (`node scripts/mcp-negative.mjs`). The CI workflow (`.github/workflows/verify.yml`) defines macOS, Linux and Windows, but **1.5.0 has no published CI report**: the one in `docs/validation/ci-report.json` is from revision 912aa25. The negative controls inject defects into an isolated checkout and require that they are detected. That does not imply mutation coverage of all tests. Next steps: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades) (pt-BR).
+In 1.5.0: 735/735 tests on Node 24.21.0 and Node 22.22.2 (macOS arm64); Playwright 24/24 (panel), 6/6 (usage) and 3/3 (control); MCP negative controls 7/7 detected (`node scripts/mcp-negative.mjs`). The CI workflow (`.github/workflows/verify.yml`) defines macOS, Linux and Windows, but **1.5.0 has no published CI report**: the one in `docs/validation/ci-report.json` is from revision 912aa25. The negative controls inject defects into an isolated checkout and require that they are detected. That does not imply mutation coverage of all tests. Next steps: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades) (pt-BR).
 
 What does not exist: a continuous file watcher, language-server semantic analysis, multi-host sync, own encryption, multi-tenant authentication, screen capture and shell execution. A call deadline does not interrupt synchronous work such as indexing. Do not place the live database on iCloud or a network disk. Revoking a memory prevents future use, but does not erase historical copies or backups. See the [security model](docs/SECURITY_MODEL.md) (pt-BR).
 

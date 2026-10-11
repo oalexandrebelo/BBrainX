@@ -15,7 +15,7 @@ O BBrainX roda na sua máquina e entrega ao agente de programação o que ele pr
 | VS Code | **Verificado em parte.** O `.vscode/mcp.json` gerado foi exercitado por um cliente do SDK MCP, do jeito que o VS Code o inicia. O início pela interface do VS Code é manual |
 | Cursor, Gemini CLI | **Não verificado.** Só imprime os fragmentos de configuração (`config --client cursor` e `--client gemini`) |
 
-A versão **1.5.0 é uma prévia de desenvolvimento** (Developer Preview). A suíte automatizada tem **734 testes** e passou 734/734 no Node 24.21.0 e no Node 22.22.2 (macOS arm64) na revisão publicada. O que não foi medido está dito como não medido. Números e próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
+A versão **1.5.0 é uma prévia de desenvolvimento** (Developer Preview). A suíte automatizada tem **735 testes** e passou 735/735 no Node 24.21.0 e no Node 22.22.2 (macOS arm64) na revisão publicada. O que não foi medido está dito como não medido. Números e próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
 
 ## Comece em três comandos
 
@@ -78,7 +78,7 @@ Perguntas cegas: medidas na versão 0.4 da busca (revisão 4785d4d, 4 de outubro
 
 Piso de recuperação (`test/godmode.test.mjs`, 36 consultas deste repositório, um acerto por arquivo): arquivo certo entre os 10 primeiros em **0,889** (32/36); o teste exige 0,85.
 
-Fonte: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md), base `5acad77`. Repetição na revisão 90f37e8 com `node scripts/measure-search-tokens.mjs`: 17.742 → 3.721 (−79,0 %), localizado 31/36 → 31/36, com corpo 31/36 → 21/36. O valor muda com o corpus indexado. Tokens são `o200k_base` sobre o payload, não cobrança do provedor. A resposta leva o mesmo JSON em `content` e em `structuredContent`; essa duplicação não foi tratada (tarefa T1: 10.125 tokens no fio contra 4.978 do texto).
+Fonte: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md), base `5acad77`. Repetição na revisão 77e6ddd (1.5.0) com `node scripts/measure-search-tokens.mjs`: 17.778 → 3.666 (−79,4 %), localizado 31/36 → 31/36, com corpo 31/36 → 20/36. O valor muda com o corpus indexado. Tokens são `o200k_base` sobre o payload, não cobrança do provedor. A resposta leva o mesmo JSON em `content` e em `structuredContent`; essa duplicação não foi tratada (tarefa T1: 10.125 tokens no fio contra 4.978 do texto).
 
 ## Seis ferramentas, um escopo
 
@@ -143,7 +143,7 @@ npm run build
 npm run test:e2e    # painel no navegador
 ```
 
-Na 1.5.0: 734/734 testes no Node 24.21.0 e no Node 22.22.2 (macOS arm64); Playwright 24/24 (painel), 6/6 (uso) e 3/3 (controle); controles negativos do MCP 7/7 detectados (`node scripts/mcp-negative.mjs`). O workflow de CI (`.github/workflows/verify.yml`) define macOS, Linux e Windows, mas **a 1.5.0 não tem relatório de CI publicado**: o de `docs/validation/ci-report.json` é da revisão 912aa25. Os controles negativos injetam defeitos em checkout isolado e exigem que sejam detectados. Isso não implica cobertura por mutação de todos os testes. Próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades).
+Na 1.5.0: 735/735 testes no Node 24.21.0 e no Node 22.22.2 (macOS arm64); Playwright 24/24 (painel), 6/6 (uso) e 3/3 (controle); controles negativos do MCP 7/7 detectados (`node scripts/mcp-negative.mjs`). O workflow de CI (`.github/workflows/verify.yml`) define macOS, Linux e Windows, mas **a 1.5.0 não tem relatório de CI publicado**: o de `docs/validation/ci-report.json` é da revisão 912aa25. Os controles negativos injetam defeitos em checkout isolado e exigem que sejam detectados. Isso não implica cobertura por mutação de todos os testes. Próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades).
 
 O que não existe: observador contínuo de arquivos, análise semântica por servidor de linguagem, sincronização entre máquinas, criptografia própria, autenticação multiusuário, captura de tela e execução de shell. O prazo de uma chamada não interrompe trabalho síncrono, como a indexação. Não use o banco ativo em iCloud ou em disco de rede. Revogar uma memória impede o uso futuro, mas não apaga cópias históricas nem backups. Veja o [modelo de segurança](docs/SECURITY_MODEL.md).
 

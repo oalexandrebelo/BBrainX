@@ -1,10 +1,10 @@
 # Identidade BBrainX
 
 Desde 10 de outubro de 2026 a marca oficial é o **monograma BBX** com o wordmark "BBrain**X**", escolhida pelo dono do
-projeto. Fontes originais (`99-Brand/` do arquivo mestre): `icon.svg` (64 px), `favicon.svg` (16 px) e `Wordmark-press.svg`.
+projeto. Fontes originais (arquivo mestre do projeto, fora do repositório): `icon.svg` (64 px), `favicon.svg` (16 px) e `Wordmark-press.svg`.
 São desenhos em curvas: nenhum arquivo de fonte é distribuído. Não é parecer de marca registrada.
 
-Revisão de 2026-10-10 (`99-Brand/revisao-2026-10-10/`), sem redesenhar contornos:
+Revisão de 2026-10-10, sem redesenhar contornos:
 
 | Arquivo | Ajuste |
 |---|---|

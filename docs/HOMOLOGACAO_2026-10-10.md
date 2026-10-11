@@ -8,8 +8,8 @@ Máquina: macOS 26.6.2 arm64, Apple M4, 16 GiB, SQLite 3.53.4.
 
 | Medida | Resultado | Como repetir |
 |---|---|---|
-| Testes automatizados, Node 24.21.0 | 734/734 | `env BBRAINX_HOME=$(mktemp -d) node --test test/*.test.mjs` |
-| Testes automatizados, Node 22.22.2 | 734/734 | idem |
+| Testes automatizados, Node 24.21.0 | 735/735 | `env BBRAINX_HOME=$(mktemp -d) node --test test/*.test.mjs` |
+| Testes automatizados, Node 22.22.2 | 735/735 | idem |
 | Playwright (Chromium): painel, uso, controle | 24/24, 6/6, 3/3 | `npm run test:e2e`; `playwright.usage.config.mjs`; `playwright.control.config.mjs` |
 | Controles negativos do MCP | 7/7 defeitos injetados e detectados | `node scripts/mcp-negative.mjs` |
 | `context_search`, média por resposta, 36 consultas, orçamento padrão de 4.000 tokens | 17.397 → **3.517** tokens (−79,8 %) | [engineering/PERFORMANCE.md](engineering/PERFORMANCE.md) |
@@ -19,7 +19,7 @@ Máquina: macOS 26.6.2 arm64, Apple M4, 16 GiB, SQLite 3.53.4.
 | `tools/list` no fio | 2.431 → 1.925 tokens (−20,8 %) | PERFORMANCE.md |
 | Instruções + definições das ferramentas, por turno | 1.498 → 1.396 tokens (−6,8 %) | PERFORMANCE.md |
 | `context_bootstrap`, 5 tarefas | 4.818 → 4.126 tokens (−14,4 %) | PERFORMANCE.md |
-| Repetição do `context_search` na revisão 90f37e8 | 17.742 → 3.721 tokens (−79,0 %); localizado 31/36 → 31/36; com corpo 31/36 → 21/36 | `node scripts/measure-search-tokens.mjs` |
+| Repetição do `context_search` na revisão 77e6ddd | 17.778 → 3.666 tokens (−79,4 %); localizado 31/36 → 31/36; com corpo 31/36 → 20/36 | `node scripts/measure-search-tokens.mjs` |
 | Node | piso 22.20.0; recomendado 24 | `package.json` (`engines`) |
 
 Tokens são `o200k_base` sobre o payload, um proxy: não medem cobrança do provedor. O valor muda com o corpus indexado.
