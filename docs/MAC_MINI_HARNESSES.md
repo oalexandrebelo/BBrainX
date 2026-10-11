@@ -49,18 +49,18 @@ BBRAINX_HOME="$BBRAINX_STATE" "$BBRAINX_NODE" "$BBRAINX_ENTRY" config \
 
 Também existem `--client codex` e `--client claude`. Integre apenas a entrada BBrainX ao arquivo existente, preservando outras entradas e configurações. Não substitua um arquivo inteiro pelo fragmento. Revise os caminhos e o ID antes de iniciar o servidor; não publique configurações que contenham segredos de outros servidores.
 
-Se usar um symlink `current` para selecionar a release, confira os argumentos emitidos: `import.meta.url` resolve o caminho físico e o gerador pode fixar a release anterior. Configure explicitamente o entrypoint absoluto sob `current`, ou um launcher estável que o invoque. Depois de atualizar, encerre as sessões antigas e confirme a revisão do novo processo; um processo já iniciado conserva o código carregado.
+Se usar um symlink `current` para selecionar a release: `import.meta.url` resolve o caminho físico, mas o gerador emite o espelho `app/current/...` quando ele resolve ao mesmo arquivo (e `BBRAINX_ENTRY`, se apontar para o mesmo arquivo). Confira mesmo assim os argumentos emitidos; um layout sem `releases/<sha>` + `current` continua emitindo o caminho físico. Depois de atualizar, encerre as sessões antigas e confirme a revisão do novo processo; um processo já iniciado conserva o código carregado.
 
 ### Codex CLI e extensão do VS Code
 
-Compartilham `~/.codex/config.toml`; projetos confiáveis também carregam `<PROJECT_ROOT>/.codex/config.toml`. Prefira esse arquivo de projeto para limitar a descoberta. O comando `codex mcp add` impresso pelo gerador registra no escopo de usuário; não trate sua execução como configuração exclusiva do workspace.
+Compartilham `~/.codex/config.toml`; projetos confiáveis também carregam `<PROJECT_ROOT>/.codex/config.toml`. Prefira esse arquivo de projeto para limitar a descoberta. O comando `codex mcp add` impresso pelo gerador registra no escopo de usuário; não trate sua execução como configuração exclusiva do workspace. Por isso o gerador nomeia a entrada `bbrainx-<projeto saneado>` (letras, dígitos, `-` e `_`; um sufixo de hash evita colisão quando o saneamento altera o ID): dois projetos não se sobrescrevem no `config.toml` global. A saída inteira é TOML válido (explicação e comando vão em comentários) e pode ser anexada ao arquivo.
 
 ```toml
-[mcp_servers.bbrainx]
+[mcp_servers.bbrainx-<PROJECT_ID>]
 command = "<ABSOLUTE_NODE_LTS>"
 args = ["<ABSOLUTE_RUNTIME>/bin/bbrainx.mjs", "mcp", "--project", "<PROJECT_ID>"]
 
-[mcp_servers.bbrainx.env]
+[mcp_servers.bbrainx-<PROJECT_ID>.env]
 BBRAINX_HOME = "<ABSOLUTE_SHARED_STATE>"
 ```
 
