@@ -31,12 +31,12 @@ function parseBoth(text) {
 }
 
 test('nome do servidor Codex leva o projeto e só usa o alfabeto que `codex mcp add` aceita', () => {
-  assert.equal(clients.codexServerName('app'), 'bbrainx-app');
-  assert.equal(clients.codexServerName('My-Project_v2'), 'bbrainx-My-Project_v2');
-  for (const project of ['a.b', 'sample.v2', 'meu app', 'x'.repeat(80), 'ação']) assert.match(clients.codexServerName(project), NAME, project);
-  assert.notEqual(clients.codexServerName('a.b'), clients.codexServerName('a-b'), 'saneamento que muda o texto não pode colidir com um ID legítimo');
-  assert.notEqual(clients.codexServerName('x'.repeat(80)), clients.codexServerName('x'.repeat(79)));
-  assert.ok(clients.codexServerName('x'.repeat(80)).length <= 56, 'nome curto o bastante para o prefixo mcp__ do Codex');
+  assert.equal(clients.projectServerName('app'), 'bbrainx-app');
+  assert.equal(clients.projectServerName('My-Project_v2'), 'bbrainx-My-Project_v2');
+  for (const project of ['a.b', 'sample.v2', 'meu app', 'x'.repeat(80), 'ação']) assert.match(clients.projectServerName(project), NAME, project);
+  assert.notEqual(clients.projectServerName('a.b'), clients.projectServerName('a-b'), 'saneamento que muda o texto não pode colidir com um ID legítimo');
+  assert.notEqual(clients.projectServerName('x'.repeat(80)), clients.projectServerName('x'.repeat(79)));
+  assert.ok(clients.projectServerName('x'.repeat(80)).length <= 56, 'nome curto o bastante para o prefixo mcp__ do Codex');
 });
 
 test('a saída inteira de config --client codex é TOML válido, com nome por projeto', () => {

@@ -73,12 +73,12 @@ A extensão conserva as seis ferramentas existentes. `data.workspace` identifica
 | `cursor` | `.cursor/mcp.json` | `mcpServers` |
 | `vscode` | `.vscode/mcp.json` | `servers`, `type:stdio` |
 | `gemini` | `.gemini/settings.json` | `mcpServers` |
-| `antigravity-cli` | `.agents/mcp_config.json` | `mcpServers` |
+| `antigravity`, `antigravity-cli` | `~/.gemini/config/mcp_config.json` (usuário; campo `scope: "user"`) | `mcpServers` |
 | `opencode-v1` | `opencode.json` | `mcp.<nome>` |
 | `opencode-v2` | `opencode.json` | `mcp.servers.<nome>` |
 | `generic` | específico do cliente | `command/args/env` |
 
-A diferença v1/v2 de OpenCode é intencional. Nove targets não são nove produtos homologados. O plugin Codex no VS Code tem configuração distinta do cliente MCP próprio do VS Code. O adapter Antigravity acima é do CLI documentado, não uma afirmação sobre todos os formatos do IDE/Web/Desktop.
+A diferença v1/v2 de OpenCode é intencional. Nove targets não são nove produtos homologados. O plugin Codex no VS Code tem configuração distinta do cliente MCP próprio do VS Code. O adapter Antigravity acima aponta para o arquivo de usuário (o único destino observado funcionando no IDE 2.5.5 e o que `agy mcp add` grava); não é uma afirmação sobre todos os formatos do IDE/Web/Desktop nem isolamento de visibilidade por workspace.
 
 O processo efetivo é:
 

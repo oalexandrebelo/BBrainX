@@ -76,9 +76,9 @@ Se faltar a CLI independente, o instalador nativo oficial aceita uma versão exa
 
 ### Antigravity IDE
 
-A documentação atual prevê `<PROJECT_ROOT>/.agents/mcp_config.json`; o arquivo global é `~/.gemini/config/mcp_config.json`. O fragmento gerado por `--client antigravity` usa `mcpServers.bbrainx` com `command`, `args` e `env`.
+A documentação prevê `<PROJECT_ROOT>/.agents/mcp_config.json` e o arquivo global `~/.gemini/config/mcp_config.json` (a CLI `agy mcp add` grava neste último). O destino verificado no IDE 2.5.5 é o arquivo de usuário: o gerador (`config --client antigravity` e `scripts/lanes.mjs config`) aponta para `~/.gemini/config/mcp_config.json`, forma `mcpServers` com `command`, `args` e `env`, e nomeia a entrada `bbrainx-<projeto>` (ou `bbrainx-<hash>` para lanes) para que dois projetos não se sobrescrevam. É escopo de usuário: a descoberta é global ao cliente e o servidor serve só o projeto de `--project`. O gerador só imprime; mesclar no arquivo é decisão sua, preservando os demais servidores.
 
-Confirme que a versão instalada reconhece o arquivo de workspace. No painel do agente, abra **MCP Servers → Manage MCP Servers → View raw config** e confira o caminho efetivamente carregado. O schema local pode confirmar o formato sem demonstrar descoberta do arquivo. Versões com guia embutido anterior podem documentar apenas configuração global/plugins; não declare isolamento de workspace apenas porque o JSON é válido.
+Antes de confiar no arquivo de workspace, confirme que a versão instalada o reconhece. No painel do agente, abra **MCP Servers → Manage MCP Servers → View raw config** e confira o caminho efetivamente carregado. O schema local pode confirmar o formato sem demonstrar descoberta do arquivo. Versões com guia embutido anterior podem documentar apenas configuração global/plugins; não declare isolamento de workspace apenas porque o JSON é válido.
 
 Após editar, use a atualização/reconexão disponível no gerenciador e confira o estado e a lista de ferramentas. Se a versão exigir reinício da janela, registre esse procedimento. Não há necessidade de enviar um prompt ao modelo para conferir a descoberta e conexão. [Documentação oficial do Antigravity](https://antigravity.google/docs/mcp?tab=ide).
 

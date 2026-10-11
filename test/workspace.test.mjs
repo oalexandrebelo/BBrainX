@@ -63,11 +63,11 @@ test('workspace binding verifies the lane identity and active host binding',t=>{
 });
 for(const client of ['kilo','antigravity'])test(client+' lane fragment is workspace-bound and does not change tool approvals',()=>{
   const base=path.resolve(os.tmpdir()),binding={project:'product',id:'alpha',root:path.join(base,'workspace')};
-  const config=laneConfig(client,{node:process.execPath,entry:path.join(base,'lanes.mjs'),home:path.join(base,'state'),binding});
+  const userHome=path.join(base,'user-home'),config=laneConfig(client,{node:process.execPath,entry:path.join(base,'lanes.mjs'),home:path.join(base,'state'),binding,userHome});
   const entry=client==='kilo'?config.fragment.mcp[config.serverName]:config.fragment.mcpServers[config.serverName];
   const args=client==='kilo'?entry.command.slice(1):entry.args;
   assert.deepEqual(args.slice(-6),['--project','product','--lane','alpha','--workspace',binding.root]);
-  assert.equal(config.destination,client==='kilo'?'.kilo/kilo.json':'.agents/mcp_config.json');
+  assert.equal(config.destination,client==='kilo'?'.kilo/kilo.json':path.join(userHome,'.gemini','config','mcp_config.json'));
   if(client==='kilo'){assert.equal(entry.timeout,60000);assert.equal(entry.type,'local');}
   assert.equal(config.writesConfiguration,false);assert.equal(config.clientVersionVerified,null);
   assert.equal(entry.alwaysAllow,undefined);assert.equal(config.fragment.permission,undefined);
