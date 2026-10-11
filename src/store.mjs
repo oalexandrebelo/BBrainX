@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { canonical, ensure, hash, identifier, newId, now, text } from './primitives.mjs';
 import { gitState, safeDirectory, stateHome } from './host.mjs';
-import { rollbackAfterFailure } from './sqlite-init.mjs';
+import { ensureWalMode, rollbackAfterFailure } from './sqlite-init.mjs';
 import { verifyRoot } from './source-root.mjs';
 
 // Estado durável: não pode ser reconstruído a partir da worktree.
@@ -75,9 +75,12 @@ export class BrainStore {
     if (fs.existsSync(file)) ensure(!fs.lstatSync(file).isSymbolicLink(), 'UNSAFE_DB_PATH');
     this.db = new DatabaseSync(file);
     if (process.platform !== 'win32') fs.chmodSync(file, 0o600);
-    // O tempo de espera vem primeiro: trocar o modo do journal já disputa a trava com outros processos.
-    this.db.exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
     try {
+      // Trocar o journal para WAL num banco novo disputa a trava com outros processos e o busy handler não cobre esse caso
+      // ("database is locked" na partida simultânea): a troca é repetida com prazo em ensureWalMode.
+      this.db.exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;');
+      ensureWalMode(this.db, 5000);
+      this.db.exec('PRAGMA synchronous=FULL;');
       // VACUUM INTO não roda dentro de transação: a cópia de segurança vem antes; a troca de schema, atômica, depois.
       if (this.#version() === 1) this.#backupV1();
       if (this.#version() === SCHEMA_VERSION) {
