@@ -11,6 +11,8 @@ function home(t) { const h = fs.mkdtempSync(path.join(os.tmpdir(), 'bb-admission
 function cli(h, ...args) {
   return spawnSync(process.execPath, [fileURLToPath(new URL('../scripts/admission.mjs', import.meta.url)), ...args, '--home', h], { encoding: 'utf8', timeout: 10000 });
 }
+// Node 22 imprime o aviso experimental do node:sqlite no stderr antes do código do produto; só essas duas linhas exatas saem.
+const productStderr=text=>text.split('\n').filter(line=>!/^\(node:\d+\) ExperimentalWarning: SQLite is an experimental feature/.test(line)&&!/^\(Use `node --trace-warnings \.\.\.` to show where the warning was created\)$/.test(line)).join('\n');
 test('CLI status on an absent ledger is read-only, and registration is explicit', t => {
   const h = home(t), before = fs.readdirSync(h), r = cli(h, 'status');
   assert.equal(r.status, 0); assert.equal(JSON.parse(r.stdout).installed, false); assert.deepEqual(fs.readdirSync(h), before);
@@ -56,6 +58,6 @@ test('CLI failures name their real error code instead of a generic one, with std
   ]) {
     const r = cli(h, ...args);
     assert.equal(r.status, 1, args.join(' ')); assert.equal(r.stdout, '', args.join(' '));
-    assert.deepEqual(JSON.parse(r.stderr), { error: code }, args.join(' '));
+    assert.deepEqual(JSON.parse(productStderr(r.stderr)), { error: code }, args.join(' '));
   }
 });
