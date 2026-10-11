@@ -7,7 +7,7 @@ import { createHash, randomUUID } from 'node:crypto';
 
 const root=fileURLToPath(new URL('../',import.meta.url)),source=path.join(root,'extensions','vscode');
 const {values}=parseArgs({options:{out:{type:'string'}},allowPositionals:false});
-const files=['package.json','extension.cjs','media/icon.svg','media/icon.png','README.md','LICENSE'];
+const files=['package.json','extension.cjs','panel-controller.cjs','media/icon.svg','media/icon.png','README.md','LICENSE'];
 for(const file of files){const stat=fs.lstatSync(path.join(source,file));if(!stat.isFile()||stat.isSymbolicLink()||stat.size>262144)throw new Error('Unsafe extension package source: '+file);}
 const manifest=JSON.parse(fs.readFileSync(path.join(source,'package.json'),'utf8'));
 if(!/^[a-z0-9-]+$/.test(manifest.name)||!/^[a-z0-9-]+$/.test(manifest.publisher)||!/^\d+\.\d+\.\d+$/.test(manifest.version))throw new Error('Invalid extension identity');

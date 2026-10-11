@@ -6,10 +6,12 @@ Configure **BBrainX: Executable** in user/machine settings. The default `~/.loca
 
 - **Detectar workspace** produces a CLI integration plan for the selected open folder.
 - **Conectar workspace** asks the CLI to register/configure that folder through `integrate --root ROOT --apply`. It modifies supported project MCP config files and keeps private backups. It does not approve workspace trust or claim a native MCP connection.
-- **Iniciar painel local** starts the trusted CLI's `serve` command in a dedicated terminal with argv; it sends no shell text. The process stops when the terminal/extension closes.
-- **Abrir painel** opens the configured HTTP loopback URL, default `http://127.0.0.1:4317`. Start the panel separately if it is not running. Remote extension hosts require explicit port forwarding; automatic remote opening is refused.
+- **Iniciar painel local** verifies readiness and starts the trusted CLI's `panel start --url ...` command in a dedicated terminal with argv; it sends no shell text. The process stops when the terminal/extension closes.
+- **Abrir painel** opens the verified HTTP loopback URL, default `http://127.0.0.1:4317`. The command checks readiness first and starts a missing listener in a dedicated terminal. It never installs dependencies, creates demo data, or builds automatically. localhost and ::1 are normalized to the real IPv4 listener. Remote extension hosts require explicit port forwarding; automatic remote opening is refused.
 
 In a trusted workspace, opened file folders produce `workspace-seen` metadata receipts every 30 seconds under one extension session ID. This does not register/index a project or grant MCP access. Disabling **Activity Receipts** stops future heartbeats; receipts expire according to the CLI's retention policy. Closed folders stop receiving updates. Virtual/unsaved workspaces and untrusted workspaces do not launch processes.
+
+Repeated clicks share the same startup. A dead terminal can be replaced; a live terminal without a listener is not duplicated. Another service or another BBRAINX_HOME on the port is not killed or adopted. Native activation in VS Code/Antigravity still needs Stage 3 validation.
 
 The tree shows *folder detected*, *configuration applied* or a pending/manual state. Connection through each agent remains a separate native verification. Antigravity identifies itself through `vscode.env.appName`; local VSIX compatibility and MCP scope still require verification in its actual installed version. IDE 2.5.5 workspace MCP discovery is not certified; CLI reports a manual step and never registers all projects globally.
 

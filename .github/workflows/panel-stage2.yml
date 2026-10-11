@@ -1,0 +1,63 @@
+name: Panel stage 2 verification
+on:
+  push:
+    branches: [feat/v2-panel-stage2]
+  pull_request:
+    branches: [feat/v2-macos-readiness]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: panel-stage2-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Snapshot of the actual candidate, not an approval
+        shell: bash
+        run: |
+          mkdir -p artifacts/panel-stage2
+          git rev-parse HEAD > artifacts/panel-stage2/revision.txt
+          git rev-parse 'HEAD^{tree}' > artifacts/panel-stage2/tree.txt
+          git archive --format=zip --output=artifacts/panel-stage2/source.zip HEAD
+          node -p 'JSON.stringify({node:process.version,sqlite:process.versions.sqlite,platform:process.platform,arch:process.arch})' > artifacts/panel-stage2/environment.json
+      - name: Install from lockfile
+        run: npm ci --ignore-scripts --no-fund
+      - name: Runtime tests
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee artifacts/panel-stage2/tests.log
+      - name: Build
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run build 2>&1 | tee artifacts/panel-stage2/build.log
+      - name: Browser (actual Chromium)
+        shell: bash
+        run: |
+          npx playwright install chromium
+          npm run test:e2e
+          npx playwright test --config playwright.usage.config.mjs
+          npx playwright test --config playwright.control.config.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-Panel-Stage2-${{ matrix.os }}
+          path: |
+            artifacts/panel-stage2/
+            test-results/
+          retention-days: 14

@@ -9,6 +9,9 @@ import { alignSdd } from './sdd.mjs';
 import { doctor } from './host.mjs';
 import { usageOverview } from './usage/summary.mjs';
 import { controlOverview } from './control.mjs';
+import { panelScope } from './panel/probe.mjs';
+import { inspectPanelAssets } from './panel/assets.mjs';
+import { performance } from 'node:perf_hooks';
 import { LocalDecisions, disabledDecisions } from './decisions.mjs';
 
 const dist=path.resolve(fileURLToPath(new URL('../dist/',import.meta.url)));
@@ -18,8 +21,9 @@ function json(res,status,payload){res.writeHead(status,{'Content-Type':'applicat
 async function body(req){let bytes=0,parts=[];for await(const part of req){bytes+=part.length;ensure(bytes<=65536,'PAYLOAD_TOO_LARGE');parts.push(part);}return JSON.parse(Buffer.concat(parts).toString('utf8'));}
 
 /** Loopback, same-origin e CSRF. Fronteira de confiança: usuário local do SO, não multi-tenant. */
-export async function startServer(store,{port=4317,laya=false}={}){
+export async function startServer(store,{port=4317,laya=false,assetsDir=dist}={}){
   ensure(Number.isInteger(port)&&port>=0&&port<65536,'INVALID_PORT');
+  const buildRoot=path.resolve(assetsDir),instanceId=randomBytes(16).toString('hex'),scopeId=panelScope(store.home);let assetsCache=null,assetsAt=-Infinity;
   const csrf=randomBytes(32).toString('hex'),decisions=laya?new LocalDecisions({home:store.home}):null;let address;
   const server=http.createServer(async(req,res)=>{
     res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
@@ -30,6 +34,10 @@ export async function startServer(store,{port=4317,laya=false}={}){
       ensure(!req.headers.origin||req.headers.origin==='http://'+expected,'ORIGIN_REJECTED');
       ensure(!['cross-site','same-site'].includes(req.headers['sec-fetch-site']),'ORIGIN_REJECTED');
       const url=new URL(req.url,'http://'+expected);
+      if(req.method==='GET'&&url.pathname==='/api/readiness'){
+        const now=performance.now();if(!assetsCache||now-assetsAt>=1000){assetsCache=inspectPanelAssets(buildRoot);assetsAt=now;}
+        return json(res,assetsCache.ready?200:503,{schemaVersion:1,service:'bbrainx-panel',version:VERSION,instanceId,scopeId,mode:'loopback',ready:assetsCache.ready,assets:assetsCache});
+      }
       if(req.method==='GET'&&url.pathname==='/api/bootstrap')return json(res,200,{version:VERSION,csrf,projects:store.projects(),doctor:doctor(),mode:'local',laya:decisions?.status()||disabledDecisions()});
       if(req.method==='GET'&&url.pathname==='/api/usage')return json(res,200,usageOverview(store,url.searchParams.get('project')));
       if(req.method==='GET'&&url.pathname==='/api/control')return json(res,200,controlOverview(store,url.searchParams.get('project')));
@@ -47,8 +55,8 @@ export async function startServer(store,{port=4317,laya=false}={}){
         finally{res.removeListener('close',abort);}
       }
       if(req.method!=='GET'&&req.method!=='HEAD')return json(res,405,{error:'METHOD_NOT_ALLOWED'});
-      const relative=decodeURIComponent(url.pathname).replace(/^\/+/,''), target=path.resolve(dist,relative==='observatory/'?'observatory/index.html':relative||'index.html');
-      ensure(target.startsWith(dist+path.sep),'UNSAFE_PATH');
+      const relative=decodeURIComponent(url.pathname).replace(/^\/+/,''), target=path.resolve(buildRoot,relative==='observatory/'?'observatory/index.html':relative||'index.html');
+      ensure(target.startsWith(buildRoot+path.sep),'UNSAFE_PATH');
       if(!fs.existsSync(target)||!fs.statSync(target).isFile())return json(res,404,{error:'NOT_FOUND',hint:'Execute npm run build antes de iniciar o painel.'});
       res.writeHead(200,{'Content-Type':contentTypes[path.extname(target)]||'application/octet-stream','Cache-Control':'no-cache'});
       if(req.method==='HEAD')res.end();else fs.createReadStream(target).on('error',()=>res.destroy()).pipe(res);
