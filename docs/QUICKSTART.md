@@ -123,7 +123,7 @@ Sem `snapshot`, o serviço reindexa a worktree e carimba o snapshot resultante. 
 node bin/bbrainx.mjs checkpoint --project meu-app --task AUTH-1 --file checkpoint.json --version 0 --key auth-attempt-1
 ```
 
-Para a próxima alteração, use a versão retornada. Não reutilize a mesma chave para conteúdo diferente. `VERSION_CONFLICT` significa reconciliar o checkpoint, não repetir cegamente. Os estados aceitos são `in_progress`, `paused`, `blocked`, `review_needed`.
+Para a próxima alteração, use a versão retornada. Não reutilize a mesma chave para conteúdo diferente. `VERSION_CONFLICT` significa reconciliar o checkpoint, não repetir cegamente. `STORE_BUSY` significa que outro processo segurou o banco além do prazo: repita a mesma chamada, com a mesma chave. Os estados aceitos são `in_progress`, `paused`, `blocked`, `review_needed`.
 
 ## 6. Memória com revisão
 
