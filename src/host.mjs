@@ -80,11 +80,13 @@ export function gitState(root) {
   const [commit, branch] = head.stdout.trim().split('\n');
   return { head: commit, branch: branch || null };
 }
-/** Piso do produto: node:sqlite imprime ExperimentalWarning no stderr antes do Node 24 e a suíte só é verificada a partir dele. */
-export const MINIMUM_NODE = '24.0.0';
+/** Piso do produto: primeira linha 22 com node:sqlite e FTS5 verificada pela CI (job de piso); Node 24 LTS é o recomendado. */
+export const MINIMUM_NODE = '22.20.0';
 export function nodeSupported(version) {
-  const [major] = String(version).split('.').map(Number);
-  return Number.isInteger(major) && major >= Number(MINIMUM_NODE.split('.')[0]);
+  const parts = String(version).split('.').map(Number), floor = MINIMUM_NODE.split('.').map(Number);
+  if (parts.length !== 3 || !parts.every(Number.isInteger)) return false;
+  for (let i = 0; i < 3; i++) if (parts[i] !== floor[i]) return parts[i] > floor[i];
+  return true;
 }
 /** Observa o host; não instala software, acessa Keychain ou executa arquivos do projeto. `nodeVersion`, `env` e `mounts` são injetáveis. */
 export function doctor({ nodeVersion = process.versions.node, env = process.env, mounts = processMounts } = {}) {
@@ -98,7 +100,7 @@ export function doctor({ nodeVersion = process.versions.node, env = process.env,
   const hardware = { platform: process.platform, architecture: process.arch, memoryGiB: Math.round(os.totalmem() / 1073741824), cpuCount: os.availableParallelism() };
   const infrastructure = infrastructurePlan({totalMemoryBytes:os.totalmem(),cpuCount:hardware.cpuCount,constrainedMemoryBytes:process.constrainedMemory?.() ?? 0});
   const blockers = [];
-  if (!supportedNode) blockers.push('Node ' + nodeVersion + ' não é suportado: instale o Node 24 LTS ou mais novo (https://nodejs.org ou `brew install node@24`) e rode o comando com ele. Mínimo: ' + MINIMUM_NODE + '.');
+  if (!supportedNode) blockers.push('Node ' + nodeVersion + ' não é suportado: instale o Node 24 LTS (https://nodejs.org ou `brew install node@24`) e rode o comando com ele. Mínimo: ' + MINIMUM_NODE + '.');
   if (!sqlite || !fts5) blockers.push('Este Node não traz node:sqlite com FTS5: use o Node 24 LTS oficial ou do Homebrew.');
   if (!git.available) blockers.push('Git não encontrado: instale o Git (macOS: `xcode-select --install` ou `brew install git`).');
   if (!stateSync.local) blockers.push('BBRAINX_HOME está em ' + stateSync.reason + ': use um disco local (veja STATE_HOME_SYNCED em docs/QUICKSTART.md) ou BBRAINX_ALLOW_SYNCED_HOME=1 por sua conta e risco.');

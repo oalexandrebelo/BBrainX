@@ -12,7 +12,7 @@ Leia [AGENTS.md](../AGENTS.md), [modelo de segurança](SECURITY_MODEL.md) e [con
 
 Use uma cópia privada do runtime identificada por **commit Git completo**, separada do projeto indexado. Confira a revisão e o lockfile antes de instalar suas dependências com `npm ci`. Não use uma branch móvel como identidade de implantação; conservar a revisão anterior permite rollback. Uma distribuição de fonte deve ter manifesto e checksums verificados antes do uso.
 
-Escolha um executável absoluto de Node LTS compatível: Node 24 LTS ou mais novo; Node 22 e anteriores não são suportados. Confirme com `--version`; o `node` encontrado pelo terminal pode diferir daquele disponível ao IDE. A seleção de versões LTS segue o [calendário oficial do Node](https://nodejs.org/en/about/previous-releases).
+Escolha um executável absoluto de Node LTS compatível: Node 24 recomendado, mínimo 22.20. Confirme com `--version`; o `node` encontrado pelo terminal pode diferir daquele disponível ao IDE. A seleção de versões LTS segue o [calendário oficial do Node](https://nodejs.org/en/about/previous-releases).
 
 Substitua os valores, sem copiar literalmente os placeholders:
 

@@ -7,7 +7,7 @@ Base examinada: PR #12, `5c462b61fd650f67c8cf1beef81de4accf638ba1`. Os heads das
 - Raiz registrada: recusar uma raiz ou ancestral redirecionado por symlink/junction antes de indexar, reler ou atualizar fontes. A falha preserva índice, snapshot e eventos. Não oferece snapshot atômico do filesystem ou sandbox do sistema operacional.
 - Atualização parcial: aplicar os mesmos limites totais de arquivos e bytes da indexação integral dentro da transação existente. Exceder a quota desfaz arquivos, chunks, FTS, snapshot e evento da tentativa.
 - Atlas: seleção por teclado sincronizada com inspetor/deep link e navegação de abas por teclado; removido import CSS vazio.
-- CI: o workflow geral chama a verificação consolidada na mesma revisão; a publicação depende do seu sucesso e dos testes/build no Node mínimo (22.20 até 10/10/2026; 24.0.0 desde a decisão de piso 24). Auditoria npm bloqueia vulnerabilidades altas/críticas e falhas de consulta. A suíte Atlas usa Bash com pipefail para preservar o erro antes de `tee`.
+- CI: o workflow geral chama a verificação consolidada na mesma revisão; a publicação depende do seu sucesso e dos testes/build no Node mínimo 22.20. Auditoria npm bloqueia vulnerabilidades altas/críticas e falhas de consulta. A suíte Atlas usa Bash com pipefail para preservar o erro antes de `tee`.
 - MCP no Node 22: os testes separam somente o bloco exato do aviso experimental SQLite dos eventos JSON, preservam stderr bruto e continuam rejeitando diagnósticos inesperados. O produto não suprime os avisos do runtime.
 - Documentação: índice da auditoria histórica corrigido; catálogo usa arquivos rastreados e links por commit.
 

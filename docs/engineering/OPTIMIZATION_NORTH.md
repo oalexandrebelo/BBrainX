@@ -77,7 +77,7 @@ node --test test/mcp-wire.test.mjs test/mcp-ownership.test.mjs
 node --test test/retention.test.mjs test/usage-store.test.mjs test/lanes-host.test.mjs
 ```
 
-Depois da fatia, `npm test` e `npm run build`; verificar o Node mínimo (24.0.0) e o Node 24 atual. UI exige E2E; distribuição exige `python3 test/archive_test.py`. Controles negativos que alteram código rodam em checkout descartável limpo. Novo schema exige migração e rollback. Não repetir suítes sem mudança ou hipótese que justifique a repetição.
+Depois da fatia, `npm test` e `npm run build`; verificar Node mínimo 22.20 e Node 24. UI exige E2E; distribuição exige `python3 test/archive_test.py`. Controles negativos que alteram código rodam em checkout descartável limpo. Novo schema exige migração e rollback. Não repetir suítes sem mudança ou hipótese que justifique a repetição.
 
 O commit/PR deve deixar: item e revisão-base; hipótese e workload; arquivos sob responsabilidade; comando e identidade das entradas; resultados, amostras e limites; alternativas descartadas; regressão observada ou custo introduzido; rollback; próxima ação concreta. Revisão independente verifica contratos e evidência, não apenas a contagem de testes. Atualizar a fila e o livro no mesmo conjunto de commits; tornar o ponto de retomada legível sem o chat.
 

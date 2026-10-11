@@ -44,6 +44,6 @@ Aceite: interface acessível em desktop/mobile; estados vazio/erro/desconhecido;
 
 ## Implementação e verificação
 
-Node 24 ou mais novo, ESM, React existente. Usar `ensure(condition, 'ERROR_CODE')`, IDs validados, paths canônicos, limites antes de materializar conteúdo. Módulos em `src/`, testes Node em `test/`, UI em `web/`, E2E em `e2e/`. Não registrar dados privados da estação no Git. Dependências novas apenas para parsing correto de formatos existentes.
+Node 24 recomendado (mínimo 22.20), ESM, React existente. Usar `ensure(condition, 'ERROR_CODE')`, IDs validados, paths canônicos, limites antes de materializar conteúdo. Módulos em `src/`, testes Node em `test/`, UI em `web/`, E2E em `e2e/`. Não registrar dados privados da estação no Git. Dependências novas apenas para parsing correto de formatos existentes.
 
 Comandos: `node --test test/workspace.test.mjs test/integrations.test.mjs`, `npm test`, `npm run build`, `npm run test:e2e`. Ampliar testes focados com cada módulo. Registrar versão testada, ambiente, limitações e rollback no handoff. Esta entrega não promove o preview a release comercial nem demonstra economia financeira ou desempenho de modelos.

@@ -12,7 +12,7 @@ A versão **0.4.0 é uma prévia de desenvolvimento**. Tudo o que está descrito
 
 ## Comece em três comandos
 
-Requisitos: **Node 24 LTS (ou mais novo) e Git**. Node 22 e anteriores não são suportados: o `node:sqlite` deles imprime um ExperimentalWarning no stderr e a verificação do produto só cobre o Node 24; `node bin/bbrainx.mjs doctor` diz o que instalar. O foco desta fase é o macOS; Linux e Windows passam na mesma suíte de testes.
+Requisitos: **Node 24 LTS e Git** (Node 22.20 ou mais novo também atende). O foco desta fase é o macOS; Linux e Windows passam na mesma suíte de testes.
 
 ```sh
 git clone https://github.com/oalexandrebelo/BBrainX.git && cd BBrainX
