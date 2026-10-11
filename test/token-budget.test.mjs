@@ -1,0 +1,67 @@
+import { test } from 'node:test';import assert from 'node:assert/strict';
+import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import { fileURLToPath } from 'node:url';
+import { spawnSync } from 'node:child_process';
+import { BrainStore } from '../src/store.mjs';
+import { indexProject, search } from '../src/retrieval.mjs';
+import * as context from '../src/context.mjs';
+import { makeEngine } from '../src/engine.mjs';
+
+// Custo em tokens do que o modelo recebe de context_search: teto por orçamento, restante como ponteiros path:linhas.
+const { tokenCount } = context;
+function workspace(t,files){
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-tok-')), root=path.join(dir,'repo');fs.mkdirSync(root);
+  for(const [name,body] of Object.entries(files)){fs.mkdirSync(path.dirname(path.join(root,name)),{recursive:true});fs.writeFileSync(path.join(root,name),body);}
+  const store=new BrainStore(path.join(dir,'state'));store.register('test',root);indexProject(store,'test');
+  t.after(()=>{store.close();fs.rmSync(dir,{recursive:true,force:true});});
+  return {dir,root,store};
+}
+const filler=count=>Array.from({length:count},(_,line)=>'  const step'+line+' = value - '+line+';').join('\n');
+// Dez arquivos que casam com a consulta, com 1 a 10 ocorrências: scores decrescentes e distintos; cada um custa bem mais de 400 tokens.
+const ranked=()=>Object.fromEntries(Array.from({length:10},(_,i)=>['src/f'+i+'.ts','export function f'+i+'(){\n'+('  // alpha note\n'.repeat(10-i))+filler(40)+'\n}\n']));
+const principal={principal:{id:'tester'}};
+const json=value=>tokenCount(JSON.stringify(value));
+
+test('context.search through the engine is capped at 4000 tokens by default and a larger budget serves every hit',async t=>{
+  const {store}=workspace(t,ranked());const engine=makeEngine(store,['test']);
+  const all=search(store,'test','alpha',10);
+  assert.equal(all.items.length,10);assert.ok(json(all.items)>5000,'the fixture must be far above the default budget: '+json(all.items));
+  const small=await engine.invoke('context.search',{project:'test',query:'alpha',limit:10},principal);
+  assert.equal(small.ok,true);
+  const {items,more,omitted,truncated}=small.data;
+  assert.ok(items.length>=2&&items.length<10,'served '+items.length);assert.equal(truncated,true);assert.equal(omitted,10-items.length);
+  assert.deepEqual(items.map(x=>x.id),all.items.slice(0,items.length).map(x=>x.id),'the order of the ranking is kept');
+  assert.ok(json(items)+json(more)<=4000,'items and pointers stay inside the budget: '+(json(items)+json(more)));
+  const large=await engine.invoke('context.search',{project:'test',query:'alpha',limit:10,budget:16000},principal);
+  assert.equal(large.data.items.length,10);assert.equal(large.data.omitted,0);assert.equal(large.data.more,undefined,'nothing left out, nothing to point at');
+});
+test('what the budget leaves out comes back as path:lines pointers, so the hit is still located',async t=>{
+  const {store}=workspace(t,ranked());const engine=makeEngine(store,['test']);
+  const all=search(store,'test','alpha',10).items;
+  const {data}=await engine.invoke('context.search',{project:'test',query:'alpha',limit:10},principal);
+  assert.equal(data.more.length,data.omitted);
+  assert.deepEqual(data.more,all.slice(data.items.length).map(x=>x.path+':'+x.start_line+'-'+x.end_line),'pointers follow the ranking and name the lines');
+  assert.ok(json(data.more)<=12*data.more.length,'a pointer is about ten tokens: '+json(data.more)+' for '+data.more.length);
+});
+test('budget is validated from 256 to 16000 and a hit larger than the budget is still served once',async t=>{
+  const {store}=workspace(t,ranked());const engine=makeEngine(store,['test']);
+  for(const budget of [100,255,16001,1.5,'4000'])await assert.rejects(()=>engine.invoke('context.search',{project:'test',query:'alpha',budget},principal),{code:'INPUT_INVALID'},String(budget));
+  const tiny=await engine.invoke('context.search',{project:'test',query:'alpha',limit:10,budget:256},principal);
+  assert.equal(tiny.data.items.length,1);assert.equal(tiny.data.omitted,9);assert.equal(tiny.data.truncated,true);
+  assert.throws(()=>context.fitSearch(search(store,'test','alpha',3),100),{code:'INVALID_BUDGET'});
+});
+test('documentation takes at most half of the search budget while code is among the hits',t=>{
+  const prose=name=>'# Retry policy '+name+'\n'+('The retry policy waits and then sends the request again. '.repeat(7)+'\n').repeat(3);
+  const files={'src/again.ts':'// policy\nexport function again(call, attempts) {\n'+filler(24)+'\n  return attempts > 0 ? call() : null;\n}\n'};
+  for(const name of ['a','b','c','d','e','f'])files['docs/'+name+'.md']=prose(name);
+  const {store}=workspace(t,files);
+  const found=search(store,'test','retry policy request',10), served=context.fitSearch(found,1500);
+  assert.ok(found.items.slice(0,6).every(item=>item.kind==='doc'),'the fixture needs the documents to outrank the code');
+  assert.ok(served.items.some(item=>item.path==='src/again.ts'),'the code must be among the hits that were served');
+  assert.ok(json(served.items.filter(item=>item.kind==='doc'))<=750,'documents stay inside half of the budget');
+});
+test('the command line search obeys --budget as the tool does',t=>{
+  const {dir}=workspace(t,ranked());
+  const run=(...args)=>{const result=spawnSync(process.execPath,[fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),'search','--project','test','--query','alpha',...args],{encoding:'utf8',env:{...process.env,BBRAINX_HOME:path.join(dir,'state')}});assert.equal(result.status,0,result.stderr);return JSON.parse(result.stdout);};
+  const small=run('--budget','256'), standard=run(), large=run('--budget','16000');
+  assert.equal(small.items.length,1);assert.equal(small.omitted,9);assert.ok(standard.items.length>small.items.length&&standard.items.length<10);assert.equal(large.items.length,10);
+});

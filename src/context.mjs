@@ -4,6 +4,28 @@ import { isFresh, refreshFiles, search } from './retrieval.mjs';
 import { queryTerms } from './analyze.mjs';
 
 export function tokenCount(value){return encode(value,{disallowedSpecial:new Set()}).length;}
+export const SEARCH_BUDGET=4000, SEARCH_POINTERS=25;
+const pointer=item=>item.path+':'+item.start_line+'-'+item.end_line;
+/**
+ * Limita o que context_search devolve a um orçamento de tokens (o JSON de cada item, que é o que o modelo lê). Mesma cota de documentação do
+ * pacote: havendo código entre os acertos, documentos ficam com até metade. O melhor acerto sempre é servido. O que não coube volta como
+ * ponteiros `caminho:linhas` (cerca de 10 tokens cada, no máximo SEARCH_POINTERS, dentro do mesmo orçamento): o agente sabe onde mais olhar sem pagar os corpos.
+ * `omitted` conta todos os acertos sem corpo; `truncated` também vale quando o orçamento corta.
+ */
+export function fitSearch(result,budget=SEARCH_BUDGET){
+  ensure(Number.isInteger(budget)&&budget>=256&&budget<=16000,'INVALID_BUDGET');
+  const hits=result.items, cost=hits.map(item=>tokenCount(JSON.stringify(item))), hasCode=hits.some(item=>item.kind!=='doc'), served=new Set();
+  let used=0,docs=0;
+  hits.forEach((item,index)=>{
+    if(served.size&&(used+cost[index]>budget||(hasCode&&item.kind==='doc'&&docs+cost[index]>budget/2)))return;
+    used+=cost[index];if(item.kind==='doc')docs+=cost[index];served.add(index);
+  });
+  const rest=()=>hits.flatMap((item,index)=>served.has(index)?[]:[item]), more=()=>rest().slice(0,SEARCH_POINTERS).map(pointer);
+  // Os ponteiros pagam do mesmo orçamento: se não cabem, o último acerto servido passa a ser ponteiro.
+  while(served.size>1&&used+(rest().length?tokenCount(JSON.stringify(more())):0)>budget){const last=Math.max(...served);served.delete(last);used-=cost[last];}
+  const left=rest(), pointers=more();
+  return {...result,items:hits.filter((item,index)=>served.has(index)),...(pointers.length?{more:pointers}:{}),truncated:result.truncated||left.length>0,omitted:left.length};
+}
 function relevant(terms,statement){for(const term of queryTerms(statement))if(terms.has(term))return true;return false;}
 /**
  * Monta o pacote com orçamento. Conta somente o payload textual; não é billing nem tokenizer universal.

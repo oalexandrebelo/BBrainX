@@ -1,3 +1,9 @@
+# Custo em tokens do que o agente lê — 10/10/2026
+
+Base `5acad77`. Medido em payload com o200k_base (`gpt-tokenizer`), um proxy: não é cobrança do provedor, `billingSavings` continua `null`. Cada item abaixo traz o teste que o fixa; mudanças de contrato público estão marcadas.
+
+- **Contrato:** `context_search` ganha `budget` (256 a 16000, padrão 4000 tokens) e a resposta ganha `omitted`; `truncated` também vale quando o orçamento corta. O que o orçamento deixa de fora volta em `more` como `caminho:linhas` (cerca de 10 tokens cada, até 25, dentro do mesmo orçamento). O melhor acerto é sempre servido. Antes, 12 trechos de 60 linhas custavam cerca de 15,5 mil tokens por chamada e `limit: 50` cerca de 62 mil; agora a resposta padrão tem cerca de 3,8 mil. Quem precisa de todos os trechos com corpo passa `budget: 16000`. A CLI `search` aceita `--budget`; o botão Buscar do painel recebe o mesmo teto.
+
 # Alinhamento SDD por projeto — 08/10/2026
 
 Detecção de artefatos Spec Kit e SDD genérico, avaliação de cobertura documental por feature e criação exclusiva de rascunho técnico quando ausente. Inclui CLI, HTTP/painel e MCP opt-in `--sdd`, quotas, fontes por hash e testes de escopo/concorrência. A nota não é avaliação semântica ou certificação de qualidade. [Especificação](specs/sdd-alignment.md), [operação](integrations/SDD.md) e [ADR](decisions/0002-sdd-coverage.md). Nenhum runtime MetaGPT/Spec Kit ou chamada paga foi incorporado.
