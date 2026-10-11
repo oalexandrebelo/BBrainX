@@ -75,8 +75,10 @@ test('CLI: BBRAINX_HOME sob Mobile Documents sai com exit 1 e STATE_HOME_SYNCED;
 });
 
 test('doctor reporta o home sincronizado e deixa de estar pronto', () => {
-  const report = host.doctor({ env: { BBRAINX_HOME: '/Users/u/Dropbox/BBrainX' }, mounts: none });
+  const node = { nodeVersion: '24.21.0', mounts: none };   // versão injetada: o resultado não depende do Node que roda a suíte
+  const report = host.doctor({ ...node, env: { BBRAINX_HOME: '/Users/u/Dropbox/BBrainX' } });
   assert.equal(report.stateSync.local, false); assert.match(report.stateSync.reason, /sincroniza/); assert.equal(report.ready, false);
-  assert.equal(host.doctor({ env: { BBRAINX_HOME: '/Users/u/Dropbox/BBrainX', BBRAINX_ALLOW_SYNCED_HOME: '1' }, mounts: none }).ready, true);
-  assert.equal(host.doctor({ env: { BBRAINX_HOME: '/tmp/ok' }, mounts: none }).stateSync.local, true);
+  assert.ok(report.blockers.some(item => /BBRAINX_HOME/.test(item) && /BBRAINX_ALLOW_SYNCED_HOME=1/.test(item)), JSON.stringify(report.blockers));
+  assert.equal(host.doctor({ ...node, env: { BBRAINX_HOME: '/Users/u/Dropbox/BBrainX', BBRAINX_ALLOW_SYNCED_HOME: '1' } }).stateSync.local, true);
+  assert.equal(host.doctor({ ...node, env: { BBRAINX_HOME: '/tmp/ok' } }).stateSync.local, true);
 });
