@@ -56,7 +56,7 @@ Motor e servidor MCP próprios, busca em linguagem natural entre português e in
 - **Busca em linguagem natural.** Dois estágios somados: termos exatos e, com metade do peso, os mesmos termos por radical e por um glossário de programação português → inglês. Palavras vazias saem da consulta quando sobra algum termo que discrimina. Em 79 perguntas cegas sobre dois repositórios de terceiros, o arquivo esperado ficou entre os 10 primeiros em 84 % dos casos (antes, 54 %) e em 1.º em 46 % (antes, 33 %).
 - **Pacote de contexto.** Documentação fica com no máximo metade do orçamento enquanto houver código candidato.
 - **Um passo para começar.** `bbrainx up --root <pasta>` registra, indexa e mostra como ligar cada harness. `doctor` passa a informar o melhor cenário da máquina. `config --client` imprime a configuração de Claude Code, Codex, Cursor, VS Code e Gemini CLI.
-- **Perfil Laya.** `bbrainx laya install | status | ask | remove`: ambiente Python isolado, pesos fixados por revisão e SHA-256, processo sem rede. Medido no M5 Pro: não melhora as duas decisões testadas sem ajuste fino, então não altera o pacote.
+- **Perfil Laya.** `bbrainx laya install | status | ask | remove`: ambiente Python isolado, pesos fixados por revisão e SHA-256, bibliotecas em modo offline no processo (`HF_HUB_OFFLINE=1`; não é bloqueio de rede do sistema operacional). Medido no M5 Pro: não melhora as duas decisões testadas sem ajuste fino, então não altera o pacote.
 - **Avaliação.** O relatório informa intervalo de confiança de 95 % e o snapshot do corpus. `scripts/laya-bench.mjs` mede o perfil contra o caminho determinístico.
 - **Mapa do estudo.** Nova aba do painel e `docs/STUDY_MAP.md`, gerados da mesma fonte: 37 ferramentas em cinco situações, com o porquê de cada uma.
 

@@ -80,7 +80,7 @@ node scripts/laya-bench.mjs --memory test/fixtures/eval-memory.cases
 | Caminho | Papel |
 |---|---|
 | `bin/bbrainx.mjs` | O CLI inteiro, em um arquivo |
-| `profiles/laya/worker.py`, `requirements.txt` | Processo do modelo (JSON por linha, sem rede) e as versões fixadas |
+| `profiles/laya/worker.py`, `requirements.txt` | Processo do modelo (JSON por linha, bibliotecas em modo offline) e as versões fixadas |
 | `scripts/setup.mjs` | `npm run setup`: confere a máquina, instala pelo lockfile, testa e compila |
 | `scripts/eval-retrieval.mjs`, `make-definition-cases.mjs` | Avaliação da busca com casos rotulados e geração de casos por declaração |
 | `scripts/laya-bench.mjs` | Laya contra o caminho determinístico |

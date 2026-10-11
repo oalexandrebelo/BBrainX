@@ -35,7 +35,7 @@ BBRAINX_PYTHON=/caminho/absoluto/python3.12 node bin/bbrainx.mjs laya install
 
 `BBRAINX_PYTHON` inválido produz `LAYA_PYTHON_INVALID`; não há troca silenciosa para outro interpretador. O comando não muda o Python do sistema. Instalação exige downloads das dependências/pesos quando não estiverem presentes. Execução usa pesos locais com os modos offline das bibliotecas. Isso não constitui sandbox de rede do sistema operacional.
 
-Não transporte um virtualenv entre usuários ou máquinas: symlinks e launchers podem apontar para caminhos antigos. Recrie-o com Python compatível no destino. Reuse somente arquivos de pesos cuja revisão e hashes correspondam ao manifesto; dependências precisam corresponder ao SO, arquitetura e ABI do Python. Na recuperação deste Mac mini, a cópia antiga apontava para `/Users/alexandrebelo/...`, inexistente nesta máquina. O Python 3.12 e os pacotes locais compatíveis foram usados para reconstruir o ambiente; não houve novo download de modelo nem API paga.
+Não transporte um virtualenv entre usuários ou máquinas: symlinks e launchers podem apontar para caminhos antigos. Recrie-o com Python compatível no destino. Reuse somente arquivos de pesos cuja revisão e hashes correspondam ao manifesto; dependências precisam corresponder ao SO, arquitetura e ABI do Python.
 
 ## Harnesses e limites de ativação
 

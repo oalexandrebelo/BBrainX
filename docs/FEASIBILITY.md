@@ -73,7 +73,7 @@ Duas técnicas do Laya entram desde já, reimplementadas no domínio do BBrainX,
 O perfil `decision-broker` **não está implementado**. Fica especificado assim, para quando houver medida:
 
 - Decisão só entre alternativas fechadas: o broker escolhe entre opções dadas, nunca inventa item nem altera conteúdo.
-- Processo filho, desligado por padrão, falando JSON por linha em stdio. Sem shell, sem rede e sem escrita no banco.
+- Processo filho, desligado por padrão, falando JSON por linha em stdio. Sem shell, sem porta e sem escrita no banco; bibliotecas em modo offline (não é bloqueio de rede do sistema operacional).
 - Pesos baixados só por comando explícito, com SHA-256 conferido.
 - O broker só reordena ou filtra candidatos que a busca lexical já devolveu.
 - Abstenção forçada em estado truncado, checkpoint ou tokenizador desconhecido, limiar não calibrado ou tempo esgotado.

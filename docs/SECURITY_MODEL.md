@@ -1,4 +1,4 @@
-# Modelo de segurança — prévia 0.4
+# Modelo de segurança — prévia 1.5
 
 ## Fronteira de confiança
 
@@ -28,7 +28,7 @@ BBrainX é uma aplicação local por usuário do sistema operacional. Não é um
 ## Perfil Laya
 
 - Nada é baixado sem o comando `laya install`. O pacote vem do PyPI com versões fixadas; os pesos, do Hugging Face numa revisão fixada, conferidos por SHA-256 antes de serem usados e de novo a cada carga dos dois arquivos grandes.
-- O formato dos pesos é `safetensors` (sem execução de código na carga). O processo roda com a rede do Hugging Face desligada e não recebe caminho de arquivo nem acesso ao banco.
+- O formato dos pesos é `safetensors` (sem execução de código na carga). O processo roda com `HF_HUB_OFFLINE=1`, `TRANSFORMERS_OFFLINE=1` e `HF_HUB_DISABLE_TELEMETRY=1` (`src/worker-env.mjs`); isso desliga o acesso do Hugging Face nas bibliotecas e **não é bloqueio de rede do sistema operacional**. Ele não recebe caminho de arquivo, acesso ao banco, chaves de API, `PYTHONPATH` nem `NODE_OPTIONS`.
 - O que o BBrainX envia ao modelo é texto do seu repositório. Ele fica na sua máquina, mas passa a existir na memória de um segundo processo.
 - O resultado do modelo não altera o pacote de contexto nesta versão. Confiança do modelo não é autorização para nada.
 - Instalar pacotes Python executa código de terceiros no seu usuário, dentro de um ambiente isolado. É uma decisão sua, e é por isso que o núcleo não depende dela.

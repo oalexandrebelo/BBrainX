@@ -22,7 +22,7 @@ npm run demo
 npm start
 ```
 
-Abra http://127.0.0.1:4317. `demo` cria somente arquivos sintéticos no diretório privado de estado e não sobrescreve exemplos já alterados. O painel não abre portas públicas. Para outra porta: `node bin/bbrainx.mjs serve --port 4318`.
+`npm start` executa `node bin/bbrainx.mjs serve` e **não abre o navegador**: abra http://127.0.0.1:4317. `demo` cria somente arquivos sintéticos no diretório privado de estado e não sobrescreve exemplos já alterados. O painel não abre portas públicas. Para outra porta: `node bin/bbrainx.mjs serve --port 4318`.
 
 Na aba Laboratório, selecione `demo`, busque autenticação/sessão, compile o pacote e observe as fontes. Use Reindexar após editar os arquivos. O checkpoint do painel é de **revisão pendente**, não uma aprovação de testes inexistentes.
 
@@ -57,7 +57,7 @@ Revise o plano antes de `--apply`. Uma colisão bloqueia todo o plano. Para inst
 node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO
 ```
 
-Rollback recusa arquivos editados posteriormente. Se a indexação falhar após aplicação, a CLI retorna recibo e `indexError`: corrija a indexação ou use esse rollback. Configurações com caminhos absolutos do estado/runtime merecem revisão antes de serem versionadas. `config --project meu-app --client cursor` continua imprimindo fragmentos manuais (também claude, codex, vscode e gemini); ele não escreve arquivos.
+Rollback recusa arquivos editados posteriormente. Se a indexação falhar após aplicação, a CLI retorna recibo e `indexError`: corrija a indexação ou use esse rollback. Configurações com caminhos absolutos do estado/runtime merecem revisão antes de serem versionadas. `config --project meu-app --client cursor` continua imprimindo fragmentos manuais (também claude, codex, vscode e gemini); ele não escreve arquivos. Na 1.5.0, Cursor e Gemini CLI só têm esse fragmento: a conexão não foi verificada. Claude Code e Codex foram verificados com clientes reais; VS Code, com o `.vscode/mcp.json` gerado exercitado por um cliente do SDK MCP (o início pela interface é manual). Evidência: [HOMOLOGACAO_2026-10-10.md](HOMOLOGACAO_2026-10-10.md).
 
 ### Plugin e descoberta de pastas abertas
 
@@ -182,9 +182,9 @@ node bin/bbrainx.mjs sdd --project meu-projeto
 
 O primeiro comando somente avalia. O segundo avalia e cria uma base `SDD.md` se não houver artefatos SDD reconhecidos; nunca substitui especificações existentes. O rascunho expõe fatos e lacunas para revisão. No painel, use a aba **SDD**. Para expor a capacidade ao harness, acrescente `--sdd` ao servidor MCP já autorizado para o projeto. `--sdd --laya` pode habilitar as duas capacidades opcionais; preserve workspace/lane/home e escopo. [Rubrica, formatos e limites](integrations/SDD.md).
 
-## 9. Atualizar da 0.2 para a 0.3 ou a 0.4
+## 9. Atualizar da 0.2 para a 0.3, a 0.4 ou a 1.5
 
-Da 0.3 para a 0.4 não há migração: o esquema do banco é o mesmo. Vindo da 0.2, na primeira abertura o serviço migra o banco sozinho, numa transação:
+Da 0.3 ou da 0.4 para a 1.5 não há migração do banco principal: o esquema é o mesmo (versão 2, `src/store.mjs`). Vindo da 0.2, na primeira abertura o serviço migra o banco sozinho, numa transação:
 
 1. Grava antes uma cópia íntegra em `brain.v1-backup.sqlite`, na pasta de estado.
 2. Preserva projetos, checkpoints, histórico, memórias e eventos.

@@ -46,7 +46,7 @@ Projeto `NandhaKishorM/laya`, código e pesos sob Apache-2.0, pesos em `convaiin
 |---|---|---|
 | Manifesto | `LAYA` em `src/laya.mjs` | Fixa pacote `laya` 0.3.26, revisão `1c5edc17a7acd8701df6fc341c0d179f1c62c982` dos pesos e o SHA-256 de cada um dos cinco arquivos |
 | Instalação | `node bin/bbrainx.mjs laya install` | Cria o ambiente Python em `<pasta de estado>/profiles/laya/venv` e baixa os pesos para `…/models/multilingual` |
-| Processo do modelo | `profiles/laya/worker.py` | Lê e escreve JSON por linha, sem rede (`HF_HUB_OFFLINE=1`), sem porta. Limites: 64 estados, 16 perguntas, 50.000 caracteres por estado |
+| Processo do modelo | `profiles/laya/worker.py` | Lê e escreve JSON por linha, com as bibliotecas em modo offline (`HF_HUB_OFFLINE=1`; não é bloqueio de rede do SO), sem porta. Limites: 64 estados, 16 perguntas, 50.000 caracteres por estado |
 | Lado Node | `LayaBroker` em `src/laya.mjs` | `decide(states, questions, {deadlineMs, maxLen})`. Nunca lança: devolve `{ok:false, reason}` com `TIMEOUT`, `ERROR`, `UNAVAILABLE` ou `DEGRADED`. Três falhas seguidas abrem um disjuntor por cinco minutos. A opção `command` do construtor troca o processo iniciado: é o jeito de apontar para outro checkpoint |
 | Medição | `scripts/laya-bench.mjs` | Compara o modelo com o caminho determinístico nas duas decisões |
 | Estado | `layaStatus()` | Informa `changesContextPack: false`. Hoje o perfil só responde a `laya ask` e à medição |
@@ -263,7 +263,7 @@ Só depois da seção 7. O desenho é seu; estas propriedades são obrigatórias
 - O `sed -i` do macOS falha em silêncio com a sintaxe do GNU. Sabotagem sem `git diff` não foi aplicada.
 - Os casos sobre este repositório mudam de número a cada documento novo. Compare versões em corpus fixado por commit.
 - Arquivo de casos com extensão indexada vira o 1.º resultado das próprias consultas. Use `.cases`.
-- O ambiente do perfil instalado roda sem rede. O treino precisa do próprio ambiente, em `LAB`.
+- O ambiente do perfil instalado roda com as bibliotecas em modo offline (sem bloqueio de rede do SO). O treino precisa do próprio ambiente, em `LAB`.
 - O Laya pode reescrever `tokenizer_config.json` na carga; por isso esse arquivo não entra na conferência de hash em tempo de execução.
 - `snapshot_download` do repositório de pesos inteiro traz também os checkpoints em inglês, cerca de 1,7 GB que você não vai usar. Passe `--model-dir` já com o `multilingual`.
 - O pacote `laya` não declara suporte ao Python 3.14. Use o 3.12.
