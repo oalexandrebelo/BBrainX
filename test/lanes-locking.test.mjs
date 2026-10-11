@@ -103,7 +103,9 @@ test('closing a lane while another process checkpoints it: nothing is committed 
     await new Promise(resolve => setTimeout(resolve, delay));
     const epoch = f.registry.active('product', 'alpha').epoch;
     for (let attempt = 1; ; attempt++) { try { f.registry.retire('product', 'alpha', epoch); break; } catch (e) { if (e.errcode !== 5 || attempt === 3) throw e; } }
-    const reading = new DatabaseSync(laneDb(f, 'alpha'), { readOnly: true });
+    // In WAL a commit never blocks a reader; only the loop's last-connection close (checkpoint + -wal removal under an
+    // exclusive lock) can, and that is not a commit. Without a busy timeout this probe failed with SQLITE_BUSY in that window.
+    const reading = new DatabaseSync(laneDb(f, 'alpha'), { readOnly: true, timeout: 5000 });
     const atClose = reading.prepare('SELECT count(*) AS n FROM task_history').get().n;
     const result = await loop.next(m => m.done); await once(loop.c, 'exit');
     const final = reading.prepare('SELECT count(*) AS n FROM task_history').get().n; reading.close();
