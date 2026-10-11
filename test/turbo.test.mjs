@@ -304,7 +304,7 @@ test('the same statement is not proposed twice and approval can change the mode'
 test('the engine returns the reason of a domain error and accepts the richer checkpoint', async t => {
   const {store} = workspace(t, {'a.md':'one'}); const engine = makeEngine(store, ['test']), principal = {principal:{id:'client'}};
   const early = await engine.invoke('context.bootstrap', {project:'test', query:'one'}, principal);
-  assert.deepEqual(early, {ok:false, data:null, error:'INDEX_REQUIRED', detail:null});
+  assert.deepEqual(early, {ok:false, data:null, error:'INDEX_REQUIRED', detail:'Projeto sem índice. Chame context_index e repita.'});
   const saved = await engine.invoke('session.checkpoint', {project:'test', task:'T', expectedVersion:0, idempotencyKey:'k', content:{...base, done:['indexed'], filesTouched:['a.md']}}, principal);
   assert.equal(saved.ok, true); assert.deepEqual(saved.data.content.done, ['indexed']); assert.equal(saved.data.content.host.git, null);
   const conflict = await engine.invoke('session.checkpoint', {project:'test', task:'T', expectedVersion:0, idempotencyKey:'k2', content:{...base, snapshot:'0'.repeat(64)}}, principal);

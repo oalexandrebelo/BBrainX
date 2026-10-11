@@ -170,8 +170,14 @@ const LOOSE_WEIGHT=.5;
  * viram `also`, faixas `inicio-fim` sem corpo. `limit` conta arquivos. `byFile:false` devolve os trechos crus, como o pacote precisa.
  */
 const ALSO_RANGES=2;
+/** Projeto (ou lane) registrado e com índice. Sem índice a busca não devolve "nada encontrado": recusa e diz o que chamar. */
+export function requireIndex(store,project){
+  const meta=store.project(project);
+  ensure(meta.snapshot,'INDEX_REQUIRED','Projeto sem índice. Chame context_index e repita.');
+  return meta;
+}
 export function search(store,project,query,limit=12,{byFile=true}={}){
-  const meta=store.project(project);text(query,1000);ensure(Number.isInteger(limit)&&limit>=1&&limit<=50,'INVALID_LIMIT');
+  const meta=requireIndex(store,project);text(query,1000);ensure(Number.isInteger(limit)&&limit>=1&&limit<=50,'INVALID_LIMIT');
   const all=query.match(/[\p{L}\p{N}_$]+/gu)?.slice(0,24)||[];
   if(!all.length)return {project,snapshot:meta.snapshot,items:[],truncated:false};
   const content=all.filter(word=>!isStopword(word)), words=content.length?content:all;

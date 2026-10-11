@@ -1,6 +1,6 @@
 import { encode } from 'gpt-tokenizer/encoding/o200k_base';
 import { ensure, hash, text } from './primitives.mjs';
-import { isFresh, refreshFiles, search } from './retrieval.mjs';
+import { isFresh, refreshFiles, requireIndex, search } from './retrieval.mjs';
 import { queryTerms } from './analyze.mjs';
 
 export function tokenCount(value){return encode(value,{disallowedSpecial:new Set()}).length;}
@@ -44,7 +44,7 @@ function relevant(terms,statement){for(const term of queryTerms(statement))if(te
 export function compileContext(store,{project,query,budget=4000,task,onStale='refresh'}){
   text(query,1000);ensure(Number.isInteger(budget)&&budget>=256&&budget<=16000,'INVALID_BUDGET');
   ensure(onStale==='refresh'||onStale==='fail','INVALID_STALE_POLICY');
-  ensure(store.project(project).snapshot,'INDEX_REQUIRED');
+  requireIndex(store,project);
   let result;const refreshed=new Set();
   for(let round=0;;round++){
     result=search(store,project,query,30,{byFile:false});
