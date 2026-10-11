@@ -1,6 +1,7 @@
 import { BrainStore } from '../store.mjs';
 import { ensure, hash } from '../primitives.mjs';
 import { LaneRegistry } from './registry.mjs';
+import { EngineError } from '../capability.mjs';
 
 /** Lane index/checkpoints have their own database. Approved memory has exactly one authority. */
 export class LaneStore extends BrainStore {
@@ -67,14 +68,43 @@ export class LaneStore extends BrainStore {
   close(){try{super.close();}finally{try{this.authority.close();}finally{this.registry.close();}}}
 }
 
-/** Bound host engine. One in-flight operation per process; clients can use separate lane processes. */
-export function bindLaneEngine(engine,store){
-  let active=false;
+/** Admitted requests per lane process (running + waiting); equals the MCP handler's default in-flight limit (asserted in
+ * lanes-mcp.test.mjs), so a burst from one harness is refused by the handler, never by the lane first. */
+export const LANE_QUEUE_DEPTH=8;
+/** Longest a request waits for its turn. A capability run is capped at 30 s by the engine; a longer wait means a stuck
+ * operation, and the requester gets a retryable refusal instead of an open-ended hang. */
+export const LANE_QUEUE_WAIT_MS=30000;
+const cancelled=signal=>new EngineError('CANCELLED','Capability invocation was cancelled.',{cause:signal.reason});
+
+/** Bound host engine. A single operation at a time per process (the transient approved-memory view is per operation), but
+ * parallel requests from one harness wait in a bounded FIFO queue instead of failing: at most `depth` are admitted, a waiting
+ * entry leaves when its AbortSignal fires or after `maxWaitMs`, and only a request beyond those bounds gets LANE_BUSY.
+ * Separate lane processes still run side by side. */
+export function bindLaneEngine(engine,store,{depth=LANE_QUEUE_DEPTH,maxWaitMs=LANE_QUEUE_WAIT_MS}={}){
+  if(!Number.isSafeInteger(depth)||depth<1||depth>128||!Number.isSafeInteger(maxWaitMs)||maxWaitMs<1||maxWaitMs>600000)throw new TypeError('INVALID_LANE_QUEUE_OPTIONS');
+  let running=false;const waiting=[];
+  const busy=detail=>({ok:false,data:null,error:'LANE_BUSY',detail});
+  // The seat is handed over without ever clearing `running`, so a newcomer cannot overtake the head of the queue.
+  const release=()=>{const next=waiting.shift();if(next)next.grant();else running=false;};
+  function takeTurn(signal){
+    if(!running){running=true;return null;}
+    if(1+waiting.length>=depth)return Promise.resolve(busy('Lane queue is full ('+depth+' requests admitted); retry when one settles.'));
+    return new Promise((resolve,reject)=>{
+      const entry={grant(){leave();resolve(null);}};
+      const leave=()=>{clearTimeout(timer);signal?.removeEventListener('abort',onAbort);};
+      const drop=()=>{const at=waiting.indexOf(entry);if(at>=0)waiting.splice(at,1);leave();};
+      const onAbort=()=>{drop();reject(cancelled(signal));};
+      const timer=setTimeout(()=>{drop();resolve(busy('Waited '+maxWaitMs+' ms for the lane without a turn; retry.'));},maxWaitMs);
+      signal?.addEventListener('abort',onAbort,{once:true});waiting.push(entry);
+    });
+  }
   return {...engine,
     list:()=>engine.list(),describe:id=>engine.describe(id),
     async invoke(id,args,options){
-      if(active)return {ok:false,data:null,error:'LANE_BUSY',detail:'Este processo atende uma operação por vez; aguarde a conclusão.'};
-      active=true;
+      const signal=options?.signal;
+      if(signal?.aborted)throw cancelled(signal);
+      const refused=await takeTurn(signal);
+      if(refused)return refused;
       try {
         store.beginOperation();
         const result=await engine.invoke(id,args,options);
@@ -82,7 +112,7 @@ export function bindLaneEngine(engine,store){
         if(result.ok&&result.data&&typeof result.data==='object'&&!Array.isArray(result.data))result.data={...result.data,workspace:store.workspaceMetadata()};
         return result;
       } catch(e){if(e.name==='BrainError')return {ok:false,data:null,error:e.code,detail:e.message};throw e;}
-      finally{store.endOperation();active=false;}
+      finally{store.endOperation();release();}
     }
   };
 }
