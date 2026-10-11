@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { ensure, hash, identifier, now } from '../primitives.mjs';
 import { safeDirectory } from '../host.mjs';
+import { ensureWalMode } from '../sqlite-init.mjs';
 
 export const LANE_SCHEMA = 1;
 const schema = `
@@ -48,7 +49,7 @@ export class LaneRegistry {
     this.db=new DatabaseSync(file);
     try {
       if(process.platform!=='win32')fs.chmodSync(file,0o600);
-      this.db.exec('PRAGMA busy_timeout=1500; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
+      this.db.exec('PRAGMA busy_timeout=1500;');ensureWalMode(this.db,1500);this.db.exec('PRAGMA synchronous=FULL;');
       const validate=()=>{
         ensure(this.db.prepare('PRAGMA user_version').get().user_version===LANE_SCHEMA,'LANE_SCHEMA_VERSION');
         ensure(this.db.prepare("SELECT value FROM lane_meta WHERE key='schema'").get()?.value===schemaHash,'LANE_SCHEMA_HASH');

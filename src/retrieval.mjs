@@ -93,38 +93,62 @@ function replaceFile(store,project,file,content){
 }
 function megabytes(bytes){return (bytes/1048576).toFixed(1)+' MiB';}
 
+// Escrita do índice em lotes curtos: o lock de escrita do banco é segurado só durante os INSERTs de um lote, nunca durante leitura de arquivos.
+const INDEX_BATCH_FILES=250, INDEX_BATCH_BYTES=4*1048576;
 /**
  * Reconcilia o índice com a worktree. Um arquivo por vez: a memória não cresce com o repositório.
  * Arquivo inalterado (mesmo hash) mantém seus trechos. Nada é executado; nada sai da máquina.
+ * Duas fases: (1) varredura sem lock de escrita (lê e confere cada arquivo, aplica os tetos; só guarda caminho e hash), de modo que
+ * recusas não alteram nada; (2) gravação dos arquivos que mudaram em lotes curtos. Cada lote publica o snapshot calculado sobre o
+ * manifesto realmente indexado, então todo estado confirmado tem snapshot coerente com seus arquivos; a remoção dos que sumiram e o
+ * snapshot final saem numa última transação. Falha no meio deixa um índice coerente que a próxima chamada completa.
  */
 export function indexProject(store, project, override) {
   const limits=resolveLimits(override), {root}=store.project(project);
   const names=[...new Set(candidates(root,limits).filter(included).map(x=>x.replaceAll('\\','/')))].sort();
-  return store.transaction(()=>{
-    const previous=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
-    const entries=[], skipped=[], skippedByReason={};let totalBytes=0,changed=0,reused=0,removed=0;
-    for(const relative of names){
-      let file;
-      try{file=readSafe(root,relative,limits.maxFileBytes);}
-      catch(e){
-        if(!skippable.has(e.code))throw e;
-        // Checkout esparso lista caminhos que não estão no disco: conta, mas não infla a resposta.
-        skippedByReason[e.code]=(skippedByReason[e.code]||0)+1;if(skipped.length<100)skipped.push({path:relative,reason:e.code});continue;
-      }
-      // O teto conta arquivos lidos de fato, não caminhos listados pelo Git.
-      ensure(entries.length<limits.maxFiles,'INDEX_FILE_LIMIT','Mais de '+limits.maxFiles+' arquivos elegíveis. Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxFiles+'.');
-      totalBytes+=file.bytes;
-      ensure(totalBytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' (em '+relative+'). Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxBytes+'.');
-      entries.push({path:relative,hash:file.hash});
-      if(previous.get(relative)===file.hash){reused++;continue;}
-      replaceFile(store,project,relative,file);changed++;
+  const previous=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
+  const entries=[], skipped=[], skippedByReason={};let totalBytes=0;
+  for(const relative of names){
+    let file;
+    try{file=readSafe(root,relative,limits.maxFileBytes);}
+    catch(e){
+      if(!skippable.has(e.code))throw e;
+      // Checkout esparso lista caminhos que não estão no disco: conta, mas não infla a resposta.
+      skippedByReason[e.code]=(skippedByReason[e.code]||0)+1;if(skipped.length<100)skipped.push({path:relative,reason:e.code});continue;
     }
-    const present=new Set(entries.map(x=>x.path));
-    for(const old of previous.keys())if(!present.has(old)){removeFile(store,project,old);removed++;}
-    const snapshot=snapshotOf(entries);
-    store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);
-    const result={project,snapshot,files:entries.length,changed,reused,removed,bytes:totalBytes,skipped,skippedByReason,limits,scope:'supported-text-files',automaticWatcher:false};
-    store.event(project,'index.completed',{snapshot,files:entries.length,changed,reused,removed}); return result;
+    // O teto conta arquivos lidos de fato, não caminhos listados pelo Git.
+    ensure(entries.length<limits.maxFiles,'INDEX_FILE_LIMIT','Mais de '+limits.maxFiles+' arquivos elegíveis. Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxFiles+'.');
+    totalBytes+=file.bytes;
+    ensure(totalBytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' (em '+relative+'). Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxBytes+'.');
+    entries.push({path:relative,hash:file.hash});
+  }
+  const present=new Set(entries.map(x=>x.path)), stale=entries.filter(x=>previous.get(x.path)!==x.hash);
+  const publish=()=>{const snapshot=snapshotOf(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project));store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);return snapshot;};
+  let changed=0;
+  for(let at=0;at<stale.length;){
+    const batch=[];let batchBytes=0;
+    while(at<stale.length&&batch.length<INDEX_BATCH_FILES&&batchBytes<INDEX_BATCH_BYTES){
+      const {path:relative}=stale[at++];
+      let file=null;
+      // O arquivo é lido de novo aqui, fora do lock: vale o conteúdo de agora, mesmo que tenha mudado desde a varredura.
+      try{file=readSafe(root,relative,limits.maxFileBytes);batchBytes+=file.bytes;}catch(e){if(!skippable.has(e.code))throw e;}
+      batch.push({relative,file});
+    }
+    store.transaction(()=>{
+      for(const {relative,file} of batch){
+        const known=store.stmt('SELECT hash FROM files WHERE project=? AND path=?').get(project,relative);
+        if(!file){if(known)removeFile(store,project,relative);}
+        else if(known?.hash!==file.hash){replaceFile(store,project,relative,file);changed++;}
+      }
+      publish();
+    });
+  }
+  return store.transaction(()=>{
+    let removed=0;
+    for(const {path:old} of store.stmt('SELECT path FROM files WHERE project=?').all(project))if(!present.has(old)){removeFile(store,project,old);removed++;}
+    const snapshot=publish(), files=store.stmt('SELECT count(*) AS n FROM files WHERE project=?').get(project).n;
+    const result={project,snapshot,files,changed,reused:entries.length-stale.length,removed,bytes:totalBytes,skipped,skippedByReason,limits,scope:'supported-text-files',automaticWatcher:false};
+    store.event(project,'index.completed',{snapshot,files,changed,reused:result.reused,removed}); return result;
   });
 }
 

@@ -37,13 +37,12 @@ A primeira leitura do conjunto aprovado ocorre numa transação de leitura centr
 
 Na publicação do evento de contexto:
 
-1. Abrir transação do registro e confirmar a lane ativa.
-2. Reservar a escrita na autoridade central para serializar com aprovação/revogação.
-3. Recalcular a revisão e recusar se divergir da capturada.
-4. Confirmar o evento do pacote no banco da lane, anotando revisão e epoch.
-5. Liberar as transações centrais e devolver o resultado.
+1. Abrir a transação de escrita do banco da lane e gravar o evento (a espera por esse lock, que um índice grande em outro processo pode segurar por segundos, ocorre **sem** nenhum lock compartilhado).
+2. Imediatamente antes do COMMIT da lane, abrir a transação do registro e confirmar que a lane e a epoch continuam ativas.
+3. Reservar a escrita na autoridade central para serializar com aprovação/revogação e recalcular a revisão; recusar se divergir da capturada.
+4. Confirmar o evento no banco da lane, anotando revisão e epoch, e liberar as transações do registro e da autoridade (que não gravam nada).
 
-A ordem global é **registro → autoridade → lane**. Nenhuma etapa de inferência, indexação ou leitura de arquivos do compilador ocorre dentro dessas transações de publicação. As esperas de SQLite continuam síncronas; busy timeouts individuais não constituem um limite rígido de tempo total da operação. Uma aprovação concorrente pode causar recusa conservadora ou espera.
+A ordem global é **lane → registro → autoridade**; nada que segura o registro ou a autoridade espera pelo banco de uma lane (nenhum caminho abre o banco da lane depois deles), então não há ciclo entre processos. Fechar uma lane (`retire`) também toma o registro: ou termina antes do passo 2, e então a escrita é desfeita com `LANE_NOT_ACTIVE`, ou espera o COMMIT terminar. Nenhuma escrita sobrevive numa epoch encerrada. (Validar a lane fora da transação e escrever depois deixaria essa janela aberta; `test/lanes-locking.test.mjs` a exercita.) Nenhuma etapa de inferência, indexação ou leitura de arquivos do compilador ocorre dentro dessas transações de publicação. As esperas de SQLite continuam síncronas; busy timeouts individuais não constituem um limite rígido de tempo total da operação, e um timeout vira o erro tipado repetível `STORE_BUSY`. Uma aprovação concorrente pode causar recusa conservadora ou espera.
 
 **Isso não é um commit atômico entre três bancos.** O único dado novo nessa publicação é o evento da lane. Um crash após seu commit e antes da entrega pode deixar um evento sem resposta recebida; compilar não prova entrega nem cobrança. O protocolo não afirma exatamente uma vez para a entrega de contexto. Checkpoints usam o ledger idempotente do núcleo para replays da mesma chave.
 
@@ -53,9 +52,9 @@ A linearização da revisão é anterior à entrega de rede/stdio. Uma revogaç�
 
 Indexação de A escreve no banco de A; não disputa o writer do índice B ou mantém o writer da memória global durante a varredura. O custo de dois índices semelhantes é armazenamento duplicado e algum parse repetido. Essa troca intencional prioriza correção e concorrência antes de deduplicação global.
 
-Publicação de contexto e checkpoints têm seções curtas serializadas pelo registro. Checkpoint ainda consulta metadados Git e usa o caminho síncrono do núcleo, portanto não declaramos que toda reserva do registro seja livre de I/O. A otimização futura é separar observação prévia, condição de versão e commit, acompanhada de testes que mostrem ausência de janela incorreta.
+Publicação de contexto e checkpoints esperam primeiro o lock de escrita do banco da lane e só seguram o registro (e a autoridade) em volta do COMMIT, como descrito acima. A consulta ao Git do checkpoint ocorre antes da transação, sem lock algum. Uma lane que espera seu próprio banco (por exemplo, enquanto outro processo indexa) não atrasa as outras lanes nem a autoridade.
 
-No processo de uma lane, o wrapper aceita uma invocação de cada vez. Isso protege a visão transiente de memória contra interferência entre awaits. Outra conexão/processo pode trabalhar em outra lane em paralelo. Dois clientes escrevendo na mesma tarefa da mesma lane recebem conflitos de versão normais; não existe merge automático de texto de checkpoint.
+No processo de uma lane, o wrapper executa uma invocação de cada vez (as demais esperam numa fila FIFO limitada). Isso protege a visão transiente de memória contra interferência entre awaits. Outra conexão/processo pode trabalhar em outra lane em paralelo. Dois clientes escrevendo na mesma tarefa da mesma lane recebem conflitos de versão normais; não existe merge automático de texto de checkpoint.
 
 A abertura do `BrainStore` atual foi ajustada para validar o schema em transação de leitura quando não há migração. Migrações e criação continuam usando escrita. Reutiliza o princípio examinado no PR MEDIUM sem trazer todos os recursos daquele PR. O schema v2 e seu hash permanecem inalterados.
 

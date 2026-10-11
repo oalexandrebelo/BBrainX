@@ -5,8 +5,9 @@ import os from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
-import {LayaBroker,findPython} from '../src/laya.mjs';
+import {LayaBroker,LayaTransportBroker,findPython} from '../src/laya.mjs';
 const worker=fileURLToPath(new URL('./fixtures/laya-protocol-worker.mjs',import.meta.url));
+const envWorker=fileURLToPath(new URL('./fixtures/env-report-worker.mjs',import.meta.url));
 const question={kind:{type:'choice',instructions:'Classify this text.',criteria:{bug:'a bug',docs:'documentation'}}};
 function broker(t,mode='normal',options={}){const instance=new LayaBroker({command:[process.execPath,worker,mode],startMs:2000,deadlineMs:3000,...options});t.after(()=>instance.stop());return instance;}
 async function within(promise,ms=1000){let timer;try{return await Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Unresolved broker operation')),ms);})]);}finally{clearTimeout(timer);}}
@@ -60,7 +61,11 @@ test('invalid inputs refuse before starting a worker and bound the entire JSON r
     [Array(64).fill('\\'.repeat(50000)),question]
   ])assert.deepEqual(await b.decide(states,questions,options),{ok:false,reason:'INVALID_INPUT'});
   assert.equal(b.info,null);
-  const reply=await b.decide(Array(64).fill('x'),Object.fromEntries(Array.from({length:16},(_,i)=>['q'+i,{type:'noul',instructions:'yes?'}])));
+  // Intentional contract change (unified worker.py envelope, <=128 rows): 64 states x 16 questions = 1024 rows used to be admitted
+  // and is now refused locally, because the worker would refuse it and the refusal would count toward the circuit breaker.
+  const noulQuestions=count=>Object.fromEntries(Array.from({length:count},(_,i)=>['q'+i,{type:'noul',instructions:'yes?'}]));
+  assert.deepEqual(await b.decide(Array(64).fill('x'),noulQuestions(16)),{ok:false,reason:'INVALID_INPUT'});assert.equal(b.info,null);
+  const reply=await b.decide(Array(64).fill('x'),noulQuestions(2));
   assert.equal(reply.ok,true);assert.equal(reply.results.length,64);
 });
 test('malformed, oversized and invalid UTF8 output fail closed without exposing raw bytes',async t=>{
@@ -128,4 +133,25 @@ test('scores and probability labels obey declared criteria, including upstream r
   for(const state of ['negative-score','high-score','bad-score-keys'])assert.deepEqual(await broker(t).decide([state],score),{ok:false,reason:'INVALID_RESPONSE'});
   assert.equal((await broker(t).decide(['valid-probabilities'],score,{maxLen:256})).ok,true);
   assert.equal((await broker(t).decide(['valid-probabilities'],question,{maxLen:8192})).ok,true);
+});
+test('both brokers spawn the worker with the same sanitized environment: no provider keys, injection flags or Python path',async t=>{
+  const injected={OPENAI_API_KEY:'test-secret-openai',ANTHROPIC_API_KEY:'test-secret-anthropic',NODE_OPTIONS:'--no-warnings',PYTHONPATH:'/test/injected/path',
+    PYTHONHOME:'/test/injected/home',HF_TOKEN:'test-secret-hf',AWS_SECRET_ACCESS_KEY:'test-secret-aws'};
+  const saved=Object.fromEntries(Object.keys(injected).map(name=>[name,process.env[name]]));
+  t.after(()=>{for(const name of Object.keys(injected))if(saved[name]===undefined)delete process.env[name];else process.env[name]=saved[name];});
+  Object.assign(process.env,injected);
+  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-laya-env-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
+  const noul={q:{type:'noul',instructions:'Transport only.'}},seen={};
+  for(const [label,Broker] of [['LayaBroker',LayaBroker],['LayaTransportBroker',LayaTransportBroker]]){
+    const report=path.join(directory,label+'.json'),instance=new Broker({command:[process.execPath,envWorker,report],startMs:2000,deadlineMs:3000});
+    t.after(async()=>{await instance.stop();});
+    const reply=await instance.decide(['probe'],noul);assert.equal(reply.ok,true,label+' must complete a request');
+    const dump=fs.readFileSync(report,'utf8');
+    for(const value of Object.values(injected))assert.ok(!dump.includes(value),label+' leaked an injected value');
+    const {env,execArgv}=JSON.parse(dump);seen[label]=env;
+    for(const name of Object.keys(injected))assert.ok(!Object.hasOwn(env,name),label+' inherited '+name);
+    assert.deepEqual(execArgv,[],label+' must not receive injected node flags');
+    assert.equal(env.HF_HUB_OFFLINE,'1');assert.equal(env.TRANSFORMERS_OFFLINE,'1');assert.equal(env.PYTHONNOUSERSITE,'1');assert.ok(env.PATH,label+' keeps PATH');
+  }
+  assert.deepEqual(seen.LayaTransportBroker,seen.LayaBroker,'both paths share one environment policy');
 });

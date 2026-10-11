@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { canonical, ensure, hash, identifier, newId, now, text } from './primitives.mjs';
 import { gitState, safeDirectory, stateHome } from './host.mjs';
-import { rollbackAfterFailure } from './sqlite-init.mjs';
+import { ensureWalMode, rollbackAfterFailure } from './sqlite-init.mjs';
 import { verifyRoot } from './source-root.mjs';
 
 // Estado durável: não pode ser reconstruído a partir da worktree.
@@ -75,9 +75,12 @@ export class BrainStore {
     if (fs.existsSync(file)) ensure(!fs.lstatSync(file).isSymbolicLink(), 'UNSAFE_DB_PATH');
     this.db = new DatabaseSync(file);
     if (process.platform !== 'win32') fs.chmodSync(file, 0o600);
-    // O tempo de espera vem primeiro: trocar o modo do journal já disputa a trava com outros processos.
-    this.db.exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
     try {
+      // Trocar o journal para WAL num banco novo disputa a trava com outros processos e o busy handler não cobre esse caso
+      // ("database is locked" na partida simultânea): a troca é repetida com prazo em ensureWalMode.
+      this.db.exec('PRAGMA busy_timeout=5000; PRAGMA foreign_keys=ON;');
+      ensureWalMode(this.db, 5000);
+      this.db.exec('PRAGMA synchronous=FULL;');
       // VACUUM INTO não roda dentro de transação: a cópia de segurança vem antes; a troca de schema, atômica, depois.
       if (this.#version() === 1) this.#backupV1();
       if (this.#version() === SCHEMA_VERSION) {
@@ -121,9 +124,11 @@ export class BrainStore {
     if (!statement) { statement = this.db.prepare(sql); this.#statements.set(sql, statement); }
     return statement;
   }
-  transaction(fn) {
+  /** `commitGate(commit)`, when given, runs the COMMIT itself (and may refuse it by throwing, which rolls back): a caller that needs
+   * another lock only across the commit takes it there instead of holding it while this write lock is still being waited for. */
+  transaction(fn, commitGate) {
     this.db.exec('BEGIN IMMEDIATE');
-    try { const result = fn(); this.db.exec('COMMIT'); return result; }
+    try { const result = fn(); if (commitGate) commitGate(() => this.db.exec('COMMIT')); else this.db.exec('COMMIT'); return result; }
     catch (e) { rollbackAfterFailure(this); throw e; }
   }
   event(project, type, payload) {
@@ -162,12 +167,12 @@ export class BrainStore {
     this.project(project);
     return this.db.prepare("SELECT count(*) AS total FROM memories WHERE project=? AND status='approved'").get(project).total;
   }
-  commitContextEvent(project, payload) { this.transaction(() => this.event(project, 'context.compiled', payload)); }
+  commitContextEvent(project, payload, commitGate) { this.transaction(() => this.event(project, 'context.compiled', payload), commitGate); }
   /**
    * Grava o estado de uma tarefa. `snapshot` declarado precisa ser o do índice atual; omitido, o host carimba o atual.
    * `host` (snapshot, Git, hora) é observado aqui e nunca aceito do chamador.
    */
-  checkpoint(project, task, content, expectedVersion, key) {
+  checkpoint(project, task, content, expectedVersion, key, commitGate) {
     const {root} = this.project(project); identifier(task); identifier(key);
     ensure(Number.isSafeInteger(expectedVersion) && expectedVersion >= 0, 'INVALID_VERSION');
     const declared = normalizeCheckpoint(content), fingerprint = hash({task, content:declared, expectedVersion});
@@ -192,7 +197,7 @@ export class BrainStore {
       this.db.prepare('INSERT INTO idempotency VALUES(?,?,?,?,?)').run(project, 'checkpoint', key, fingerprint, canonical(response));
       this.event(project, 'checkpoint.created', {task, version, snapshot, gitHead:host.git?.head || null});
       return response;
-    });
+    }, commitGate);
   }
   /** Já existe resposta gravada para esta chave? Permite repetir uma chamada sem refazer efeitos anteriores a ela. */
   hasCheckpointKey(project, key) {

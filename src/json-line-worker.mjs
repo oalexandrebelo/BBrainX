@@ -1,12 +1,14 @@
 import { spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
+import { workerEnv } from './worker-env.mjs';
 
 const LIMIT = 8 * 1024 * 1024;
 const validMs = ms => Number.isSafeInteger(ms) && ms > 0 && ms <= 300000;
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 /** Canal de um worker cooperativo: um pedido em voo; nenhuma fila de trabalho oculta.
- * Só o host escolhe command/args. Não é uma sandbox nem supervisor de descendentes.
+ * Só o host escolhe command/args; o ambiente do filho é sempre o saneado de worker-env.mjs (sem credenciais, PYTHONPATH ou NODE_OPTIONS).
+ * Não é uma sandbox nem supervisor de descendentes.
  * A vaga pertence à geração até observar `close`, não até `kill()` retornar true.
  */
 export class JsonLineWorker {
@@ -104,7 +106,7 @@ export class JsonLineWorker {
   async #launch() {
     const [command, ...args] = this.#command;
     let child;
-    try { child = spawn(command, args, { stdio: ['pipe', 'pipe', 'ignore'], shell: false, windowsHide: true }); }
+    try { child = spawn(command, args, { stdio: ['pipe', 'pipe', 'ignore'], shell: false, windowsHide: true, env: workerEnv() }); }
     catch { return false; }
     const gen = { child, number: ++this.#sequence, status: 'starting', ready: null, used: 0,
       buffer: Buffer.allocUnsafe(Math.min(4096, this.#maxBytes)), waiter: null };
