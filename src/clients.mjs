@@ -44,7 +44,7 @@ export function clientConfig(client,{node,entry,project,home}){
   if(client==='codex')return codexRegistration({node,args,home,project});
   if(client==='cursor')return '# Cursor — cole em .cursor/mcp.json (projeto) ou ~/.cursor/mcp.json\n'+json({mcpServers:{bbrainx:{type:'stdio',...server}}});
   if(client==='vscode')return '# VS Code — cole em .vscode/mcp.json\n'+json({servers:{bbrainx:{type:'stdio',...server}}});
-  if(client==='gemini')return '# Gemini CLI — cole em ~/.gemini/settings.json (ou .gemini/settings.json do projeto)\n'+json({mcpServers:{bbrainx:server}});
+  if(client==='gemini')return '# Gemini CLI — cole em ~/.gemini/settings.json (global; o nome leva o projeto, então cada projeto tem a sua entrada) ou em .gemini/settings.json do projeto\n'+json({mcpServers:{[projectServerName(project)]:server}});
   if(client==='antigravity')return ['# Antigravity (IDE e CLI agy). Escopo de USUÁRIO: mescle esta entrada em ~/.gemini/config/mcp_config.json e preserve os servidores que já existem;',
     '# `agy mcp add` grava nesse mesmo arquivo. O cliente descobre o servidor em todas as janelas, mas ele serve só o projeto indicado em --project; o nome leva o projeto.',
     '# O arquivo de workspace .agents/mcp_config.json não foi descoberto pelo Antigravity IDE 2.5.5 (docs/MAC_MINI_HARNESSES.md).'].join('\n')+'\n'+json({mcpServers:{[projectServerName(project)]:server}});

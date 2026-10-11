@@ -146,7 +146,10 @@ test('each client gets its own configuration shape, with paths that survive spac
   const jsonOf=textValue=>JSON.parse(textValue.slice(textValue.indexOf('{')));
   assert.deepEqual(jsonOf(clientConfig('cursor',options)).mcpServers.bbrainx,{type:'stdio',command:'/opt/node',args:[options.entry,'mcp','--project','app'],env:{BBRAINX_HOME:options.home}});
   assert.equal(jsonOf(clientConfig('vscode',options)).servers.bbrainx.type,'stdio');
-  assert.deepEqual(jsonOf(clientConfig('gemini',options)).mcpServers.bbrainx.args,[options.entry,'mcp','--project','app']);
+  // ~/.gemini/settings.json é global: a chave leva o projeto, para dois projetos não se sobrescreverem.
+  assert.deepEqual(Object.keys(jsonOf(clientConfig('gemini',options)).mcpServers),['bbrainx-app']);
+  assert.deepEqual(jsonOf(clientConfig('gemini',options)).mcpServers['bbrainx-app'].args,[options.entry,'mcp','--project','app']);
+  assert.notDeepEqual(Object.keys(jsonOf(clientConfig('gemini',{...options,project:'other'})).mcpServers),Object.keys(jsonOf(clientConfig('gemini',options)).mcpServers));
   assert.deepEqual(jsonOf(clientConfig('antigravity',options)),{mcpServers:{'bbrainx-app':{command:options.node,args:[options.entry,'mcp','--project','app'],env:{BBRAINX_HOME:options.home}}}});
   assert.deepEqual(jsonOf(clientConfig('kilo',options)),{mcp:{bbrainx:{type:'local',command:[options.node,options.entry,'mcp','--project','app'],environment:{BBRAINX_HOME:options.home},enabled:true,timeout:60000}}});
   const claude=clientConfig('claude',options);
