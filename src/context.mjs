@@ -4,6 +4,15 @@ import { isFresh, refreshFiles, search } from './retrieval.mjs';
 import { queryTerms } from './analyze.mjs';
 
 export function tokenCount(value){return encode(value,{disallowedSpecial:new Set()}).length;}
+// O hash completo continua em sources[].hash; no texto lido pelo modelo bastam 12 hex (48 bits) para conferir o arquivo.
+const section=item=>'\n\n---\n'+item.path+':'+item.start_line+'-'+item.end_line+' [sha256:'+item.file_hash.slice(0,12)+']\n'+item.body;
+/** Piso de relevância (fração do melhor score) abaixo do qual um trecho não entra no pacote; o melhor trecho de código e o melhor de documentação nunca são cortados. Vem do host, nunca de argumento de ferramenta; 0 desliga. */
+export function minRelevance(env=process.env){
+  const raw=env.BBRAINX_PACK_MIN_RELEVANCE===undefined||env.BBRAINX_PACK_MIN_RELEVANCE===''?0.3:Number(env.BBRAINX_PACK_MIN_RELEVANCE);
+  ensure(Number.isFinite(raw)&&raw>=0&&raw<=1,'INVALID_LIMIT','BBRAINX_PACK_MIN_RELEVANCE precisa estar entre 0 e 1.');
+  return raw;
+}
+const KEEP_AT_LEAST=2;
 export const SEARCH_BUDGET=4000, SEARCH_POINTERS=25;
 const pointer=item=>item.path+':'+item.start_line+'-'+item.end_line;
 /**
@@ -80,24 +89,26 @@ export function compileContext(store,{project,query,budget=4000,task,onStale='re
   if(process.env.BBRAINX_MEASURE_CONTEXT==='1'){
     const parts=[rendered];let referenceBytes=Buffer.byteLength(rendered);
     for(const item of result.items){
-      const part='\n\n---\n'+item.path+':'+item.start_line+'-'+item.end_line+' [sha256:'+item.file_hash+']\n'+item.body;
+      const part=section(item);
       referenceBytes+=Buffer.byteLength(part);if(referenceBytes>65536)break;parts.push(part);
     }
     if(referenceBytes<=65536)referenceTokens=tokenCount(parts.join(''));
   }
-  const served=[],seen=new Set();let sourcesOmittedByBudget=0,docTokens=0;
+  const served=[],seen=new Set(),floor=minRelevance()*(result.items[0]?.score??0), bestOfKind=new Set([result.items.find(item=>item.kind==='doc'),result.items.find(item=>item.kind!=='doc')]);let sourcesOmittedByBudget=0,sourcesOmittedByRelevance=0,docTokens=0;
   // Documentação fica com no máximo metade do orçamento enquanto houver código candidato: o pacote leva a explicação e a implementação.
   const hasCode=result.items.some(item=>item.kind!=='doc');
   for(const item of result.items){
     const digest=hash(item.body);if(seen.has(digest))continue;
-    const section='\n\n---\n'+item.path+':'+item.start_line+'-'+item.end_line+' [sha256:'+item.file_hash+']\n'+item.body, cost=item.kind==='doc'?tokenCount(section):0;
+    // Cauda de baixa relevância não paga tokens: os dois melhores trechos sempre entram.
+    if(served.length>=KEEP_AT_LEAST&&item.score<floor&&!bestOfKind.has(item)){sourcesOmittedByRelevance++;continue;}
+    const part=section(item), cost=item.kind==='doc'?tokenCount(part):0;
     if(hasCode&&docTokens+cost>budget/2){sourcesOmittedByBudget++;continue;}
-    const proposedTokens=tokenCount(rendered+section);
+    const proposedTokens=tokenCount(rendered+part);
     if(proposedTokens>budget){sourcesOmittedByBudget++;continue;}
     renderedTokens=proposedTokens;
-    docTokens+=cost;seen.add(digest);served.push({id:item.id,path:item.path,startLine:item.start_line,endLine:item.end_line,hash:item.file_hash,kind:item.kind});rendered+=section;
+    docTokens+=cost;seen.add(digest);served.push({id:item.id,path:item.path,startLine:item.start_line,endLine:item.end_line,hash:item.file_hash,kind:item.kind});rendered+=part;
   }
-  const payload={project,snapshot:meta.snapshot,text:rendered,sources:served,payloadTokens:renderedTokens,budget,encoding:'o200k_base',providerInputTokens:null,providerCacheTokens:null,billingSavings:null,selection:'lexical-ranked-with-doc-quota',coverageComplete:false,selectedFilesVerified:true,refreshedFiles:[...refreshed].sort(),sourcesOmittedByBudget,memoriesOmitted,checkpointTrimmed,checkpointStale:!!checkpoint&&checkpoint.content.snapshot!==meta.snapshot};
+  const payload={project,snapshot:meta.snapshot,text:rendered,sources:served,payloadTokens:renderedTokens,budget,encoding:'o200k_base',providerInputTokens:null,providerCacheTokens:null,billingSavings:null,selection:'lexical-ranked-with-doc-quota',coverageComplete:false,selectedFilesVerified:true,refreshedFiles:[...refreshed].sort(),sourcesOmittedByBudget,sourcesOmittedByRelevance,memoriesOmitted,checkpointTrimmed,checkpointStale:!!checkpoint&&checkpoint.content.snapshot!==meta.snapshot};
   const packId=hash({text:rendered,encoding:payload.encoding});
   store.commitContextEvent(project,{packId,payloadTokens:payload.payloadTokens,sourceCount:served.length,measurementVersion:'candidate-window-v1',referenceTokens,snapshot:meta.snapshot,refreshed:refreshed.size});
   return {packId,...payload};

@@ -5,6 +5,7 @@ import { BrainStore } from '../src/store.mjs';
 import { indexProject, search } from '../src/retrieval.mjs';
 import * as context from '../src/context.mjs';
 import { makeEngine } from '../src/engine.mjs';
+import { compileContext, minRelevance } from '../src/context.mjs';
 
 // Custo em tokens do que o modelo recebe de context_search: teto por orçamento, restante como ponteiros path:linhas.
 const { tokenCount } = context;
@@ -20,6 +21,7 @@ const filler=count=>Array.from({length:count},(_,line)=>'  const step'+line+' = 
 const ranked=()=>Object.fromEntries(Array.from({length:10},(_,i)=>['src/f'+i+'.ts','export function f'+i+'(){\n'+('  // alpha note\n'.repeat(10-i))+filler(40)+'\n}\n']));
 const principal={principal:{id:'tester'}};
 const json=value=>tokenCount(JSON.stringify(value));
+async function withEnv(name,value,fn){const before=process.env[name];if(value===undefined)delete process.env[name];else process.env[name]=value;try{return await fn();}finally{if(before===undefined)delete process.env[name];else process.env[name]=before;}}
 
 test('context.search through the engine is capped at 4000 tokens by default and a larger budget serves every hit',async t=>{
   const {store}=workspace(t,ranked());const engine=makeEngine(store,['test']);
@@ -64,6 +66,31 @@ test('the command line search obeys --budget as the tool does',t=>{
   const run=(...args)=>{const result=spawnSync(process.execPath,[fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),'search','--project','test','--query','alpha',...args],{encoding:'utf8',env:{...process.env,BBRAINX_HOME:path.join(dir,'state')}});assert.equal(result.status,0,result.stderr);return JSON.parse(result.stdout);};
   const small=run('--budget','256'), standard=run(), large=run('--budget','16000');
   assert.equal(small.items.length,1);assert.equal(small.omitted,9);assert.ok(standard.items.length>small.items.length&&standard.items.length<10);assert.equal(large.items.length,10);
+});
+
+// ── pacote de contexto: cabeçalho curto e piso de relevância ───────────────
+test('the pack header carries a 12-hex file hash that is a prefix of the full hash in sources',t=>{
+  const {store}=workspace(t,ranked());const pack=compileContext(store,{project:'test',query:'alpha',budget:2000});
+  const headers=[...pack.text.matchAll(/^---\n(\S+):(\d+)-(\d+) \[sha256:([0-9a-f]+)\]$/gm)];
+  assert.equal(headers.length,pack.sources.length);assert.ok(headers.length>0);
+  headers.forEach((header,i)=>{assert.equal(header[4].length,12);assert.equal(pack.sources[i].hash.length,64);assert.ok(pack.sources[i].hash.startsWith(header[4]));});
+  assert.equal(pack.payloadTokens,tokenCount(pack.text));
+});
+test('the relevance floor drops the low-score tail but never the best code or the best document',async t=>{
+  const files={...ranked(),'docs/alpha.md':'# alpha\nalpha note.\n'};
+  const {store}=workspace(t,files);
+  const open=await withEnv('BBRAINX_PACK_MIN_RELEVANCE','0',()=>compileContext(store,{project:'test',query:'alpha',budget:16000}));
+  const strict=await withEnv('BBRAINX_PACK_MIN_RELEVANCE','1',()=>compileContext(store,{project:'test',query:'alpha',budget:16000}));
+  assert.equal(open.sourcesOmittedByRelevance,0);assert.ok(open.sources.length>strict.sources.length);
+  assert.equal(strict.sourcesOmittedByRelevance,open.sources.length-strict.sources.length);
+  assert.ok(strict.sources.some(x=>x.kind==='doc'),'the best document survives the floor');
+  assert.ok(strict.sources.some(x=>x.kind!=='doc'),'the best code section survives the floor');assert.ok(strict.sources.length>=2,'the two best sections always enter');
+  assert.ok(strict.payloadTokens<open.payloadTokens);
+});
+test('the relevance floor comes from the host and must be a number from 0 to 1',async t=>{
+  const {store}=workspace(t,ranked());
+  assert.equal(minRelevance({}),0.3);assert.equal(minRelevance({BBRAINX_PACK_MIN_RELEVANCE:''}),0.3);assert.equal(minRelevance({BBRAINX_PACK_MIN_RELEVANCE:'0'}),0);
+  for(const bad of ['2','-0.1','abc'])await withEnv('BBRAINX_PACK_MIN_RELEVANCE',bad,()=>assert.throws(()=>compileContext(store,{project:'test',query:'alpha'}),{code:'INVALID_LIMIT'},bad));
 });
 
 // ── esquemas anunciados em tools/list ──────────────────────────────────────
