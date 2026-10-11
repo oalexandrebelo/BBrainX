@@ -71,7 +71,7 @@ test('missing build does not initialize state or download dependencies',async t=
  assert.equal(h.status.state,'missing-assets');assert(!fs.existsSync(path.join(dir,'state')));
 });
 test('panel status runs in source copy without node_modules',t=>{
- const dir=area(t);for(const f of ['scripts/panel.mjs','src/panel/probe.mjs','src/panel/assets.mjs','src/panel/lifecycle.mjs','src/state-home.mjs']){fs.mkdirSync(path.dirname(path.join(dir,f)),{recursive:true});fs.copyFileSync(path.join(root,f),path.join(dir,f));}
+ const dir=area(t);for(const f of ['scripts/panel.mjs','src/panel/probe.mjs','src/panel/assets.mjs','src/panel/lifecycle.mjs','src/state-home.mjs','src/main-module.mjs']){fs.mkdirSync(path.dirname(path.join(dir,f)),{recursive:true});fs.copyFileSync(path.join(root,f),path.join(dir,f));}
  const report=JSON.parse(execFileSync(process.execPath,[path.join(dir,'scripts/panel.mjs'),'status','--port','1'],{encoding:'utf8',timeout:5000}));assert.equal(report.state,'unreachable');assert(!fs.existsSync(path.join(dir,'node_modules')));
 });
 test('real command respects selected port and reports missing build without side effects',t=>{

@@ -1,5 +1,5 @@
 import { parseArgs } from 'node:util';
-import { pathToFileURL } from 'node:url';
+import { isMainModule } from '../src/main-module.mjs';
 import { spawn } from 'node:child_process';
 import { panelTarget } from '../src/panel/probe.mjs';
 import { panelStatus, ensurePanel } from '../src/panel/lifecycle.mjs';
@@ -33,6 +33,6 @@ export async function panelCommand(args=process.argv.slice(2)) {
     if(handle.owned)await stopped;
   }finally{process.removeListener('SIGINT',stop);process.removeListener('SIGTERM',stop);await handle?.close();}
 }
-if(process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url){
+if(isMainModule(import.meta.url)){
   try{await panelCommand();}catch(e){console.error(JSON.stringify({error:e.code==='ERR_MODULE_NOT_FOUND'?'PANEL_DEPENDENCY_MISSING':/^[A-Z_]+$/.test(e.message)?e.message:'PANEL_START_FAILED',hint:'Confira Node/SQLite; instale explicitamente pelo lockfile e execute npm run build. Nenhuma instalação automática foi feita.'}));process.exitCode=1;}
 }

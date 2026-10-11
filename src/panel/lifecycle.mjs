@@ -26,8 +26,11 @@ export function ensurePanel(value,{assetsDir=build,home}={}) {
       store=new BrainStore(home);server=await startServer(store,{port:target.port,assetsDir});
       const status=await panelStatus(target.url,{home});
       if(status.state!=='ready'){await server.close();store.close();return {status,owned:false,close:async()=>{}};}
-      let closed=false;
-      return {status,owned:true,async close(){if(closed)return;closed=true;await server.close();store.close();}};
+      let closing=null;
+      return {status,owned:true,close(){
+        closing??=(async()=>{await server.close();store.close();})();
+        return closing;
+      }};
     }catch(e){
       if(server)await server.close();store?.close();
       if(e.code==='EADDRINUSE'){
