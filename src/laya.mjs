@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { LayaTransport } from './laya-transport.mjs';
+import { LayaTransport, LAYA_ENVELOPE, batchWithinEnvelope } from './laya-transport.mjs';
 import { workerEnv } from './worker-env.mjs';
 import { pipeline } from 'node:stream/promises';
 import { Readable, Transform } from 'node:stream';
@@ -120,9 +120,12 @@ const counter=value=>Number.isSafeInteger(value)&&value>=0;
 const boundedText=value=>typeof value==='string'&&value.length>0&&value.length<=16000;
 const duration=value=>Number.isInteger(value)&&value>0&&value<=2147483647;
 function requestInput(states,questions,maxLen){
-  if(!Array.isArray(states)||states.length<1||states.length>64||states.some(s=>typeof s!=='string'||s.length>50000))return false;
-  if(!plain(questions)||Object.keys(questions).length<1||Object.keys(questions).length>16)return false;
-  if(maxLen!==undefined&&(!Number.isSafeInteger(maxLen)||maxLen<256||maxLen>8192))return false;
+  const E=LAYA_ENVELOPE;
+  if(!Array.isArray(states)||states.length<1||states.length>E.maxStates||states.some(s=>typeof s!=='string'||s.length>E.maxStateChars))return false;
+  if(!plain(questions)||Object.keys(questions).length<1||Object.keys(questions).length>E.maxQuestions)return false;
+  // Stricter floor than the worker's (256 vs minLen); the batch bound is the worker's, so a refusal never trips the breaker.
+  if(maxLen!==undefined&&(!Number.isSafeInteger(maxLen)||maxLen<256||maxLen>E.maxLen))return false;
+  if(!batchWithinEnvelope(states.length,Object.keys(questions).length,maxLen??E.workerDefaultLen))return false;
   for(const [name,q] of Object.entries(questions)){
     if(!/^[A-Za-z][A-Za-z0-9_-]{0,79}$/.test(name)||!plain(q)||Object.keys(q).some(k=>!['type','instructions','criteria'].includes(k)))return false;
     // Empty questions remain compatible with the old broker protocol; new callers declare a type.

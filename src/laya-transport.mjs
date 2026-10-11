@@ -6,6 +6,16 @@ const count = value => value === null || (Number.isSafeInteger(value) && value >
 const probability = value => typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1;
 const finite = value => typeof value === 'number' && Number.isFinite(value);
 
+/** Request admission of profiles/laya/worker.py, in one place for both brokers (LayaTransport and LayaBroker). A test parses worker.py
+ * and fails if these drift. `workerDefaultLen` is what the worker uses when a request omits maxLen. */
+export const LAYA_ENVELOPE = Object.freeze({ maxStates: 64, maxQuestions: 16, maxStateChars: 50000, maxRows: 128, maxBatchTokens: 131072,
+  minLen: 32, maxLen: 8192, workerDefaultLen: 512 });
+/** Rows are states x questions; `length` is the effective maxLen of the request. */
+export const batchWithinEnvelope = (stateCount, questionCount, length) => {
+  const rows = stateCount * questionCount;
+  return rows <= LAYA_ENVELOPE.maxRows && rows * length <= LAYA_ENVELOPE.maxBatchTokens;
+};
+
 /** Verifica o envelope de transporte; não calibra o modelo nem aprova suas escolhas. */
 export function validLayaReply(message, request) {
   if (message?.ok === false) return true; // Falha reportada é devolvida sem detalhe sensível.
@@ -62,10 +72,11 @@ export class LayaTransport {
   async decide(states, questions, options = {}) {
     if (!object(options) || Object.keys(options).some(k => !['maxLen','deadlineMs','signal'].includes(k))) return {ok:false,reason:'INVALID_REQUEST'};
     const {maxLen = 1024, deadlineMs = this.deadlineMs, signal} = options;
-    if (!Array.isArray(states) || states.length < 1 || states.length > 64 || states.some(s => typeof s !== 'string' || s.length > 50000) ||
-        !object(questions) || Object.keys(questions).length < 1 || Object.keys(questions).length > 16 ||
-        !Number.isSafeInteger(maxLen) || maxLen < 32 || maxLen > 8192 ||
-        states.length * Object.keys(questions).length > 128 || states.length * Object.keys(questions).length * maxLen > 131072)
+    const E = LAYA_ENVELOPE;
+    if (!Array.isArray(states) || states.length < 1 || states.length > E.maxStates || states.some(s => typeof s !== 'string' || s.length > E.maxStateChars) ||
+        !object(questions) || Object.keys(questions).length < 1 || Object.keys(questions).length > E.maxQuestions ||
+        !Number.isSafeInteger(maxLen) || maxLen < E.minLen || maxLen > E.maxLen ||
+        !batchWithinEnvelope(states.length, Object.keys(questions).length, maxLen))
       return {ok:false,reason:'INVALID_REQUEST'};
     let request;
     try {

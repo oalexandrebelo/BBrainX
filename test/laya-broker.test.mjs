@@ -61,7 +61,11 @@ test('invalid inputs refuse before starting a worker and bound the entire JSON r
     [Array(64).fill('\\'.repeat(50000)),question]
   ])assert.deepEqual(await b.decide(states,questions,options),{ok:false,reason:'INVALID_INPUT'});
   assert.equal(b.info,null);
-  const reply=await b.decide(Array(64).fill('x'),Object.fromEntries(Array.from({length:16},(_,i)=>['q'+i,{type:'noul',instructions:'yes?'}])));
+  // Intentional contract change (unified worker.py envelope, <=128 rows): 64 states x 16 questions = 1024 rows used to be admitted
+  // and is now refused locally, because the worker would refuse it and the refusal would count toward the circuit breaker.
+  const noulQuestions=count=>Object.fromEntries(Array.from({length:count},(_,i)=>['q'+i,{type:'noul',instructions:'yes?'}]));
+  assert.deepEqual(await b.decide(Array(64).fill('x'),noulQuestions(16)),{ok:false,reason:'INVALID_INPUT'});assert.equal(b.info,null);
+  const reply=await b.decide(Array(64).fill('x'),noulQuestions(2));
   assert.equal(reply.ok,true);assert.equal(reply.results.length,64);
 });
 test('malformed, oversized and invalid UTF8 output fail closed without exposing raw bytes',async t=>{
