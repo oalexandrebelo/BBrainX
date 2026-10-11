@@ -24,7 +24,7 @@ Começar (registra a pasta, indexa e mostra como ligar ao seu harness):
 
 Contexto e busca:
   node bin/bbrainx.mjs index --project nome
-  node bin/bbrainx.mjs search --project nome --query "onde a sessão é validada"
+  node bin/bbrainx.mjs search --project nome --query "onde a sessão é validada" [--budget 4000]
   node bin/bbrainx.mjs context --project nome --query "validação de sessão" --budget 4000 [--task T1] [--strict]
 
 Continuidade e memória:
@@ -128,7 +128,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       store.register('demo',root);const {indexProject}=await import('../src/retrieval.mjs');print(indexProject(store,'demo'));
     }
     else if(command==='index'){const {indexProject}=await import('../src/retrieval.mjs');print(indexProject(store,values.project));}
-    else if(command==='search'){const {search}=await import('../src/retrieval.mjs');print(search(store,values.project,values.query));}
+    else if(command==='search'){const {search}=await import('../src/retrieval.mjs'),{fitSearch}=await import('../src/context.mjs');print(fitSearch(search(store,values.project,values.query),values.budget===undefined?undefined:Number(values.budget)));}
     else if(command==='context'){const {compileContext}=await import('../src/context.mjs');print(compileContext(store,{project:values.project,query:values.query,budget:Number(values.budget||4000),...(values.task?{task:values.task}:{}),onStale:values.strict?'fail':'refresh'}));}
     else if(command==='checkpoint'){ensure(values.file,'FILE_REQUIRED');const {saveCheckpoint}=await import('../src/session.mjs');print(saveCheckpoint(store,{project:values.project,task:values.task,content:JSON.parse(fs.readFileSync(values.file,'utf8')),expectedVersion:Number(values.version||0),idempotencyKey:values.key||newId()}));}
     else if(command==='memory')print(store.memories(values.project));

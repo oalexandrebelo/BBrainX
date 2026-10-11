@@ -96,7 +96,7 @@ async function retrieval(broker,args,store,meta){
   for(let caseIndex=0;caseIndex<cases.length;caseIndex++){
     const item=cases[caseIndex];
     if(!item||typeof item.query!=='string'||!Array.isArray(item.expect))throw Object.assign(new Error(`Consulta ${caseIndex+1} inválida.`),{code:'LAYA_BENCH_DATASET_INVALID'});
-    const items=search(store,args.project,item.query,50).items,head=items.slice(0,args.candidates),tail=items.slice(args.candidates);
+    const items=search(store,args.project,item.query,50,{byFile:false}).items,head=items.slice(0,args.candidates),tail=items.slice(args.candidates);
     const questions={
       yes:{type:'noul',instructions:'Does this file excerpt contain the code or text that answers: "'+item.query+'"?',criteria:{true:'the excerpt implements or explains exactly this',false:'the excerpt is about something else or only mentions it'}},
       fit:{type:'score',instructions:'How well does this file excerpt answer: "'+item.query+'"?',criteria:['unrelated','mentions it in passing','implements or explains exactly this']}

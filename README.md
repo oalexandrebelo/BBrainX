@@ -63,7 +63,7 @@ Esses números medem a posição do arquivo esperado, não tarefa concluída nem
 | MCP | Responsabilidade |
 |---|---|
 | `context_bootstrap` | Montar um pacote com orçamento de tokens, com caminho, linhas e hash de cada trecho. |
-| `context_search` | Buscar no índice; a declaração de um nome vem antes dos usos e dos testes. |
+| `context_search` | Buscar no índice; a declaração de um nome vem antes dos usos e dos testes. Um acerto por arquivo e no máximo `budget` tokens (padrão 4000); o que não cabe volta como `caminho:linhas`. |
 | `context_index` | Atualizar o índice da pasta registrada. |
 | `session_checkpoint` | Salvar o estado da tarefa: o que foi feito, decisões, arquivos tocados, evidências. |
 | `session_get` | Recuperar o checkpoint, em outro harness ou em outra sessão. |

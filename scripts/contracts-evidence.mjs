@@ -7,6 +7,7 @@ import assert from 'node:assert/strict';
 import { BrainStore } from '../src/store.mjs';
 import { indexProject, search } from '../src/retrieval.mjs';
 import { compileContext } from '../src/context.mjs';
+import { withCurrentFormat } from './pack-format.mjs';
 
 const BASE='a9636e9402e3fa673ae05b3489202da1048aef5e', out='artifacts/core-contracts';
 fs.mkdirSync(out,{recursive:true});
@@ -20,13 +21,14 @@ assert(!fs.existsSync(baselinePath),'BASELINE_PATH_EXISTS');
 const root=fs.mkdtempSync(path.join(os.tmpdir(),'bb-contract-io-'));let brain;
 let io;
 try{
-  fs.writeFileSync(baselinePath,execFileSync('git',['show',BASE+':src/context.mjs'],{maxBuffer:1000000}),{flag:'wx'});
+  // O original ganha as duas mudanças de formato documentadas (scripts/pack-format.mjs); o resto é comparado como estava.
+  fs.writeFileSync(baselinePath,withCurrentFormat(execFileSync('git',['show',BASE+':src/context.mjs'],{maxBuffer:1000000,encoding:'utf8'})),{flag:'wx'});
   const original=await import(pathToFileURL(baselinePath).href);
   const code=path.join(root,'project');fs.mkdirSync(code);
   fs.writeFileSync(path.join(code,'session.ts'),Array.from({length:600},(_,i)=>`export function validateSession${i}(value: string) { return value === "token-${i}"; }`).join('\n'));
   brain=new BrainStore(path.join(root,'state'));brain.register('io',code);indexProject(brain,'io');
   const options={project:'io',query:'validateSession',budget:4000};
-  const candidates=search(brain,'io',options.query,30).items;
+  const candidates=search(brain,'io',options.query,30,{byFile:false}).items;
   assert(candidates.length>1,'NO_MULTI_CHUNK_SCENARIO');assert.equal(new Set(candidates.map(c=>c.path)).size,1);
   const actual=path.join(brain.project('io').root,'session.ts'),realRead=fs.readFileSync;
   const measure=fn=>{
@@ -35,6 +37,8 @@ try{
     try{return {payload:fn(brain,options),get calls(){return calls;},get bytes(){return bytes;}};}
     finally{fs.readFileSync=realRead;}
   };
+  // O piso de relevância muda de propósito quais seções entram.
+  process.env.BBRAINX_PACK_MIN_RELEVANCE='0';
   const before=measure(original.compileContext),after=measure(compileContext);
   assert.deepEqual(after.payload,before.payload,'CONTEXT_IO_PARITY_FAILED');
   assert.equal(before.calls,candidates.length);assert.equal(after.calls,1);
