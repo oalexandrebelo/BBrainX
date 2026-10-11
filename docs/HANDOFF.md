@@ -27,7 +27,7 @@ O núcleo é Node 24 com o SQLite embutido (`node:sqlite`, FTS5). Não usa model
 ## 3. Comandos
 
 ```sh
-# ambiente: Node 24 LTS (22.20 ou mais novo também atende) e Git
+# ambiente: Node 24 LTS (ou mais novo) e Git
 npm ci --ignore-scripts
 npm test              # domínio, motor, protocolo com processo real, perfis, mapa do estudo
 npm run build         # painel (Vite) em dist/

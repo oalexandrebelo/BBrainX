@@ -15,6 +15,8 @@ Sem `--apply`, não escreve configurações. `--apply` permite registrar a raiz 
 
 O launcher confiável do host pode definir `BBRAINX_NODE` com um caminho estável, por exemplo o alias `opt` de um gerenciador de versões. A CLI exige caminho absoluto existente que resolva por `realpath` para o mesmo executável de `process.execPath`, e conserva o alias no comando gerado. Outro binário, caminho relativo ou ausente é recusado antes de criar estado/configuração. Isso permite adotar o legado com o mesmo caminho estável sem aceitar executáveis arbitrários nem relaxar a comparação dos demais campos.
 
+Sem `BBRAINX_NODE`, o gerador troca `.../Cellar/<fórmula>/<versão>/bin/node` pelo alias `.../opt/<fórmula>/bin/node` quando ele resolve por `realpath` ao mesmo binário; o `brew upgrade` apaga o keg versionado, não o alias. Quando o processo roda de `app/releases/<sha>`, o entry emitido é o espelho `app/current/...` se resolver ao mesmo arquivo. `BBRAINX_ENTRY` obedece à mesma prova (`INTEGRATION_ENTRY_MISMATCH` se apontar para outro arquivo). Vale para `config`, `integrate`, `scripts/codex-project.mjs` e `scripts/lanes.mjs config`. Gerenciadores sem alias padrão (fnm, nvm, volta) continuam emitindo `process.execPath`: use `BBRAINX_NODE` com o alias do gerenciador.
+
 O [plugin próprio](../../extensions/vscode/README.md) é um VSIX local separado: `node scripts/package-extension.mjs` requer Python 3 apenas para empacotar. Detectar usa o plano; Conectar usa `integrate --apply`. Workspace API/heartbeats demonstram uma pasta aberta no host cooperante; não demonstram conexão MCP, não concedem projeto e não habilitam fallback global no Antigravity IDE.
 
 ## Interface do módulo

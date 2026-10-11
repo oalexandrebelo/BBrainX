@@ -64,7 +64,7 @@ const replayRawSha256=createHash('sha256').update(replayBytes).digest('hex');
 const replaySummary={...replay,results:replay.results.map(({samples,...result})=>result),rawSha256:replayRawSha256,samplesOmitted:true};
 const replaySummaryFile='engineering/checkpoint-replay-summary.json',replaySummaryBytes=JSON.stringify(replaySummary,null,2)+'\n';
 fs.mkdirSync(path.join(output,'engineering'),{recursive:true});fs.writeFileSync(path.join(output,replaySummaryFile),replaySummaryBytes);
-const minimumLogPath=path.join('.ci-minimum','tests-node22.log'),minimumLogBytes=fs.readFileSync(minimumLogPath);
+const minimumLogPath=path.join('.ci-minimum','tests-node-minimum.log'),minimumLogBytes=fs.readFileSync(minimumLogPath);
 const minimumLog=minimumLogBytes.toString('utf8').replace(/\x1b\[[0-9;]*m/g,'');
 const minimumCounts={};
 for(const key of ['tests','pass','fail','cancelled','skipped','todo']){
@@ -72,11 +72,11 @@ for(const key of ['tests','pass','fail','cancelled','skipped','todo']){
  minimumCounts[key]=match?Number(match[1]):null;
 }
 if(!positiveInteger(minimumCounts.tests)||minimumCounts.pass!==minimumCounts.tests||['fail','cancelled','skipped','todo'].some(key=>minimumCounts[key]!==0))throw new Error('Incomplete or failing minimum Node test evidence');
-const minimumLogFile='tests-node22-minimum.log';fs.writeFileSync(path.join(output,minimumLogFile),minimumLogBytes);
+const minimumLogFile='tests-node-minimum.log';fs.writeFileSync(path.join(output,minimumLogFile),minimumLogBytes);
 const report={schemaVersion:1,testedRevision:process.env.GITHUB_SHA,runUrl:process.env.GITHUB_SERVER_URL+'/'+process.env.GITHUB_REPOSITORY+'/actions/runs/'+process.env.GITHUB_RUN_ID,generatedAt:new Date().toISOString(),dependencyLockSha256:lockHash,platforms,browser:{engine:'Chromium',evidence:screenshots,realLocalApi:true},video:{rendered:video,kind:'explanatory-composition-not-product-benchmark'},nativeHarnessApplicationsTested:false,maintainerMacTested:false,modelInferenceTested:false};
 report.consolidated={testedRevision:combined.revision,runtimeTests:combined.tests,reports:combinedReports,labCountsAreSeparate:true};
 report.engineering={checkpointReplay:{testedRevision:replay.candidateHead,file:replaySummaryFile,sha256:createHash('sha256').update(replaySummaryBytes).digest('hex'),rawSha256:replayRawSha256,samplesOmitted:true}};
-report.minimumNode={configuredVersion:'22.20.0',testedRevision:process.env.GITHUB_SHA,file:minimumLogFile,sha256:createHash('sha256').update(minimumLogBytes).digest('hex'),...minimumCounts};
+report.minimumNode={configuredVersion:'24.0.0',testedRevision:process.env.GITHUB_SHA,file:minimumLogFile,sha256:createHash('sha256').update(minimumLogBytes).digest('hex'),...minimumCounts};
 fs.writeFileSync(path.join(output,'ci-report.json'),JSON.stringify(report,null,2)+'\n');
 const readme=fs.readFileSync('README.md','utf8');
 if(!readme.includes('<!-- verified-preview -->'))fs.writeFileSync('README.md',readme+'\n<!-- verified-preview -->\n## Interface verificada na CI\n\n![Arquitetura interativa BBrainX](public/demo/bbrainx-architecture-desktop.png)\n\n[Relatório por revisão](docs/validation/ci-report.json) · [Vídeo explicativo](public/demo/bbrainx-intro.mp4)\n');

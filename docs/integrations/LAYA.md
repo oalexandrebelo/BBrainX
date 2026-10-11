@@ -15,7 +15,7 @@ O estado fornecido é tratado como dado. Ele não amplia a autoridade nem vira i
 
 ## Ativar em outra máquina
 
-Execute a partir da raiz do clone Git, com Node 22.20 ou superior e dependências instaladas. Use Node 24 para reproduzir o ambiente desta entrega. Os comandos usam o `BBRAINX_HOME` selecionado pelo host; um launcher instalado pode definir um home diferente do padrão do clone. Confira `laya status` pelo mesmo entrypoint que iniciará o servidor.
+Execute a partir da raiz do clone Git, com Node 24 ou superior e dependências instaladas. Os comandos usam o `BBRAINX_HOME` selecionado pelo host; um launcher instalado pode definir um home diferente do padrão do clone. Confira `laya status` pelo mesmo entrypoint que iniciará o servidor.
 
 ```sh
 git rev-parse --show-toplevel

@@ -146,7 +146,7 @@ A fonte é registrada como evidência fornecida, não automaticamente certificad
 | Linux | `$XDG_DATA_HOME/bbrainx` ou `~/.local/share/bbrainx` |
 | Windows | `%LOCALAPPDATA%/BBrainX` |
 
-`BBRAINX_HOME` fixa outro diretório, independentemente do cwd do harness. Não coloque o banco vivo em pastas de sincronização de arquivos.
+`BBRAINX_HOME` fixa outro diretório, independentemente do cwd do harness. Não coloque o banco vivo em pastas de sincronização de arquivos: iCloud (`~/Library/Mobile Documents`), `~/Library/CloudStorage/*`, Dropbox, OneDrive, Google Drive ou volume de rede (SMB/NFS/AFP) são recusados com `STATE_HOME_SYNCED` antes de qualquer pasta ou banco ser criado, também quando um symlink de ancestral aponta para elas. `bbrainx doctor` mostra `stateSync`. Quem aceita o risco define `BBRAINX_ALLOW_SYNCED_HOME=1`. Uma pasta como `~/Documents` com "Desktop e Documentos no iCloud" ligado não é detectável pelo nome: escolha um `BBRAINX_HOME` fora dela.
 
 ```sh
 node bin/bbrainx.mjs backup --file "/caminho/seguro/bbrainx-backup.sqlite"
@@ -207,6 +207,7 @@ Não copie a cópia por cima do `brain.sqlite` em uso: os arquivos `brain.sqlite
 |---|---|
 | Node incompatível | Use Node 24 no terminal e no caminho absoluto do cliente. |
 | Lockfile ausente | Atualize para uma revisão publicada após CI bem-sucedida; não use dependências flutuantes sem revisão. |
+| `STATE_HOME_SYNCED` | `BBRAINX_HOME` está em pasta sincronizada ou volume de rede. Use um disco local (padrão no macOS: `~/Library/Application Support/BBrainX`), mova os dados com `backup` ou, sob sua responsabilidade, `BBRAINX_ALLOW_SYNCED_HOME=1`. |
 | `PROJECT_NOT_REGISTERED` | Registre o ID e raiz pelo CLI no mesmo `BBRAINX_HOME`. |
 | `PROJECT_ROOT_ALREADY_REGISTERED` | A pasta já tem um nome; a mensagem diz qual. Use esse nome. |
 | `STALE_INDEX` | Só ocorre com `--strict` ou quando o arquivo muda sem parar. Reindexe; não aceite código antigo como atual. |

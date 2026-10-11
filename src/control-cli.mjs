@@ -3,7 +3,7 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { BrainStore } from './store.mjs';
-import { stateHome } from './host.mjs';
+import { stateHome,stableNodePath,stableEntryPath } from './host.mjs';
 import { ensure,identifier } from './primitives.mjs';
 import { verifyRoot } from './source-root.mjs';
 import { LANE_SCHEMA,LANE_SCHEMA_HASH,gitWorkspace } from './lanes/registry.mjs';
@@ -20,14 +20,7 @@ function catalog(home){
   });}finally{db.close();}
 }
 function projectId(root,known,requested){return requested||known.find(x=>x.root===root)?.id||path.basename(root).replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^[^A-Za-z0-9]+/,'').slice(0,80).replace(/[^A-Za-z0-9]+$/,'')||'project';}
-function integrationNode(){
-  const node=process.env.BBRAINX_NODE??process.execPath;
-  ensure(path.isAbsolute(node)&&!/[\u0000-\u001f\u007f]/.test(node),'INVALID_INTEGRATION_NODE');
-  let resolved;
-  try{resolved=fs.realpathSync.native(node);}catch{ensure(false,'INVALID_INTEGRATION_NODE');}
-  ensure(resolved===fs.realpathSync.native(process.execPath),'INTEGRATION_NODE_MISMATCH');
-  return node;
-}
+function integrationNode(){return stableNodePath({errors:{invalid:'INVALID_INTEGRATION_NODE',mismatch:'INTEGRATION_NODE_MISMATCH'}});}
 function readLaneBinding(home,project,lane,root,known){
   identifier(project);identifier(lane);const primary=known.find(item=>item.id===project);ensure(primary,'PROJECT_NOT_REGISTERED');
   const file=path.join(home,'lanes-v1.sqlite');ensure(fs.existsSync(file),'LANE_NOT_ACTIVE');
@@ -70,7 +63,7 @@ export async function controlCommand(command,v,args){
           ensure(!inside(a)&&!inside(b),'PROJECT_ROOT_OVERLAP');
         }
       }
-      const entry=process.env.BBRAINX_ENTRY||fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url));
+      const entry=stableEntryPath(fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),{errors:{invalid:'INVALID_INTEGRATION_ENTRY',mismatch:'INTEGRATION_ENTRY_MISMATCH'}});
       const plan=planIntegrations({root,project,lane:v.lane,home,node,entry,clients:v.clients?.split(','),adoptExisting:v['adopt-existing']===true});
       if(!v.apply)return plan;
       ensure(!plan.files.some(x=>x.status==='blocked'),'INTEGRATION_PLAN_BLOCKED');

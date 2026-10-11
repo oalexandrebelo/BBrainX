@@ -1,8 +1,7 @@
 import fs from 'node:fs';
-import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 import {createHash} from 'node:crypto';
-import {fileURLToPath} from 'node:url';
+import {isMainModule} from '../src/main-module.mjs';
 
 /** Source distributions describe committed blobs, never checkout bytes or symlink targets. */
 export function sourceManifest(root=process.cwd()){
@@ -25,7 +24,7 @@ export function sourceManifest(root=process.cwd()){
   return {schemaVersion:2,commit,tree,version,sourceTimestamp,archive:'BBrainX-v'+version+'-source.zip',
     contentSource:'git-blobs',dependencyLocks:Object.fromEntries(['package-lock.json','media/package-lock.json'].filter(file=>files[file]).map(file=>[file,files[file]])),files,modes};
 }
-if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
+if(isMainModule(import.meta.url)){
   const manifest=sourceManifest();fs.mkdirSync('artifacts',{recursive:true});
   const target='artifacts/source-manifest.json',temporary=target+'.'+process.pid+'.tmp';
   fs.writeFileSync(temporary,JSON.stringify(manifest,null,2)+'\n');fs.renameSync(temporary,target);

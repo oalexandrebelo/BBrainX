@@ -2,11 +2,11 @@
 import fs from 'node:fs';
 import { TextDecoder } from 'node:util';
 import { parseArgs } from 'node:util';
-import { fileURLToPath } from 'node:url';
 import { BrainStore } from '../src/store.mjs';
 import { UsageStore } from '../src/usage/store.mjs';
 import { usageOverview } from '../src/usage/summary.mjs';
 import { check } from '../src/usage/contract.mjs';
+import { isMainModule } from '../src/main-module.mjs';
 
 /** Não abre arquivos globais de harness, não segue symlink final e limita leitura antes de JSON.parse. */
 export function readUsageFile(file){
@@ -35,4 +35,4 @@ export async function main(argv){
     console.log(JSON.stringify({project:values.project,result},null,2));
   }finally{usage?.close();brain.close();}
 }
-if(process.argv[1]===fileURLToPath(import.meta.url))main(process.argv.slice(2)).catch(e=>{console.error(JSON.stringify({error:e.code||'INVALID_IMPORT'}));process.exitCode=1;});
+if(isMainModule(import.meta.url))main(process.argv.slice(2)).catch(e=>{console.error(JSON.stringify({error:e.code||'INVALID_IMPORT'}));process.exitCode=1;});

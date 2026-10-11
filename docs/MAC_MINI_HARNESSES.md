@@ -12,7 +12,7 @@ Leia [AGENTS.md](../AGENTS.md), [modelo de segurança](SECURITY_MODEL.md) e [con
 
 Use uma cópia privada do runtime identificada por **commit Git completo**, separada do projeto indexado. Confira a revisão e o lockfile antes de instalar suas dependências com `npm ci`. Não use uma branch móvel como identidade de implantação; conservar a revisão anterior permite rollback. Uma distribuição de fonte deve ter manifesto e checksums verificados antes do uso.
 
-Escolha um executável absoluto de Node LTS compatível: Node 24 recomendado, mínimo 22.20. Confirme com `--version`; o `node` encontrado pelo terminal pode diferir daquele disponível ao IDE. A seleção de versões LTS segue o [calendário oficial do Node](https://nodejs.org/en/about/previous-releases).
+Escolha um executável absoluto de Node LTS compatível: Node 24 LTS ou mais novo; Node 22 e anteriores não são suportados. Confirme com `--version`; o `node` encontrado pelo terminal pode diferir daquele disponível ao IDE. A seleção de versões LTS segue o [calendário oficial do Node](https://nodejs.org/en/about/previous-releases).
 
 Substitua os valores, sem copiar literalmente os placeholders:
 
@@ -49,18 +49,18 @@ BBRAINX_HOME="$BBRAINX_STATE" "$BBRAINX_NODE" "$BBRAINX_ENTRY" config \
 
 Também existem `--client codex` e `--client claude`. Integre apenas a entrada BBrainX ao arquivo existente, preservando outras entradas e configurações. Não substitua um arquivo inteiro pelo fragmento. Revise os caminhos e o ID antes de iniciar o servidor; não publique configurações que contenham segredos de outros servidores.
 
-Se usar um symlink `current` para selecionar a release, confira os argumentos emitidos: `import.meta.url` resolve o caminho físico e o gerador pode fixar a release anterior. Configure explicitamente o entrypoint absoluto sob `current`, ou um launcher estável que o invoque. Depois de atualizar, encerre as sessões antigas e confirme a revisão do novo processo; um processo já iniciado conserva o código carregado.
+Se usar um symlink `current` para selecionar a release: `import.meta.url` resolve o caminho físico, mas o gerador emite o espelho `app/current/...` quando ele resolve ao mesmo arquivo (e `BBRAINX_ENTRY`, se apontar para o mesmo arquivo). Confira mesmo assim os argumentos emitidos; um layout sem `releases/<sha>` + `current` continua emitindo o caminho físico. Depois de atualizar, encerre as sessões antigas e confirme a revisão do novo processo; um processo já iniciado conserva o código carregado.
 
 ### Codex CLI e extensão do VS Code
 
-Compartilham `~/.codex/config.toml`; projetos confiáveis também carregam `<PROJECT_ROOT>/.codex/config.toml`. Prefira esse arquivo de projeto para limitar a descoberta. O comando `codex mcp add` impresso pelo gerador registra no escopo de usuário; não trate sua execução como configuração exclusiva do workspace.
+Compartilham `~/.codex/config.toml`; projetos confiáveis também carregam `<PROJECT_ROOT>/.codex/config.toml`. Prefira esse arquivo de projeto para limitar a descoberta. O comando `codex mcp add` impresso pelo gerador registra no escopo de usuário; não trate sua execução como configuração exclusiva do workspace. Por isso o gerador nomeia a entrada `bbrainx-<projeto saneado>` (letras, dígitos, `-` e `_`; um sufixo de hash evita colisão quando o saneamento altera o ID): dois projetos não se sobrescrevem no `config.toml` global. A saída inteira é TOML válido (explicação e comando vão em comentários) e pode ser anexada ao arquivo.
 
 ```toml
-[mcp_servers.bbrainx]
+[mcp_servers.bbrainx-<PROJECT_ID>]
 command = "<ABSOLUTE_NODE_LTS>"
 args = ["<ABSOLUTE_RUNTIME>/bin/bbrainx.mjs", "mcp", "--project", "<PROJECT_ID>"]
 
-[mcp_servers.bbrainx.env]
+[mcp_servers.bbrainx-<PROJECT_ID>.env]
 BBRAINX_HOME = "<ABSOLUTE_SHARED_STATE>"
 ```
 
@@ -76,9 +76,9 @@ Se faltar a CLI independente, o instalador nativo oficial aceita uma versão exa
 
 ### Antigravity IDE
 
-A documentação atual prevê `<PROJECT_ROOT>/.agents/mcp_config.json`; o arquivo global é `~/.gemini/config/mcp_config.json`. O fragmento gerado por `--client antigravity` usa `mcpServers.bbrainx` com `command`, `args` e `env`.
+A documentação prevê `<PROJECT_ROOT>/.agents/mcp_config.json` e o arquivo global `~/.gemini/config/mcp_config.json` (a CLI `agy mcp add` grava neste último). O destino verificado no IDE 2.5.5 é o arquivo de usuário: o gerador (`config --client antigravity` e `scripts/lanes.mjs config`) aponta para `~/.gemini/config/mcp_config.json`, forma `mcpServers` com `command`, `args` e `env`, e nomeia a entrada `bbrainx-<projeto>` (ou `bbrainx-<hash>` para lanes) para que dois projetos não se sobrescrevam. É escopo de usuário: a descoberta é global ao cliente e o servidor serve só o projeto de `--project`. O gerador só imprime; mesclar no arquivo é decisão sua, preservando os demais servidores.
 
-Confirme que a versão instalada reconhece o arquivo de workspace. No painel do agente, abra **MCP Servers → Manage MCP Servers → View raw config** e confira o caminho efetivamente carregado. O schema local pode confirmar o formato sem demonstrar descoberta do arquivo. Versões com guia embutido anterior podem documentar apenas configuração global/plugins; não declare isolamento de workspace apenas porque o JSON é válido.
+Antes de confiar no arquivo de workspace, confirme que a versão instalada o reconhece. No painel do agente, abra **MCP Servers → Manage MCP Servers → View raw config** e confira o caminho efetivamente carregado. O schema local pode confirmar o formato sem demonstrar descoberta do arquivo. Versões com guia embutido anterior podem documentar apenas configuração global/plugins; não declare isolamento de workspace apenas porque o JSON é válido.
 
 Após editar, use a atualização/reconexão disponível no gerenciador e confira o estado e a lista de ferramentas. Se a versão exigir reinício da janela, registre esse procedimento. Não há necessidade de enviar um prompt ao modelo para conferir a descoberta e conexão. [Documentação oficial do Antigravity](https://antigravity.google/docs/mcp?tab=ide).
 

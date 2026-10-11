@@ -1,7 +1,7 @@
 // Implementação Standard Schema real para este domínio delimitado, sem dependências externas.
 import { createEngine } from '../../src/capability.mjs';
 import { runEngineCli } from '../../src/engine-cli.mjs';
-import { pathToFileURL } from 'node:url';
+import { isMainModule } from '../../src/main-module.mjs';
 const schema = (field, type) => ({ '~standard': { version: 1, vendor: 'bbrainx-test-domain',
   validate(value) {
     return value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 1 &&
@@ -18,5 +18,5 @@ export function textCapability() { return {
 }; }
 export const library = { name: 'text-library', version: '1.0.0', capabilities: { 'text.length': textCapability() } };
 export const engine = () => createEngine({ name: 'contract-fixture', version: '1.0.0', libraries: [{ library }] });
-if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url)
+if (isMainModule(import.meta.url))
   process.exitCode = await runEngineCli(engine(), { argv: process.argv.slice(2), principal: { id: 'fixture-host' } });

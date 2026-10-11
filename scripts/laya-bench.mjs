@@ -4,7 +4,7 @@ import path from 'node:path';
 import {createHash} from 'node:crypto';
 import {parseArgs} from 'node:util';
 import {performance} from 'node:perf_hooks';
-import {pathToFileURL} from 'node:url';
+import {isMainModule} from '../src/main-module.mjs';
 import {BrainStore} from '../src/store.mjs';
 import {search} from '../src/retrieval.mjs';
 import {queryTerms} from '../src/analyze.mjs';
@@ -176,4 +176,4 @@ async function main(argv=process.argv.slice(2)){
   }
 }
 
-if(process.argv[1]&&import.meta.url===pathToFileURL(path.resolve(process.argv[1])).href)void main();
+if(isMainModule(import.meta.url))void main();
