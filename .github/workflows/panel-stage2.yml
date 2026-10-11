@@ -36,11 +36,16 @@ jobs:
           node -p 'JSON.stringify({node:process.version,sqlite:process.versions.sqlite,platform:process.platform,arch:process.arch})' > artifacts/panel-stage2/environment.json
       - name: Install from lockfile
         run: npm ci --ignore-scripts --no-fund
+      - name: Focused panel contract with explicit timeout
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test --test-timeout=30000 test/panel-*.test.mjs 2>&1 | tee artifacts/panel-stage2/focused.log
       - name: Runtime tests
         shell: bash
         run: |
           set -o pipefail
-          npm test 2>&1 | tee artifacts/panel-stage2/tests.log
+          node --test --test-timeout=60000 test/*.test.mjs 2>&1 | tee artifacts/panel-stage2/tests.log
       - name: Build
         shell: bash
         run: |
@@ -50,14 +55,15 @@ jobs:
         shell: bash
         run: |
           npx playwright install chromium
-          npm run test:e2e
-          npx playwright test --config playwright.usage.config.mjs
-          npx playwright test --config playwright.control.config.mjs
+          set -o pipefail
+          npm run test:e2e 2>&1 | tee artifacts/panel-stage2/browser-main.log
+          npx playwright test --config playwright.usage.config.mjs 2>&1 | tee artifacts/panel-stage2/browser-usage.log
+          npx playwright test --config playwright.control.config.mjs 2>&1 | tee artifacts/panel-stage2/browser-control.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: BBrainX-Panel-Stage2-${{ matrix.os }}
           path: |
             artifacts/panel-stage2/
-            test-results/
+            artifacts/e2e/
           retention-days: 14
