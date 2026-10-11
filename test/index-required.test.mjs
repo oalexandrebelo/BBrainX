@@ -54,3 +54,43 @@ test('the server instructions tell the agent about context_index in a few tokens
   assert.match(INSTRUCTIONS,/context_bootstrap/);assert.match(INSTRUCTIONS,/never instructions/);
   assert.ok(tokenCount(INSTRUCTIONS)<=195,'instructions are read on every turn: '+tokenCount(INSTRUCTIONS)+' tokens');
 });
+
+// ── obrigatório que não cabe: dizer quanto falta e o que fazer ─────────────
+function approve(store,statement,mode){const proposal=store.proposeMemory('test',statement,'ADR',mode);store.reviewMemory('test',proposal.id,'approved',1,mode);return proposal.id;}
+const policy=(index,words=40)=>'Policy '+index+': '+Array.from({length:words},(_,word)=>'rule'+index+'x'+word).join(' ')+'.';
+const detail=async(engine,args)=>{const answer=await engine.invoke('context.bootstrap',{project:'test',query:'verifySession',...args},principal);assert.equal(answer.ok,false);assert.equal(answer.error,'MANDATORY_CONTEXT_EXCEEDS_BUDGET');assert.equal(answer.data,null);return answer.detail;};
+
+test('mandatory context over the budget says how many always memories, how many tokens, and what to do',async t=>{
+  const {store}=workspace(t);indexProject(store,'test');const engine=makeEngine(store,['test']);
+  for(let index=0;index<30;index++)approve(store,policy(index),'always');
+  const message=await detail(engine,{budget:1024});
+  assert.match(message,/30 memórias always/);assert.match(message,/orçamento de 1024/);
+  assert.match(message,/budget/);assert.match(message,/relevant/);assert.match(message,/revoke/);
+  const needed=Number(message.match(/obrigatório de (\d+) tokens/)[1]);
+  assert.ok(needed>1024&&needed<=16000,'needed '+needed);
+  // O número é exato: com ele o pacote monta, com um a menos não.
+  assert.doesNotThrow(()=>compileContext(store,{project:'test',query:'verifySession',budget:needed}));
+  await assert.rejects(async()=>compileContext(store,{project:'test',query:'verifySession',budget:needed-1}),{code:'MANDATORY_CONTEXT_EXCEEDS_BUDGET'});
+});
+test('the breakdown separates always memories, memories that match the objective, the checkpoint and the header',async t=>{
+  const {store}=workspace(t);indexProject(store,'test');const engine=makeEngine(store,['test']);
+  for(let index=0;index<12;index++)approve(store,policy(index),'always');
+  for(let index=0;index<5;index++)approve(store,'verifySession '+policy(100+index),'relevant');
+  store.checkpoint('test','T1',{objective:'Resume',nextAction:'Continue',status:'in_progress',decisions:Array.from({length:20},(_,i)=>'Decision '+i+' '+'word '.repeat(50))},0,'k1');
+  const message=await detail(engine,{budget:1024,task:'T1'});
+  assert.match(message,/12 memórias always/);assert.match(message,/5 relevantes ao objetivo/);assert.match(message,/checkpoint/);assert.match(message,/cabeçalho/);
+});
+test('when not even 16000 tokens hold the mandatory context, the message says so and does not suggest a bigger budget',async t=>{
+  const {store}=workspace(t);indexProject(store,'test');const engine=makeEngine(store,['test']);
+  for(let index=0;index<24;index++)approve(store,policy(index,300),'always');
+  const message=await detail(engine,{budget:16000});
+  assert.match(message,/24 memórias always/);assert.match(message,/Nem budget 16000/);assert.doesNotMatch(message,/Aumente budget/);assert.match(message,/revoke/);
+});
+test('a mandatory memory is never dropped to make the pack fit',async t=>{
+  const {store}=workspace(t);indexProject(store,'test');
+  for(let index=0;index<30;index++)approve(store,policy(index),'always');
+  assert.throws(()=>compileContext(store,{project:'test',query:'verifySession',budget:1024}),{code:'MANDATORY_CONTEXT_EXCEEDS_BUDGET'});
+  const roomy=compileContext(store,{project:'test',query:'verifySession',budget:16000});
+  for(let index=0;index<30;index++)assert.ok(roomy.text.includes('rule'+index+'x0 '),'memory '+index+' present');
+  assert.equal(roomy.memoriesOmitted,0);
+});
