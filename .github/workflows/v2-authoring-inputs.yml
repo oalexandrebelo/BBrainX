@@ -1,0 +1,30 @@
+name: V2 isolated authoring inputs
+on:
+  push:
+    branches: [feat/v2-macos-readiness]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Temporary dependency snapshot for isolated reproduction
+        shell: bash
+        run: |
+          mkdir -p artifacts/internal
+          tar --exclude='*.woff' --exclude='*.woff2' --exclude='*.ttf' --exclude='*.otf' -czf artifacts/internal/node_modules.tar.gz node_modules
+          sha256sum artifacts/internal/node_modules.tar.gz > artifacts/internal/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BBrainX-V2-Internal-Dependencies
+          path: artifacts/internal/
+          retention-days: 1
