@@ -28,7 +28,7 @@ try{
   fs.writeFileSync(path.join(code,'session.ts'),Array.from({length:600},(_,i)=>`export function validateSession${i}(value: string) { return value === "token-${i}"; }`).join('\n'));
   brain=new BrainStore(path.join(root,'state'));brain.register('io',code);indexProject(brain,'io');
   const options={project:'io',query:'validateSession',budget:4000};
-  const candidates=search(brain,'io',options.query,30).items;
+  const candidates=search(brain,'io',options.query,30,{byFile:false}).items;
   assert(candidates.length>1,'NO_MULTI_CHUNK_SCENARIO');assert.equal(new Set(candidates.map(c=>c.path)).size,1);
   const actual=path.join(brain.project('io').root,'session.ts'),realRead=fs.readFileSync;
   const measure=fn=>{

@@ -47,7 +47,7 @@ export function compileContext(store,{project,query,budget=4000,task,onStale='re
   ensure(store.project(project).snapshot,'INDEX_REQUIRED');
   let result;const refreshed=new Set();
   for(let round=0;;round++){
-    result=search(store,project,query,30);
+    result=search(store,project,query,30,{byFile:false});
     // Todos os chunks da mesma versão do arquivo compartilham uma leitura/hash nesta rodada.
     // Não persiste entre invocações nem elimina a corrida com alterações externas posteriores.
     const checked=new Map();

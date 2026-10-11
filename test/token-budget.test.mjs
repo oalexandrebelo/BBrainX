@@ -105,3 +105,36 @@ test('identifier format is enforced by the server without being repeated as a pa
     assert.equal(engine.describe(id).outputSchema.type,'object');
   }
 });
+
+// ── um acerto por arquivo ──────────────────────────────────────────────────
+// big.ts tem três trechos de 60 linhas que casam com a consulta; os outros quatro arquivos têm um trecho cada.
+const multiChunk=()=>{
+  const lines=(count,mark,every)=>Array.from({length:count},(_,i)=>i%every===0?'  // alpha '+mark+i:'  const step'+mark+i+' = value - '+i+';');
+  return {'src/big.ts':[...lines(60,'a',3),...lines(60,'b',4),...lines(30,'c',10)].join('\n')+'\n',
+    ...Object.fromEntries(Array.from({length:4},(_,i)=>['src/small'+i+'.ts','export function small'+i+'(){\n  // alpha once\n'+filler(6)+'\n}\n']))};
+};
+test('search returns one hit per file and lists the other relevant chunks of that file as line ranges',t=>{
+  const {store}=workspace(t,multiChunk());
+  const raw=search(store,'test','alpha',10,{byFile:false}).items, hits=search(store,'test','alpha',10).items;
+  assert.ok(raw.filter(x=>x.path==='src/big.ts').length>=3,'the fixture needs three chunks of one file among the hits');
+  assert.equal(new Set(hits.map(x=>x.path)).size,hits.length,'no file occupies two slots');
+  assert.equal(hits.length,new Set(raw.map(x=>x.path)).size);
+  const big=hits.find(x=>x.path==='src/big.ts'), chunks=raw.filter(x=>x.path==='src/big.ts');
+  assert.equal(big.id,chunks[0].id,'the hit is the best chunk of the file');
+  assert.deepEqual(big.also,chunks.slice(1,3).map(x=>x.start_line+'-'+x.end_line),'the others come as ranges, best first, without their bodies');
+  assert.ok(hits.filter(x=>x.path!=='src/big.ts').every(x=>x.also===undefined),'a file with a single chunk has no also');
+  assert.deepEqual(hits.map(x=>x.path),[...new Set(raw.map(x=>x.path))],'the order of the files is the order of their best chunk');
+});
+test('limit counts files, and the raw chunk list stays available for the context pack',t=>{
+  const {store}=workspace(t,multiChunk());
+  assert.equal(search(store,'test','alpha',3).items.length,3);assert.equal(new Set(search(store,'test','alpha',3).items.map(x=>x.path)).size,3);
+  assert.equal(search(store,'test','alpha',3,{byFile:false}).items.length,3);
+  const pack=compileContext(store,{project:'test',query:'alpha',budget:16000});
+  assert.ok(pack.sources.filter(x=>x.path==='src/big.ts').length>=2,'the pack keeps several chunks of the same file');
+});
+test('context.search through the engine returns distinct files with their also ranges',async t=>{
+  const {store}=workspace(t,multiChunk());const engine=makeEngine(store,['test']);
+  const {data}=await engine.invoke('context.search',{project:'test',query:'alpha',limit:10,budget:16000},principal);
+  assert.equal(new Set(data.items.map(x=>x.path)).size,data.items.length);
+  assert.equal(data.items.find(x=>x.path==='src/big.ts').also.length,2);
+});
