@@ -1,0 +1,66 @@
+name: V2 macOS readiness
+on:
+  push:
+    branches: [feat/v2-macos-readiness]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: v2-readiness-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Runtime and build on the actual candidate
+        shell: bash
+        run: |
+          mkdir -p artifacts/v2
+          set -o pipefail
+          node -p 'JSON.stringify({node:process.version,sqlite:process.versions.sqlite,platform:process.platform,arch:process.arch})' > artifacts/v2/environment.json
+          npm test 2>&1 | tee artifacts/v2/tests.log
+          npm run build 2>&1 | tee artifacts/v2/build.log
+      - name: Browser checks
+        shell: bash
+        run: |
+          npx playwright install chromium
+          npm run test:e2e
+          npx playwright test --config playwright.usage.config.mjs
+          npx playwright test --config playwright.control.config.mjs
+      - name: Pin reviewed sources without importing upstream code
+        if: matrix.os == 'ubuntu-latest'
+        run: python3 scripts/v2-reference-snapshot.py
+      - name: Internal authoring inputs (not a distribution)
+        if: matrix.os == 'ubuntu-latest'
+        shell: bash
+        run: |
+          mkdir -p artifacts/internal
+          tar --exclude='*.woff' --exclude='*.woff2' --exclude='*.ttf' --exclude='*.otf' -czf artifacts/internal/node_modules.tar.gz node_modules
+          tar -czf artifacts/internal/node.tar.gz -C "$(dirname "$(command -v node)")" node
+          sha256sum artifacts/internal/*.tar.gz > artifacts/internal/SHA256SUMS
+          git archive --format=zip --output=artifacts/v2/candidate-source.zip HEAD
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-V2-${{ matrix.os }}
+          path: artifacts/v2/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: matrix.os == 'ubuntu-latest'
+        with:
+          name: BBrainX-V2-Internal-Toolchain
+          path: artifacts/internal/
+          retention-days: 1
