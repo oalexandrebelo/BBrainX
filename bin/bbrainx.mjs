@@ -6,6 +6,7 @@ import { parseArgs } from 'node:util';
 import { ensure, newId } from '../src/primitives.mjs';
 import { doctor, stateHome, stableNodePath, stableEntryPath } from '../src/host.mjs';
 import { clientConfig, CLIENTS } from '../src/clients.mjs';
+import { VERSION } from '../src/version.mjs';
 
 // Argument errors are a short JSON line on stderr like every other failure: stdout is reserved for the MCP protocol and results.
 const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
@@ -15,7 +16,7 @@ const print=value=>console.log(JSON.stringify(value,null,2));
 try{
   if(parsedArgs.error)throw parsedArgs.error;
   if(command==='doctor'){const {scenario}=await import('../src/scenario.mjs');const report={...doctor(),scenario:scenario()};print(report);process.exitCode=report.ready?0:1;}
-  else if(command==='help'||values.help){console.log(`BBrainX — GODMODCODE 0.4
+  else if(command==='help'||values.help){console.log(`BBrainX — GODMODCODE ${VERSION}
 
 Começar (registra a pasta, indexa e mostra como ligar ao seu harness):
   node bin/bbrainx.mjs up --root /caminho/do/projeto [--project nome]

@@ -1,9 +1,10 @@
 /** Atlas documental. Status nunca é inferido a partir de uma animação ou de um clique. */
-export const revision = 'a9636e9402e3fa673ae05b3489202da1048aef5e';
-export const inspectedAt = '2026-10-05';
+import {VERSION} from '../../src/version.mjs';
+export const revision = '77e6ddd60e999fd53ffe934bf7a230f022a0cc47';
+export const inspectedAt = '2026-10-10';
 export const repo = 'https://github.com/oalexandrebelo/BBrainX';
 export const stages = {
-  shipped: {label:'Na base 0.4', color:'#83e4bd', description:'Código presente na revisão auditada; não certifica todos os clientes.'},
+  shipped: {label:'Na base '+VERSION, color:'#83e4bd', description:'Código presente na revisão auditada; não certifica todos os clientes.'},
   optional: {label:'Opt-in', color:'#69c9ee', description:'Perfil existente, ativado explicitamente. Não pertence ao caminho padrão.'},
   candidate: {label:'Patch candidato', color:'#f2c37c', description:'Código da revisão X99 entregue à parte, ainda não incorporado à base.'},
   lab: {label:'Laboratório', color:'#d7a7f4', description:'Mecanismo exercitado isoladamente; não integrado ao runtime.'},
@@ -13,7 +14,7 @@ export const stages = {
 };
 const base = path => repo+'/blob/'+revision+'/'+path;
 const sources = {
-  base:{label:'Código auditado · 1.5.0',url:base('README.md')},
+  base:{label:'Código auditado · '+VERSION,url:base('README.md')},
   ci:{label:'CI da base · 96 testes por plataforma',url:base('docs/validation/ci-report.json')},
   study:{label:'Mapa do estudo existente',url:base('docs/STUDY_MAP.md')},
   laya:{label:'Laya · upstream',url:'https://github.com/NandhaKishorM/laya'},
@@ -48,7 +49,7 @@ const rows = [
  ['laya','Laya · decisões locais','optional','DECISÃO','Perfil Python isolado com pesos verificados e execução local sob comando explícito.','Não altera o contexto padrão: os testes registrados de relevância pioraram o lexical.','Calibração e avaliação por tarefa antes da promoção.','laya','src/laya.mjs'],
  ['doctor','Doctor / setup','shipped','OPERAÇÃO','Identifica requisitos e orienta instalação sem alterar as credenciais dos harnesses.','Recomendar um backend não é medir sua inferência.','Homologação de instalação, suspensão e retomada no host real.','base','src/host.mjs'],
  ['ui','Atlas / laboratório UI','shipped','VISIBILIDADE','O painel atual explica arquitetura e oferece operações reais em um laboratório separado.','Este atlas novo é documental: navegar nele não executa agentes.','Validar interface, exportação e rotas sem modificar o núcleo.','flow','web/main.jsx'],
- ['worker','Worker por geração','candidate','CONTENÇÃO','O patch X99 delimita frames, valida respostas e aposenta workers após timeout.','Testes controlados de processos não são inferência neural nem release homologada.','Suíte completa, MCP e inferência real no Mac.','base',null],
+ ['worker','Worker por geração','optional','CONTENÇÃO','Delimita frames, valida respostas e aposenta workers após timeout; usado pelo perfil Laya.','Testes controlados de processos não são inferência neural nem release homologada.','Inferência real no Mac com o perfil Laya ligado.','base','src/json-line-worker.mjs'],
  ['cache','Cache exato de decisões','candidate','REUSO','LRU/TTL limitado por bytes, com projeto, snapshot, memória, política e modelo na identidade.','Desligado por padrão e por processo; não é KV compartilhado entre modelos.','Medir reuso e invalidadores com Laya real antes de habilitar.','laya',null],
  ['read','Snapshot de leitura','candidate','CONSISTÊNCIA','Monta o contexto sob leitura coerente e revalida o estado antes da publicação.','Seis testes de integração do compilador ficaram sem execução no patch anterior.','Executar esses testes com as dependências fixadas.','sqlite',null],
  ['daemon','Autoridade por usuário','planned','COORDENAÇÃO','Um coordenador e um worker residente compartilhados pelos harnesses do mesmo usuário.','Ainda não existe daemon global entre os processos de harness.','IPC autenticado, lifecycle e isolamento por projeto.','base',null],
@@ -56,7 +57,7 @@ const rows = [
  ['authz','Autorização versionada','planned','SEGURANÇA','Revogações e políticas participam do selo de validade; revalidar antes de liberar conteúdo.','JWT válido não prova sessão vigente; não promete recolher bytes já enviados.','Definir ponto de linearização e testar partições/revogações.','supertokens',null],
  ['admission','Admissão ponderada','lab','CONTROLE','Combina GCRA, bytes de fila e vagas efetivas; o laboratório verifica a aritmética.','5.670 sequências verificadas não são um rate limiter distribuído implantado.','Integrar controle atômico por cliente/projeto e medir fila.','gcra',null],
  ['budget','Reserva de orçamento','lab','CONTROLE','Reservar antes da execução; manter OUTCOME_UNKNOWN até reconciliar.','Laboratório SQLite não inclui cobrança de provedores reais.','Adapters de custos e reconciliação idempotente no runtime.','medusa',null],
- ['release','Publicação com fencing','lab','CONSISTÊNCIA','Escrita condicionada à geração; estado e evento crítico no mesmo commit.','Fencing só protege quando o destino rejeita gerações antigas.','Integrar destino, revisão de acesso e falhas após commit.','fencing',null],
+ ['release','Publicação com fencing','shipped','CONSISTÊNCIA','Checkpoint de lane só confirma com a época ativa, no mesmo commit do estado e do evento.','Fencing só protege quando o destino rejeita gerações antigas.','Aplicar o mesmo fencing a destinos externos.','fencing','src/lanes/store.mjs'],
  ['secrets','Secrets / egress broker','planned','SEGURANÇA','Referências opacas; credenciais inseridas apenas no destino autorizado.','Não instala proxy MITM, não lê Keychain e não muda autenticação.','Escopo, rotação, políticas de egress e revisão de ameaça.','infisical',null],
  ['otel','OTel / auditoria separada','planned','OBSERVABILIDADE','Diagnóstico em fila limitada; eventos críticos permanecem transacionais.','SigNoz não é requisito do Mac; sampling não mede todo o tráfego.','Instrumentar sem prompts, segredos ou labels ilimitados.','signoz',null],
  ['symbols','Mapa de símbolos / LSP','planned','RECUPERAÇÃO','Declarações e referências reduzem leitura redundante de código.','Tree-sitter não é prova semântica de toda relação dinâmica.','Benchmark por linguagem e dependências, antes de adoção.','serena',null],
@@ -73,7 +74,7 @@ export const components = rows.map(([id,title,status,layer,why,limit,gate,source
 const E=(a,b,kind='flow')=>({id:a+'--'+b,source:a,target:b,kind});
 export const views = [
  {id:'target',label:'Arquitetura alvo',title:'Uma autoridade. Contexto verificável.',note:'Mistura declarada de base, candidato, laboratório e proposta. Não representa tudo instalado.',ids:['harness','mcp','authz','admission','daemon','index','search','context','sqlite','release','laya','cache','read','budget','secrets','otel'],columns:4,links:[E('harness','mcp'),E('mcp','daemon'),E('daemon','authz'),E('authz','admission'),E('admission','context'),E('index','search'),E('search','context'),E('sqlite','context'),E('laya','cache'),E('cache','context'),E('context','read'),E('read','release'),E('budget','release'),E('secrets','release'),E('release','otel')]},
- {id:'runtime',label:'Runtime atual',title:'O que está na base 1.5.0.',note:'Laya é opt-in e não interfere no ranking do contexto. Escopo: revisão auditada.',ids:['harness','mcp','engine','context','index','search','memory','checkpoint','sqlite','laya','doctor','ui'],columns:4,links:[E('harness','mcp'),E('mcp','engine'),E('engine','context'),E('index','search'),E('search','context'),E('memory','context'),E('checkpoint','context'),E('sqlite','index'),E('sqlite','memory'),E('sqlite','checkpoint'),E('doctor','laya'),E('context','ui')]},
+ {id:'runtime',label:'Runtime atual',title:'O que está na base '+VERSION+'.',note:'Laya é opt-in e não interfere no ranking do contexto. Escopo: revisão auditada.',ids:['harness','mcp','engine','context','index','search','memory','checkpoint','sqlite','laya','doctor','ui'],columns:4,links:[E('harness','mcp'),E('mcp','engine'),E('engine','context'),E('index','search'),E('search','context'),E('memory','context'),E('checkpoint','context'),E('sqlite','index'),E('sqlite','memory'),E('sqlite','checkpoint'),E('doctor','laya'),E('context','ui')]},
  {id:'laya',label:'Laya + cache',title:'Decisão curta. Reuso com identidade.',note:'O cache candidato é exato, por processo e desligado por padrão. Não compartilha KV entre modelos.',ids:['daemon','identity','worker','laya','cache','read','release','onnx'],columns:4,links:[E('daemon','worker'),E('identity','cache'),E('worker','laya'),E('laya','cache'),E('cache','read'),E('read','release'),E('onnx','worker')]},
  {id:'governance',label:'Protocolo X99',title:'Permissão, capacidade e commit.',note:'Os mecanismos em roxo têm verificações de laboratório, não integração de produto.',ids:['identity','authz','admission','budget','sqlite','read','release','secrets','otel','daemon','memory','checkpoint'],columns:4,links:[E('identity','authz'),E('authz','admission'),E('admission','budget'),E('budget','release'),E('sqlite','read'),E('read','release'),E('secrets','release'),E('release','otel'),E('daemon','sqlite'),E('memory','read'),E('checkpoint','read')]},
  {id:'ecosystem',label:'Novas incorporações',title:'Extrair técnicas. Não empilhar serviços.',note:'As cinco plataformas são referências; seus mecanismos abaixo têm status próprio.',ids:['supertokens','infisical','medusa','signoz','unkey','authz','secrets','budget','otel','admission','symbols','lightrag','onnx','cache','unsafe'],columns:5,links:[E('supertokens','authz','reference'),E('infisical','secrets','reference'),E('medusa','budget','reference'),E('signoz','otel','reference'),E('unkey','admission','reference')]}
@@ -91,9 +92,9 @@ export function graphFor(viewId,status='all',query='') {
  return {view,nodes,edges:links};
 }
 export const evidence = [
- {label:'Base publicada',value:'96',unit:'testes por plataforma',note:'CI da revisão 912aa253, anterior a este atlas. Não são 288 testes distintos.',url:sources.ci.url},
- {label:'Patch X99 anterior',value:'43',unit:'testes locais aprovados',note:'38 novos + 5 existentes. 6 testes de compilador não executados. Patch fora da base.',url:null},
- {label:'Protocolo isolado',value:'35',unit:'verificações de laboratório',note:'Python/SQLite/processos em Linux. Sem Laya, runtime ou validação nativa macOS.',url:null}
+ {label:'Base 1.5.0',value:'734',unit:'testes',note:'Node 24.21.0 e 22.22.2 no macOS arm64, revisão 77e6ddd. A mesma suíte nas duas versões, não somadas.',url:base('docs/HOMOLOGACAO_2026-10-10.md')},
+ {label:'Navegador',value:'33',unit:'testes Playwright',note:'Painel 24, uso 6, controle 3, na mesma revisão.',url:null},
+ {label:'Busca',value:'−79,4%',unit:'tokens por resposta',note:'17.778 → 3.666 em 36 consultas; arquivo esperado localizado 31/36 antes e depois.',url:base('docs/engineering/PERFORMANCE.md')}
 ];
 export const comparators = [
  {name:'Serena',area:'Código e símbolos',advantage:'Ferramentas semânticas e referências por LSP; integração MCP documentada.',gap:'BBrainX ainda usa busca lexical e não tem LSP no núcleo.',source:'serena'},
@@ -102,8 +103,8 @@ export const comparators = [
  {name:'Graphiti',area:'Conhecimento temporal',advantage:'Construção incremental de grafo temporal e recuperação híbrida.',gap:'BBrainX mantém memória aprovada e lexical; não implementa esse grafo.',source:'graphiti'}
 ];
 export const gates = [
- 'Suíte integral e MCP sobre o patch X99, sem somar evidências antigas.',
- 'Handoff real por versão de Codex, Claude Code, Gemini CLI e demais clientes.',
+ 'Gate MEDIUM em dois Macs físicos (16 a <32 GiB), por tarefa aceita.',
+ 'Handoff real em Cursor, Gemini CLI e demais clientes além de Claude Code e Codex.',
  'Calibração Laya em holdout: qualidade e cobertura, não apenas latência.',
  'Daemon e cache compartilhados com revogação, limites e retomada.',
  'Benchmark pareado por tarefa aceita, incluindo releituras e custo.',

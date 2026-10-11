@@ -41,13 +41,13 @@ test('atlas: toda relação planejada permanece documental',()=>{
 test('atlas: exportação determinística preserva revisão e status',()=>{
  const one=exportDocument('target'),two=exportDocument('target');assert.deepEqual(one,two);
  assert.equal(one.inspectedRevision,revision);assert.equal(one.classification,'documentary-architecture-not-runtime-telemetry');
- assert.equal(one.nodes.length,16);assert.equal(exportDocument('laya','candidate').nodes.length,3);
+ assert.equal(one.nodes.length,16);assert.equal(exportDocument('laya','candidate').nodes.length,2);
 });
 test('atlas: SVG faz escape de texto, não incorpora script nem URLs remotas',()=>{
  const doc=exportDocument('laya');doc.title='<script>alert("x")</script> &';doc.nodes[0].data={...doc.nodes[0].data,title:'<image href="bad"/>'};
  const svg=exportSvg(doc);assert.ok(svg.includes('&lt;script&gt;'));assert.ok(!svg.includes('<script>'));assert.ok(!svg.includes('<image '));assert.ok(!svg.includes('foreignObject'));assert.ok(svg.startsWith('<svg'));
 });
-test('atlas: evidências anteriores ficam separadas e sem total enganoso',()=>{
- assert.deepEqual(evidence.map(e=>e.value),['96','43','35']);assert.equal(evidence[0].url,sources.ci.url);
- assert.match(evidence[1].note,/não executados/);assert.match(evidence[2].note,/Sem Laya/);
+test('atlas: evidências da 1.5.0 ficam separadas e sem total enganoso',()=>{
+ assert.deepEqual(evidence.map(e=>e.value),['734','33','−79,4%']);assert.ok(evidence[0].url.includes(revision));
+ assert.match(evidence[0].note,/não somadas/);assert.match(evidence[2].note,/31\/36 antes e depois/);
 });

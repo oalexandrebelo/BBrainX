@@ -57,7 +57,7 @@ test('atlas: alterna as cinco visões e inspeciona por lista acessível',async({
 
 test('atlas: filtro e busca não promovem o cache candidato',async({page})=>{
  await page.goto('/atlas.html?view=laya');await loaded(page,8);
- await page.getByLabel('Filtrar por maturidade').selectOption('candidate');await loaded(page,3);
+ await page.getByLabel('Filtrar por maturidade').selectOption('candidate');await loaded(page,2);
  await page.locator('.atlas-node-list').getByRole('button',{name:'Cache exato de decisões',exact:true}).click();
  await expect(page.getByTestId('atlas-inspector')).toContainText('Desligado por padrão');
  await expect(page.getByTestId('atlas-inspector')).toContainText('Patch candidato');
@@ -77,7 +77,7 @@ test('atlas: exporta JSON e SVG da visão selecionada',async({page})=>{
  for(const [button,extension] of [['JSON ↓','json'],['SVG ↓','svg']]){
   const downloading=page.waitForEvent('download');await page.getByRole('button',{name:button,exact:true}).click();const download=await downloading;
   const file=path.join(out,'download-laya.'+extension);await download.saveAs(file);const value=fs.readFileSync(file,'utf8');
-  if(extension==='json'){const doc=JSON.parse(value);expect(doc.nodes.length).toBe(8);expect(doc.view).toBe('laya');expect(doc.inspectedRevision).toMatch(/^a9636e9/);}else expect(value).toContain('<svg');
+  if(extension==='json'){const doc=JSON.parse(value);expect(doc.nodes.length).toBe(8);expect(doc.view).toBe('laya');expect(doc.inspectedRevision).toMatch(/^77e6ddd/);}else expect(value).toContain('<svg');
  }
 });
 
