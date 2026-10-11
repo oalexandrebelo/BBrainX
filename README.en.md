@@ -10,7 +10,7 @@ BBrainX runs on your machine and gives a coding agent what it needs to continue 
 
 ## Start in three commands
 
-Requirements: Node 24 LTS and Git. This phase focuses on macOS; Linux and Windows pass the same test suite.
+Requirements: Node 24 LTS (or newer) and Git. Node 22 and earlier are not supported: their `node:sqlite` prints an ExperimentalWarning on stderr and the product is only verified on Node 24; `node bin/bbrainx.mjs doctor` says what to install. This phase focuses on macOS; Linux and Windows pass the same test suite.
 
 ```sh
 git clone https://github.com/oalexandrebelo/BBrainX.git && cd BBrainX

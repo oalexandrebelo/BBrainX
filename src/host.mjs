@@ -78,9 +78,15 @@ export function gitState(root) {
   const [commit, branch] = head.stdout.trim().split('\n');
   return { head: commit, branch: branch || null };
 }
-/** Observa o host; não instala software, acessa Keychain ou executa arquivos do projeto. */
-export function doctor({ env = process.env, mounts = processMounts } = {}) {
-  const [major, minor] = process.versions.node.split('.').map(Number);
+/** Piso do produto: node:sqlite imprime ExperimentalWarning no stderr antes do Node 24 e a suíte só é verificada a partir dele. */
+export const MINIMUM_NODE = '24.0.0';
+export function nodeSupported(version) {
+  const [major] = String(version).split('.').map(Number);
+  return Number.isInteger(major) && major >= Number(MINIMUM_NODE.split('.')[0]);
+}
+/** Observa o host; não instala software, acessa Keychain ou executa arquivos do projeto. `nodeVersion`, `env` e `mounts` são injetáveis. */
+export function doctor({ nodeVersion = process.versions.node, env = process.env, mounts = processMounts } = {}) {
+  const supportedNode = nodeSupported(nodeVersion);
   let sqlite = false, fts5 = false;
   const db = new DatabaseSync(':memory:');
   try { sqlite = true; db.exec('CREATE VIRTUAL TABLE probe USING fts5(text)'); fts5 = true; } finally { db.close(); }
@@ -89,13 +95,18 @@ export function doctor({ env = process.env, mounts = processMounts } = {}) {
   const stateSync = { local: syncReason === null, reason: syncReason };
   const hardware = { platform: process.platform, architecture: process.arch, memoryGiB: Math.round(os.totalmem() / 1073741824), cpuCount: os.availableParallelism() };
   const infrastructure = infrastructurePlan({totalMemoryBytes:os.totalmem(),cpuCount:hardware.cpuCount,constrainedMemoryBytes:process.constrainedMemory?.() ?? 0});
+  const blockers = [];
+  if (!supportedNode) blockers.push('Node ' + nodeVersion + ' não é suportado: instale o Node 24 LTS ou mais novo (https://nodejs.org ou `brew install node@24`) e rode o comando com ele. Mínimo: ' + MINIMUM_NODE + '.');
+  if (!sqlite || !fts5) blockers.push('Este Node não traz node:sqlite com FTS5: use o Node 24 LTS oficial ou do Homebrew.');
+  if (!git.available) blockers.push('Git não encontrado: instale o Git (macOS: `xcode-select --install` ou `brew install git`).');
+  if (!stateSync.local) blockers.push('BBRAINX_HOME está em ' + stateSync.reason + ': use um disco local (veja STATE_HOME_SYNCED em docs/QUICKSTART.md) ou BBRAINX_ALLOW_SYNCED_HOME=1 por sua conta e risco.');
   return {
-    node: process.versions.node, supportedNode: major > 22 || (major === 22 && minor >= 20), sqlite, fts5, git,
+    node: nodeVersion, minimumNode: MINIMUM_NODE, supportedNode, sqlite, fts5, git,
     hardware, infrastructure, stateDirectory: stateHome(env), stateSync,
     profile: 'local-deterministic',
     optionalCandidate: process.platform === 'darwin' && process.arch === 'arm64' ? 'Apple Silicon: avaliar Laya MPS ou SemIf MLX, não ativados' : 'CPU: avaliar Laya ONNX, não ativado',
     backendBenchmarked: false, remoteProvidersEnabled: false,
-    ready: (major > 22 || (major === 22 && minor >= 20)) && sqlite && fts5 && git.available && stateSync.local,
+    ready: blockers.length === 0, blockers,
     limits: ['Diagnóstico não mede inferência.', 'GPU, clientes e modelos não são requisitos do núcleo.', 'Não altera autenticação dos harnesses.', 'Perfil de infraestrutura é recomendação; não aplica limite global de RSS.']
   };
 }

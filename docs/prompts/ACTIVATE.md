@@ -32,7 +32,7 @@ cd "$BBRAINX_REPO" && npm run setup
 
 Se o clone for recusado, o repositório ainda é privado: peça o acesso ao dono e pare.
 
-**2. Confira a máquina.** É preciso Node 22.20 ou mais novo (o recomendado é o 24 LTS) e Git.
+**2. Confira a máquina.** É preciso Node 24 LTS (ou mais novo) e Git; Node 22 e anteriores não são suportados.
 
 ```sh
 node "$BBRAINX_REPO/bin/bbrainx.mjs" doctor
