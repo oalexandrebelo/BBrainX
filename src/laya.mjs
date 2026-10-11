@@ -3,6 +3,7 @@ import path from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
 import { LayaTransport } from './laya-transport.mjs';
+import { workerEnv } from './worker-env.mjs';
 import { pipeline } from 'node:stream/promises';
 import { Readable, Transform } from 'node:stream';
 import { fileURLToPath } from 'node:url';
@@ -170,15 +171,6 @@ function answersValid(results,states,questions,strictHead){
     });
   });
 }
-/** Retain only runtime paths, never provider credentials, PYTHONPATH or Node injection flags.
- * Offline library flags are not an OS network sandbox.
- */
-function workerEnv(source=process.env){
-  const env={};
-  for(const name of ['PATH','HOME','USERPROFILE','SYSTEMROOT','SystemRoot','WINDIR','TEMP','TMP','TMPDIR','LANG','LC_ALL'])if(source[name]!==undefined)env[name]=source[name];
-  return {...env,HF_HUB_OFFLINE:'1',TRANSFORMERS_OFFLINE:'1',HF_HUB_DISABLE_TELEMETRY:'1',TOKENIZERS_PARALLELISM:'false',PYTHONNOUSERSITE:'1'};
-}
-
 /** One bounded request in flight. Deadline includes loading; abort/timeout retires its worker generation. */
 export class LayaBroker{
   #generation=null;#active=null;#sequence=0;#failures=0;#openUntil=0;
