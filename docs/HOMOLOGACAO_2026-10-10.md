@@ -12,7 +12,7 @@ Máquina: macOS 26.6.2 arm64, Apple M4, 16 GiB, SQLite 3.53.4.
 | Testes automatizados, Node 22.22.2 | 734/734 | idem |
 | Playwright (Chromium): painel, uso, controle | 24/24, 6/6, 3/3 | `npm run test:e2e`; `playwright.usage.config.mjs`; `playwright.control.config.mjs` |
 | Controles negativos do MCP | 7/7 defeitos injetados e detectados | `node scripts/mcp-negative.mjs` |
-| `context_search`, 36 consultas, orçamento padrão de 4.000 tokens | 17.397 → **3.517** tokens (−79,8 %) | [engineering/PERFORMANCE.md](engineering/PERFORMANCE.md) |
+| `context_search`, média por resposta, 36 consultas, orçamento padrão de 4.000 tokens | 17.397 → **3.517** tokens (−79,8 %) | [engineering/PERFORMANCE.md](engineering/PERFORMANCE.md) |
 | Arquivo esperado localizado | 31/36 antes e depois | idem |
 | Arquivo esperado com corpo no resultado | 31/36 → 23/36 | idem |
 | Piso de recuperação (conjunto godmode), arquivo certo entre os 10 primeiros | **0,889**, um acerto por arquivo (o teste exige 0,85) | `test/godmode.test.mjs` |

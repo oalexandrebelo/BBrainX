@@ -69,7 +69,7 @@ Perguntas cegas: medidas na versão 0.4 da busca (revisão 4785d4d, 4 de outubro
 
 | Medida | Antes | Depois |
 |---|---|---|
-| `context_search`, 36 consultas, orçamento padrão de 4.000 tokens | 17.397 | **3.517** (−79,8 %) |
+| `context_search`, média por resposta, 36 consultas, orçamento padrão de 4.000 tokens | 17.397 | **3.517** (−79,8 %) |
 | Arquivo esperado localizado | 31/36 | 31/36 |
 | Arquivo esperado com corpo no resultado | 31/36 | 23/36 |
 | `tools/list` no fio | 2.431 | 1.925 (−20,8 %) |

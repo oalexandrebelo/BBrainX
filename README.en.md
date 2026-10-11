@@ -69,7 +69,7 @@ Blind questions: measured on the 0.4 search (revision 4785d4d, 4 October 2026). 
 
 | Measure | Before | After |
 |---|---|---|
-| `context_search`, 36 queries, default budget of 4,000 tokens | 17,397 | **3,517** (−79.8%) |
+| `context_search`, mean per answer, 36 queries, default budget of 4,000 tokens | 17,397 | **3,517** (−79.8%) |
 | Expected file located | 31/36 | 31/36 |
 | Expected file with its body in the result | 31/36 | 23/36 |
 | `tools/list` on the wire | 2,431 | 1,925 (−20.8%) |
