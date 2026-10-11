@@ -54,3 +54,15 @@ console.log('extensions/vscode/media/icon.png and icon.svg (' + glyph.length + '
 // O painel (Workbench e Atlas) importa o mesmo glifo; o Observatory, HTML estático, o traz inline e o teste confere a igualdade.
 fs.writeFileSync('web/brand-glyph.js', '// Gerado por scripts/brand-rasterize.mjs a partir de public/brand/icon.svg. Não edite à mão.\nexport const BRAND_GLYPH = Object.freeze({ viewBox: ' +
   JSON.stringify(viewBox) + ', paths: Object.freeze(' + JSON.stringify(glyph) + ') });\n');
+// Superfícies sem build que carregam a marca inline: o Atlas (publicado sem public/) e o cabeçalho do Observatory.
+const icon32 = 'data:image/png;base64,' + fs.readFileSync('public/brand/icon-32.png').toString('base64');
+function inline(file, pattern, replacement) {
+  const before = fs.readFileSync(file, 'utf8'), found = before.match(new RegExp(pattern.source, 'g')) || [];
+  if (found.length !== 1) throw new Error('BRAND_INLINE_TARGET ' + file + ': ' + found.length);
+  fs.writeFileSync(file, before.replace(pattern, replacement));
+}
+inline('atlas.html', /<link rel="icon" type="image\/png" sizes="32x32" href="data:image\/png;base64,[A-Za-z0-9+/=]+"/,
+  () => '<link rel="icon" type="image/png" sizes="32x32" href="' + icon32 + '"');
+inline('public/observatory/index.html', /(<a class="brand"[^>]*><svg viewBox=")[^"]*("[^>]*>)(?:<path d="[^"]*"\/>)+(<\/svg>)/,
+  (match, open, attributes, close) => open + viewBox + attributes + glyph.map(d => '<path d="' + d + '"/>').join('') + close);
+console.log('atlas.html and public/observatory/index.html (inline icon and header glyph)');

@@ -4,6 +4,14 @@ Desde 10 de outubro de 2026 a marca oficial é o **monograma BBX** com o wordmar
 projeto. Fontes originais (`99-Brand/` do arquivo mestre): `icon.svg` (64 px), `favicon.svg` (16 px) e `Wordmark-press.svg`.
 São desenhos em curvas: nenhum arquivo de fonte é distribuído. Não é parecer de marca registrada.
 
+Revisão de 2026-10-10 (`99-Brand/revisao-2026-10-10/`), sem redesenhar contornos:
+
+| Arquivo | Ajuste |
+|---|---|
+| `icon.svg` | quadro 0–64 dentro do canvas; glifo centrado (margens 7/4 → 5,5/5,5); 15 → 8 paths |
+| `favicon.svg` (16 e 32 px) | quadro 0–16; glifo centrado; sem o espigão entre B e X; peso uniforme (traço 0,18); 15 → 7 paths |
+| `wordmark.svg` | 20 → 12 paths, mesmo desenho |
+
 ## Paleta
 
 | Uso | Cor |
@@ -30,12 +38,18 @@ VS Code 1.141 e Antigravity 2.5.5 descartam ícone MCP em SVG; por isso o handsh
 ## Para mudar a marca
 
 1. Substitua `public/brand/icon.svg`, `favicon.svg` e `wordmark.svg` pelos novos originais.
-2. Rode `node scripts/brand-rasterize.mjs`: gera os PNGs, o ícone e a máscara da extensão e `web/brand-glyph.js`, com o
-   Chromium fixado pelo Playwright do lockfile (saída idêntica byte a byte entre execuções).
-3. Atualize o glifo inline do cabeçalho em `public/observatory/index.html`.
-4. `test/brand-icons.test.mjs` e `test/extension.test.mjs` reprovam se alguma superfície ficar diferente do ícone oficial.
+2. Rode `node scripts/brand-rasterize.mjs`: gera os PNGs, o ícone e a máscara da extensão, `web/brand-glyph.js`, o ícone
+   inline do `atlas.html` e o glifo do cabeçalho do Observatory, com o Chromium fixado pelo Playwright do lockfile
+   (saída idêntica byte a byte entre execuções).
+3. `test/brand-icons.test.mjs` e `test/extension.test.mjs` reprovam se alguma superfície ficar diferente do ícone oficial.
 
-Pendente: o filme Remotion (`media/src/index.jsx`) ainda usa o monograma provisório e precisa ser renderizado de novo.
+## Oportunidades
+
+- Favicon próprio para 16 px (só o X, ou "BX" na grade de pixels).
+- Wordmark sem fundo, para fundo escuro e para fundo claro; versão compacta (glifo + "BBrainX") abaixo de 360 px.
+- Um só tom de fundo (`#0C171D` e `#0B151B` hoje).
+- VS Code: ícone por ferramenta MCP (`Tool.icons`) e ícone na barra de status.
+- Filme Remotion (`media/src/index.jsx`) com a marca atual.
 
 ## Histórico
 
