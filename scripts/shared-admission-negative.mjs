@@ -24,8 +24,8 @@ for (const [id, mutate] of mutations) {
     fs.mkdirSync(path.join(directory, 'src')); fs.mkdirSync(path.join(directory, 'test'));
     const changed = mutate(original); assert.notEqual(changed, original);
     fs.writeFileSync(path.join(directory, 'src/shared-admission.mjs'), changed);
-    // O módulo agora importa o helper real de bootstrap: ausência de dependência não detecta mutante.
-    fs.copyFileSync(path.join(root, 'src/sqlite-init.mjs'), path.join(directory, 'src/sqlite-init.mjs'));
+    // O módulo importa o helper real de bootstrap e a checagem de pasta sincronizada: ausência de dependência não detecta mutante.
+    for (const dependency of ['sqlite-init.mjs', 'state-location.mjs', 'primitives.mjs']) fs.copyFileSync(path.join(root, 'src', dependency), path.join(directory, 'src', dependency));
     fs.copyFileSync(path.join(root, 'test/shared-admission.test.mjs'), path.join(directory, 'test/shared-admission.test.mjs'));
     const run = spawnSync(process.execPath, ['--test', '--test-reporter=tap', 'test/shared-admission.test.mjs'], { cwd: directory, encoding: 'utf8', timeout: 30000, maxBuffer: 4 * 1024 * 1024 });
     const log = (run.stdout ?? '') + (run.stderr ?? ''); fs.writeFileSync(path.join(output, id + '.log'), log);
