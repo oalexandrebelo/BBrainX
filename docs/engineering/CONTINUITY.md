@@ -33,6 +33,8 @@ Quem for otimizar começa pelo [norte de otimização](OPTIMIZATION_NORTH.md), q
 
 Na baseline funcional acima: ownership MCP contra IDs em voo duplicados; replay de checkpoint sem Git e writer transaction redundantes; distribuição pelos blobs Git com manifesto v2 e ZIP verificável; SBOMs separados; status/contexto/roadmap versionados. A justificativa e os custos de desempenho estão no [livro de experimentos](PERFORMANCE.md). Consulte os checks da PR/revisão atual antes de integrar; os resultados da baseline não certificam commits posteriores.
 
+Custo em tokens (branch `fix/tokens`, base `5acad77`): teto de `context_search`, um acerto por arquivo, piso de relevância e cabeçalho curto no pacote, esquemas de `tools/list` sem repetição, recusas acionáveis para índice ausente e obrigatório que não cabe. Medições, quem paga o custo e alternativas rejeitadas: [livro de experimentos](PERFORMANCE.md); contratos alterados: [notas de versão](../RELEASE_NOTES.md).
+
 Próxima ação: conferir a CI da ponta remota, revisar as PRs empilhadas EV-12/Laya/SDD e tratar as lacunas nativas documentadas. A prioridade de otimização permanece EV-05 (corpus fixado e tarefas aceitas), EV-06 (trabalho síncrono limitado) e EV-07 (restauração do conjunto de bancos). EV-11 documenta a reprodução de saída MCP acumulada com consumidor lento. Não apresentar esses itens como concluídos.
 
 ## EV-12 — integração e controle por projeto
