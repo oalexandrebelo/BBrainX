@@ -52,18 +52,26 @@ export class LaneStore extends BrainStore {
     });
   }
   reviewMemory(){ensure(false,'REVIEW_AT_PROJECT_AUTHORITY');}
-  commitContextEvent(project,payload){
-    this.checkProject(project);const memory=this.#capture();
-    // Order: registry -> memory authority -> lane. No inference or filesystem work under these locks.
-    this.registry.transaction(()=>{
-      this.registry.active(project,this.binding.id,this.binding.epoch);
-      this.authority.transaction(()=>{
-        ensure(this.#readMemory().revision===memory.revision,'SHARED_MEMORY_CHANGED');
-        super.commitContextEvent(project,{...payload,lane:this.binding.id,laneEpoch:this.binding.epoch,memoryRevision:memory.revision});
-      });
+  /** Lock order is lane -> registry -> memory authority, and nothing that holds the registry or the authority ever waits for a lane
+   * database. The lane write lock is taken first and waited for with no shared lock held (a big index in another process can hold it
+   * for seconds); only then, around the lane COMMIT itself, does the registry confirm the lane epoch is still active and the
+   * authority confirm the approved-memory revision. Closing a lane takes the registry lock, so it either completes before this gate
+   * (the write is rolled back, LANE_NOT_ACTIVE) or waits until the commit is done: no write survives in a closed epoch. */
+  #gate(inner){
+    return commit=>this.registry.transaction(()=>{
+      this.registry.active(this.scopeProject,this.binding.id,this.binding.epoch);
+      inner(commit);
     });
   }
-  checkpoint(project,...args){this.checkProject(project);return this.registry.transaction(()=>{this.registry.active(project,this.binding.id,this.binding.epoch);return super.checkpoint(project,...args);});}
+  commitContextEvent(project,payload){
+    this.checkProject(project);const memory=this.#capture();
+    super.commitContextEvent(project,{...payload,lane:this.binding.id,laneEpoch:this.binding.epoch,memoryRevision:memory.revision},this.#gate(commit=>
+      this.authority.transaction(()=>{
+        ensure(this.#readMemory().revision===memory.revision,'SHARED_MEMORY_CHANGED');
+        commit();
+      })));
+  }
+  checkpoint(project,task,content,expectedVersion,key){this.checkProject(project);return super.checkpoint(project,task,content,expectedVersion,key,this.#gate(commit=>commit()));}
   workspaceMetadata(){return {project:this.scopeProject,lane:this.binding.id,epoch:this.binding.epoch,root:this.binding.root,memoryAuthority:'project',checkpointScope:'workspace',isolation:'cooperative-not-os-sandbox'};}
   close(){try{super.close();}finally{try{this.authority.close();}finally{this.registry.close();}}}
 }

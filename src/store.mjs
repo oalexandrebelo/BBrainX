@@ -124,9 +124,11 @@ export class BrainStore {
     if (!statement) { statement = this.db.prepare(sql); this.#statements.set(sql, statement); }
     return statement;
   }
-  transaction(fn) {
+  /** `commitGate(commit)`, when given, runs the COMMIT itself (and may refuse it by throwing, which rolls back): a caller that needs
+   * another lock only across the commit takes it there instead of holding it while this write lock is still being waited for. */
+  transaction(fn, commitGate) {
     this.db.exec('BEGIN IMMEDIATE');
-    try { const result = fn(); this.db.exec('COMMIT'); return result; }
+    try { const result = fn(); if (commitGate) commitGate(() => this.db.exec('COMMIT')); else this.db.exec('COMMIT'); return result; }
     catch (e) { rollbackAfterFailure(this); throw e; }
   }
   event(project, type, payload) {
@@ -165,12 +167,12 @@ export class BrainStore {
     this.project(project);
     return this.db.prepare("SELECT count(*) AS total FROM memories WHERE project=? AND status='approved'").get(project).total;
   }
-  commitContextEvent(project, payload) { this.transaction(() => this.event(project, 'context.compiled', payload)); }
+  commitContextEvent(project, payload, commitGate) { this.transaction(() => this.event(project, 'context.compiled', payload), commitGate); }
   /**
    * Grava o estado de uma tarefa. `snapshot` declarado precisa ser o do índice atual; omitido, o host carimba o atual.
    * `host` (snapshot, Git, hora) é observado aqui e nunca aceito do chamador.
    */
-  checkpoint(project, task, content, expectedVersion, key) {
+  checkpoint(project, task, content, expectedVersion, key, commitGate) {
     const {root} = this.project(project); identifier(task); identifier(key);
     ensure(Number.isSafeInteger(expectedVersion) && expectedVersion >= 0, 'INVALID_VERSION');
     const declared = normalizeCheckpoint(content), fingerprint = hash({task, content:declared, expectedVersion});
@@ -195,7 +197,7 @@ export class BrainStore {
       this.db.prepare('INSERT INTO idempotency VALUES(?,?,?,?,?)').run(project, 'checkpoint', key, fingerprint, canonical(response));
       this.event(project, 'checkpoint.created', {task, version, snapshot, gitHead:host.git?.head || null});
       return response;
-    });
+    }, commitGate);
   }
   /** Já existe resposta gravada para esta chave? Permite repetir uma chamada sem refazer efeitos anteriores a ela. */
   hasCheckpointKey(project, key) {
