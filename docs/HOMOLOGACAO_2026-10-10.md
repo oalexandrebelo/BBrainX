@@ -1,4 +1,4 @@
-# Homologação 2026-10-10 — versão de uso (0.5.0-rc1) e backlog
+# Homologação 2026-10-10 — versão de uso (0.5.0-rc2) e backlog
 
 Escopo de uso: **Claude Code, Codex e VS Code** (Antigravity IDE usa o mesmo motor MCP do VS Code; conexão manual).
 Esta versão é para uso diário do dono no Mac mini e no MacBook Pro. **Não é lançamento público**: publicação, divulgação e
@@ -35,25 +35,35 @@ Concorrência (processos reais, 3 execuções): isolamento de lanes, memória ap
 vencedor, revogação, recusa de escopo/traversal/symlink, 28 kill -9 sem perda (replay idempotente), troca de harness na
 mesma lane preservando checkpoint.
 
-## Backlog priorizado (não corrigido nesta versão)
+## Incluído na rc2 (estudado, testado e aprovado nesta homologação)
 
-Trabalho parcial preservado nas branches `fix/harness` e `fix/tokens` do clone de auditoria.
+| Melhoria | Resultado medido |
+|---|---|
+| `context_search` com teto de tokens (budget 4000), um acerto por arquivo, ponteiros `caminho:linhas` para o resto | 17.397 → 3.517 tokens em 36 consultas (−79,8%); arquivo certo localizado 31/36 antes e depois; com `limit:50` 64.368 → 3.720 |
+| Esquemas sem repetição em `tools/list`; hash de seção curto e piso de relevância no pacote | `tools/list` −20,8%; custo fixo por turno −6,8%; bootstrap −14,4% (5 tarefas) |
+| Projeto/lane sem índice e orçamento obrigatório estourado viram erro acionável (chame `context_index`; quantas memórias e quanto falta) | fim do "nada encontrado" silencioso e do `detail:null` |
+| Chamadas paralelas na mesma lane entram em fila FIFO limitada (antes: `LANE_BUSY`) | 8 paralelas completam; acima do limite recusa tipada |
+| Checkpoint de lane não segura mais o lock global do registro enquanto espera o banco da lane; epoch encerrada continua sem receber escrita | lanes independentes sem EXECUTION_FAILED sob carga; 4 testes de corrida close×checkpoint |
+| Partida a frio simultânea com retry limitado do modo WAL; SQLITE_BUSY vira `STORE_BUSY` tipado e repetível; índice lê e calcula hash fora da transação | servidor não morre mais na criação simultânea do banco |
+| Worker Laya (caminho compartilhado) com ambiente sanitizado: sem chaves de API, NODE_OPTIONS ou PYTHONPATH | teste injeta segredos e prova que não vazam |
+| CLI com erro curto em JSON (sem stack trace, stdout vazio para o MCP) | — |
+| Marca oficial BBX em README, painel, handshake MCP e extensão VS Code | ver `docs/BRAND.md` |
 
-| Pri. | Item | Impacto | Referência |
-|---|---|---|---|
-| 1 | Worker Laya pelo caminho LayaTransport herda o ambiente completo (chaves de API) | segurança, só com Laya compartilhado | `fix/harness` 81ec313 (pronto) |
-| 2 | Checkpoint de lane segura o lock global do registro enquanto espera o banco da lane: sob carga, lanes independentes recebem EXECUTION_FAILED | multi-lane pesado | preservar invariante "epoch encerrada não recebe checkpoint" |
-| 3 | `context_search` sem teto de tokens (média 15,7k; 62k com limit=50); budget 4000 = −77% com o mesmo recall | tokens | `fix/tokens` (parcial) |
-| 4 | Chamadas paralelas na mesma lane → LANE_BUSY (Claude chama tools em paralelo) | turnos/tokens | fila FIFO limitada |
-| 5 | Lane sem índice responde vazio em silêncio; INSTRUCTIONS não citam `context_index` | tokens | — |
-| 6 | Partida a frio simultânea: `journal_mode=WAL` sem retry em store/registry (10–17/100 em banco novo) | robustez | usar `ensureWalMode` (F01) |
-| 7 | SQLITE_BUSY vira EXECUTION_FAILED opaco; `indexProject` segura escrita durante leitura+hash | índices grandes | — |
-| 8 | Busca repete o mesmo arquivo no top-10 (~11% das vagas); 1 trecho/arquivo: hit@3 0,64→0,69 | qualidade/tokens | piso godmode com margem mínima |
-| 9 | 50 memórias `always` → bootstrap falha inteiro com `detail:null` | robustez | — |
-| 10 | Instalador oficial no repositório com smoke MCP real e backup do banco antes da troca de release | operação | o instalador usado no Mac mini está fora do repo |
-| 11 | README: alegações não verificadas (Cursor/VS Code/Gemini), CI de 912aa25, paridade PT/EN | lançamento público | relatório docs×CLI |
-| 12 | FR-008 MEDIUM: instrumento pronto; falta coleta longa com máquina quieta e segundo Mac 16–<32 GiB | gate público | `medium-native-benchmark.mjs` |
-| 13 | Aval final independente (Fable, esforço máximo) antes de divulgar; decidir publicação/merge dos PRs #8–#19 | lançamento | `main` remota está em a9636e9 |
+Suíte 734/734 no Node 24.21.0 e no 22.22.3; Playwright 24/24, 6/6, 3/3.
+
+## Backlog (não incluído)
+
+| Pri. | Item | Referência |
+|---|---|---|
+| 1 | Corpo do `context_search` reduzido às linhas ao redor dos termos (precisão de linhas hoje 0,26) | `docs/engineering/PERFORMANCE.md` |
+| 2 | Lease de escrita por lane (hoje só CAS/idempotência impedem dois escritores) | ideia do Brigade abaixo |
+| 3 | Memórias `always` e descrições de tools só por nome+resumo, corpo sob demanda | ideia do Brigade abaixo |
+| 4 | Instalador oficial no repositório (o kit `INSTALAR.sh` cobre o uso pessoal) com backup do banco antes da troca | — |
+| 5 | Hardlink externo é indexado; memória revogada pode ser reaprovada (sem máquina de estados) | relatório de concorrência |
+| 6 | README: alegações não verificadas (Cursor/Gemini), CI de 912aa25, paridade PT/EN restante | relatório docs×CLI |
+| 7 | Filme Remotion com a marca nova | `docs/BRAND.md` |
+| 8 | FR-008 MEDIUM: coleta longa com máquina quieta + segundo Mac 16–<32 GiB | instrumento na auditoria |
+| 9 | Aval final independente (Fable, esforço máximo) e decisão de publicação (main remota em a9636e9; PRs #8–#19) | antes de divulgar |
 
 ## Oportunidade avaliada: spinabot/brigade (MIT, ~11k estrelas, alegações do README não verificadas)
 
