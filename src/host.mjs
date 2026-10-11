@@ -27,9 +27,10 @@ export function stableNodePath({ env = process.env, execPath = process.execPath,
   const invalid = errors.invalid ?? 'INVALID_NODE_PATH', mismatch = errors.mismatch ?? 'NODE_PATH_MISMATCH';
   const requested = env.BBRAINX_NODE;
   if (requested !== undefined) {
-    ensure(typeof requested === 'string' && path.isAbsolute(requested) && !CONTROL.test(requested), invalid);
-    try { realpath(requested); } catch { ensure(false, invalid); }
-    ensure(sameFile(realpath, requested, execPath), mismatch);
+    const invalidMessage = 'BBRAINX_NODE precisa ser o caminho absoluto de um executável existente.';
+    ensure(typeof requested === 'string' && path.isAbsolute(requested) && !CONTROL.test(requested), invalid, invalidMessage);
+    try { realpath(requested); } catch { ensure(false, invalid, invalidMessage); }
+    ensure(sameFile(realpath, requested, execPath), mismatch, 'BBRAINX_NODE precisa resolver (realpath) ao mesmo executável deste processo; use o alias estável do Node que está rodando o BBrainX.');
     return requested;
   }
   const keg = /^(.*)\/Cellar\/([^/]+)\/[^/]+\/bin\/node$/.exec(execPath);
@@ -45,9 +46,10 @@ export function stableEntryPath(selfPath, { env = process.env, realpath = native
   const invalid = errors.invalid ?? 'INVALID_ENTRY_PATH', mismatch = errors.mismatch ?? 'ENTRY_PATH_MISMATCH';
   const requested = env.BBRAINX_ENTRY;
   if (requested !== undefined && requested !== '') {
-    ensure(typeof requested === 'string' && path.isAbsolute(requested) && !CONTROL.test(requested), invalid);
-    try { realpath(requested); } catch { ensure(false, invalid); }
-    ensure(sameFile(realpath, requested, selfPath), mismatch);
+    const invalidMessage = 'BBRAINX_ENTRY precisa ser o caminho absoluto de um arquivo existente.';
+    ensure(typeof requested === 'string' && path.isAbsolute(requested) && !CONTROL.test(requested), invalid, invalidMessage);
+    try { realpath(requested); } catch { ensure(false, invalid, invalidMessage); }
+    ensure(sameFile(realpath, requested, selfPath), mismatch, 'BBRAINX_ENTRY precisa resolver (realpath) ao mesmo arquivo em execução; aponte para app/current dentro da mesma release.');
     return requested;
   }
   const parts = selfPath.split(path.sep), at = parts.lastIndexOf('releases');

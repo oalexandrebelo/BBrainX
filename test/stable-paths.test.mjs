@@ -36,7 +36,7 @@ test('BBRAINX_NODE só vale se for absoluto e resolver ao mesmo executável; sen
   assert.equal(host.stableNodePath({ env: { BBRAINX_NODE: stable }, execPath: CELLAR, realpath }), stable);
   assert.throws(() => host.stableNodePath({ env: { BBRAINX_NODE: '/bin/sh' }, execPath: CELLAR, realpath }), { code: 'NODE_PATH_MISMATCH' });
   for (const bad of ['node', '', '/nao/existe', '/x\ny']) assert.throws(() => host.stableNodePath({ env: { BBRAINX_NODE: bad }, execPath: CELLAR, realpath }), { code: 'INVALID_NODE_PATH' }, JSON.stringify(bad));
-  assert.throws(() => host.stableNodePath({ env: { BBRAINX_NODE: '/bin/sh' }, execPath: CELLAR, realpath, errors: { mismatch: 'X_MISMATCH' } }), { code: 'X_MISMATCH' });
+  assert.throws(() => host.stableNodePath({ env: { BBRAINX_NODE: '/bin/sh' }, execPath: CELLAR, realpath, errors: { mismatch: 'X_MISMATCH' } }), { code: 'X_MISMATCH', message: /BBRAINX_NODE.*realpath/ });
 });
 
 test('entry em releases/<sha> é emitido via app/current quando current resolve ao mesmo arquivo', () => {
