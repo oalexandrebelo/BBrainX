@@ -125,9 +125,9 @@ O que não existe: observador contínuo de arquivos, análise semântica por ser
 
 ## Marca
 
-A marca em uso é o **monograma BX**, escolhida de forma provisória entre três opções originais que continuam em estudo. O porquê de cada uma e como trocar estão em [docs/BRAND.md](docs/BRAND.md).
+A marca oficial é o **monograma BBX** com o wordmark do topo desta página: ícone do painel, do handshake MCP (Claude Code, Codex, VS Code) e da extensão VS Code. Paleta, superfícies e como regenerar estão em [docs/BRAND.md](docs/BRAND.md).
 
-<p align="center"><img src="public/brand/options/opcoes.gif" width="480" alt="As três opções de marca do BBrainX alternando: A, duas camadas; B, facetada; C, monograma BX, em uso"/></p>
+<p align="center"><img src="public/brand/icon.svg" width="96" alt="Ícone BBrainX: monograma BBX verde-menta sobre fundo grafite"/></p>
 
 ## Comunidade
 

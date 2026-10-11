@@ -2,6 +2,7 @@ import React,{memo,useCallback,useEffect,useMemo,useRef,useState} from 'react';
 import {ReactFlow,ReactFlowProvider,Background,Controls,MiniMap,Handle,Position,useReactFlow,useNodesInitialized,MarkerType} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './atlas.css';
+import {BRAND_GLYPH} from '../brand-glyph.js';
 import {revision,inspectedAt,repo,stages,sources,components,views,graphFor,evidence,comparators,gates} from './data.js';
 import {exportDocument,exportSvg,saveDownload} from './export.js';
 
@@ -27,7 +28,7 @@ function initialState(){
  const query=(p.get('q')||'').slice(0,120),graph=graphFor(view,status,query);
  return {view,status,query,selected:graph.nodes.some(n=>n.id===p.get('node'))?p.get('node'):(graph.nodes.find(n=>n.id==='context')?.id||graph.nodes[0]?.id||null)};
 }
-const Mark=()=> <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M4 12H20A8 8 0 0 1 20 28H4Z M4 36H24A8 8 0 0 1 24 52H4Z M36 12H44L60 52H52Z M52 12H60L44 52H36Z" fill="currentColor"/></svg>;
+const Mark=()=> <svg viewBox={BRAND_GLYPH.viewBox} fill="currentColor" aria-hidden="true">{BRAND_GLYPH.paths.map(d=><path key={d} d={d}/>)}</svg>;
 const External=({href,children,...props})=><a href={href} target="_blank" rel="noreferrer" {...props}>{children}<span aria-hidden="true"> ↗</span></a>;
 function AtlasContent(){
  const [state,setState]=useState(initialState),[notice,setNotice]=useState(''),tabRefs=useRef([]);

@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import {ReactFlow,Background,Controls,MiniMap,Handle,Position,useNodesState,useEdgesState} from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import './style.css';
+import {BRAND_GLYPH} from './brand-glyph.js';
 import ControlPanel from './ControlPanel.jsx';
 import LayaPanel from './LayaPanel.jsx';
 import SddPanel from './SddPanel.jsx';
@@ -11,7 +12,7 @@ import {situations,tools,measuredOn} from './study-map.js';
 import {layoutStudy} from './study-layout.js';
 
 const repo='https://github.com/oalexandrebelo/BBrainX';
-function Mark(){return <svg viewBox="4 12 56 40" fill="currentColor" aria-hidden="true"><path d="M4 12H20A8 8 0 0 1 20 28H4Z"/><path d="M4 36H24A8 8 0 0 1 24 52H4Z"/><path d="M36 12H44L60 52H52Z"/><path d="M52 12H60L44 52H36Z"/></svg>;}
+function Mark(){return <svg viewBox={BRAND_GLYPH.viewBox} fill="currentColor" aria-hidden="true">{BRAND_GLYPH.paths.map(d=><path key={d} d={d}/>)}</svg>;}
 const statusLabel={implemented:'IMPLEMENTADO',experimental:'EXPERIMENTAL',protocol:'INTERFACE'};
 function ArchitectureNode({data,selected}){return <div className={'arch-node '+(selected?'selected ':'')+data.status}>
  <Handle type="target" position={Position.Top}/><div className="node-meta"><span>{data.layer}</span><i/></div><div className="node-title"><b aria-hidden="true">{data.icon}</b><strong>{data.label}</strong></div><p>{data.subtitle}</p><Handle type="source" position={Position.Bottom}/></div>;}

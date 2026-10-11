@@ -1,6 +1,7 @@
 // Deriva os ícones de uso a partir dos SVGs oficiais, com o Chromium fixado pelo Playwright do lockfile.
 // uso: node scripts/brand-rasterize.mjs  →  public/brand/icon-32.png e icon-128.png (painel e handshake MCP),
-// extensions/vscode/media/icon.png (lista de extensões) e extensions/vscode/media/icon.svg (máscara da Activity Bar).
+// extensions/vscode/media/icon.png (lista de extensões), extensions/vscode/media/icon.svg (máscara da Activity Bar)
+// e web/brand-glyph.js (marca do cabeçalho do painel).
 // IDEs derivadas do VS Code só aceitam ícone MCP e de extensão em raster; o SVG continua servindo o painel.
 import fs from 'node:fs';
 import { chromium } from '@playwright/test';
@@ -50,3 +51,6 @@ const viewBox = [glyphBox.x - 1, glyphBox.y - 1, glyphBox.width + 2, glyphBox.he
 fs.writeFileSync('extensions/vscode/media/icon.svg', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + viewBox + '" fill="currentColor">' +
   glyph.map(d => '<path d="' + d + '"/>').join('') + '</svg>\n');
 console.log('extensions/vscode/media/icon.png and icon.svg (' + glyph.length + ' paths)');
+// O painel (Workbench e Atlas) importa o mesmo glifo; o Observatory, HTML estático, o traz inline e o teste confere a igualdade.
+fs.writeFileSync('web/brand-glyph.js', '// Gerado por scripts/brand-rasterize.mjs a partir de public/brand/icon.svg. Não edite à mão.\nexport const BRAND_GLYPH = Object.freeze({ viewBox: ' +
+  JSON.stringify(viewBox) + ', paths: Object.freeze(' + JSON.stringify(glyph) + ') });\n');

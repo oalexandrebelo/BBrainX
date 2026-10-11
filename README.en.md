@@ -74,9 +74,9 @@ No continuous file watcher, language-server analysis, multi-host sync, own encry
 
 ## Brand
 
-The mark in use is the **BX monogram**, a provisional choice among three original options that are still under study. See [docs/BRAND.md](docs/BRAND.md).
+The official mark is the **BBX monogram** with the wordmark at the top of this page: panel icon, MCP handshake icon (Claude Code, Codex, VS Code) and VS Code extension icon. Palette, surfaces and how to regenerate them are in [docs/BRAND.md](docs/BRAND.md).
 
-<p align="center"><img src="public/brand/options/opcoes.gif" width="480" alt="The three BBrainX brand options cycling: A, two layers; B, faceted; C, BX monogram, in use"/></p>
+<p align="center"><img src="public/brand/icon.svg" width="96" alt="BBrainX icon: mint BBX monogram on a graphite tile"/></p>
 
 ## License
 
