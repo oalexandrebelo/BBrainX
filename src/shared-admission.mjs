@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { types } from 'node:util';
 import { ensureWalMode } from './sqlite-init.mjs';
+import { assertLocalState } from './state-location.mjs';
 
 /** @typedef {{ledgerId:string,resource:string,generation:number,token:string}} AdmissionHandle */
 /** @typedef {{id:string,physicalKey:string,slots:number,byteLimit:number}} ResourcePolicy */
@@ -101,6 +102,7 @@ export class SharedAdmission {
     need(typeof readOnly === 'boolean' && positive(historyLimit, 1000000) && positive(busyTimeoutMs, 5000), 'INVALID_ADMISSION_CONFIGURATION');
     need(reconcileVerifier === undefined || typeof reconcileVerifier === 'function' && !types.isAsyncFunction(reconcileVerifier), 'INVALID_RECONCILIATION_VERIFIER');
     this.#readOnly = readOnly; this.#reconcileVerifier = reconcileVerifier;
+    assertLocalState(home);
     if (!readOnly) fs.mkdirSync(home, { recursive: true, mode: 0o700 });
     need(!fs.lstatSync(home).isSymbolicLink(), 'UNSAFE_ADMISSION_HOME');
     const directory = privateDirectory(path.join(fs.realpathSync(home), 'admission'), !readOnly);

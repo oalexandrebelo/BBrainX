@@ -5,6 +5,8 @@ import { spawnSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { ensure } from './primitives.mjs';
 import { infrastructurePlan } from './infrastructure.mjs';
+import { assertLocalState, syncedStateReason, readMounts, processMounts } from './state-location.mjs';
+export { assertLocalState, syncedStateReason, readMounts };
 
 export function stateHome(env = process.env, platform = process.platform) {
   if (env.BBRAINX_HOME) return path.resolve(env.BBRAINX_HOME);
@@ -56,6 +58,7 @@ export function stableEntryPath(selfPath, { env = process.env, realpath = native
   return selfPath;
 }
 export function safeDirectory(directory) {
+  assertLocalState(directory);
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   ensure(!fs.lstatSync(directory).isSymbolicLink(), 'UNSAFE_STATE_DIRECTORY');
   return fs.realpathSync(directory);
@@ -76,21 +79,23 @@ export function gitState(root) {
   return { head: commit, branch: branch || null };
 }
 /** Observa o host; não instala software, acessa Keychain ou executa arquivos do projeto. */
-export function doctor() {
+export function doctor({ env = process.env, mounts = processMounts } = {}) {
   const [major, minor] = process.versions.node.split('.').map(Number);
   let sqlite = false, fts5 = false;
   const db = new DatabaseSync(':memory:');
   try { sqlite = true; db.exec('CREATE VIRTUAL TABLE probe USING fts5(text)'); fts5 = true; } finally { db.close(); }
   const git = commandVersion('git');
+  const syncReason = env.BBRAINX_ALLOW_SYNCED_HOME === '1' ? null : syncedStateReason(stateHome(env), { mounts });
+  const stateSync = { local: syncReason === null, reason: syncReason };
   const hardware = { platform: process.platform, architecture: process.arch, memoryGiB: Math.round(os.totalmem() / 1073741824), cpuCount: os.availableParallelism() };
   const infrastructure = infrastructurePlan({totalMemoryBytes:os.totalmem(),cpuCount:hardware.cpuCount,constrainedMemoryBytes:process.constrainedMemory?.() ?? 0});
   return {
     node: process.versions.node, supportedNode: major > 22 || (major === 22 && minor >= 20), sqlite, fts5, git,
-    hardware, infrastructure, stateDirectory: stateHome(),
+    hardware, infrastructure, stateDirectory: stateHome(env), stateSync,
     profile: 'local-deterministic',
     optionalCandidate: process.platform === 'darwin' && process.arch === 'arm64' ? 'Apple Silicon: avaliar Laya MPS ou SemIf MLX, não ativados' : 'CPU: avaliar Laya ONNX, não ativado',
     backendBenchmarked: false, remoteProvidersEnabled: false,
-    ready: (major > 22 || (major === 22 && minor >= 20)) && sqlite && fts5 && git.available,
+    ready: (major > 22 || (major === 22 && minor >= 20)) && sqlite && fts5 && git.available && stateSync.local,
     limits: ['Diagnóstico não mede inferência.', 'GPU, clientes e modelos não são requisitos do núcleo.', 'Não altera autenticação dos harnesses.', 'Perfil de infraestrutura é recomendação; não aplica limite global de RSS.']
   };
 }
