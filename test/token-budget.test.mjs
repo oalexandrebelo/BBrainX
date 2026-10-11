@@ -65,3 +65,16 @@ test('the command line search obeys --budget as the tool does',t=>{
   const small=run('--budget','256'), standard=run(), large=run('--budget','16000');
   assert.equal(small.items.length,1);assert.equal(small.omitted,9);assert.ok(standard.items.length>small.items.length&&standard.items.length<10);assert.equal(large.items.length,10);
 });
+
+// ── esquemas anunciados em tools/list ──────────────────────────────────────
+test('identifier format is enforced by the server without being repeated as a pattern in every tool schema',async t=>{
+  const {store}=workspace(t,ranked());const engine=makeEngine(store,['test']);
+  for(const id of ['bad id','-lead','_lead','a/b','x'.repeat(81),''])await assert.rejects(()=>engine.invoke('session.get',{project:'test',task:id},principal),{code:'INPUT_INVALID'},JSON.stringify(id));
+  assert.equal((await engine.invoke('session.get',{project:'test',task:'A.b-c_9'},principal)).ok,true);
+  assert.equal((await engine.invoke('session.get',{project:'test',task:'x'.repeat(80)},principal)).ok,true);
+  for(const {id} of engine.list()){
+    const text=JSON.stringify(engine.describe(id));
+    assert.ok(!text.includes('"pattern"'),id+' still advertises a pattern');assert.ok(!text.includes('$defs'),id+' still advertises a recursive output schema');
+    assert.equal(engine.describe(id).outputSchema.type,'object');
+  }
+});

@@ -3,6 +3,7 @@
 Base `5acad77`. Medido em payload com o200k_base (`gpt-tokenizer`), um proxy: não é cobrança do provedor, `billingSavings` continua `null`. Cada item abaixo traz o teste que o fixa; mudanças de contrato público estão marcadas.
 
 - **Contrato:** `context_search` ganha `budget` (256 a 16000, padrão 4000 tokens) e a resposta ganha `omitted`; `truncated` também vale quando o orçamento corta. O que o orçamento deixa de fora volta em `more` como `caminho:linhas` (cerca de 10 tokens cada, até 25, dentro do mesmo orçamento). O melhor acerto é sempre servido. Antes, 12 trechos de 60 linhas custavam cerca de 15,5 mil tokens por chamada e `limit: 50` cerca de 62 mil; agora a resposta padrão tem cerca de 3,8 mil. Quem precisa de todos os trechos com corpo passa `budget: 16000`. A CLI `search` aceita `--budget`; o botão Buscar do painel recebe o mesmo teto.
+- **Contrato:** `tools/list` deixa de repetir a regex dos identificadores como `pattern` em cada propriedade (a validação no servidor é a mesma: mesmos seis ids inválidos recusados, mensagem de erro de 55 para 43 tokens) e `outputSchema.data` passa a ser objeto JSON ou null, sem o esquema recursivo de `z.json()` repetido nas seis ferramentas. `tools/list` no fio: 2.431 para 1.925 tokens (-20,8%); o que o modelo vê por turno (instruções + nome, descrição e esquema de entrada): 1.498 para 1.382 (-7,7%), já com o `budget` novo de `context_search`. O ganho de `outputSchema` só chega ao modelo se o harness o injeta no prompt (não verificado).
 
 # Alinhamento SDD por projeto — 08/10/2026
 
