@@ -32,7 +32,7 @@ export function resolveExisting(directory) {
   }
 }
 function lexicalReason(directory, mounts, platform) {
-  const flavour = platform === 'win32' ? path.win32 : path;
+  const flavour = platform === 'win32' ? path.win32 : path.posix;
   const resolved = flavour.resolve(directory);
   if (platform === 'win32' && /^\\\\(?![?.]\\)/.test(resolved)) return 'sistema de arquivos remoto (caminho UNC ' + resolved.split('\\').slice(0, 4).join('\\') + ')';
   const hit = resolved.split(flavour.sep).find(part => SYNC_SEGMENTS.has(part.toLowerCase()) || SYNC_PREFIX.test(part));

@@ -39,20 +39,23 @@ test('BBRAINX_NODE só vale se for absoluto e resolver ao mesmo executável; sen
   assert.throws(() => host.stableNodePath({ env: { BBRAINX_NODE: '/bin/sh' }, execPath: CELLAR, realpath, errors: { mismatch: 'X_MISMATCH' } }), { code: 'X_MISMATCH', message: /BBRAINX_NODE.*realpath/ });
 });
 
+const at = (...parts) => path.join(path.sep, ...parts);   // caminho fictício absoluto no separador da plataforma
 test('entry em releases/<sha> é emitido via app/current quando current resolve ao mesmo arquivo', () => {
-  const self = '/Users/u/Library/Application Support/BBrainX/app/releases/f48cdcc/bin/bbrainx.mjs', via = '/Users/u/Library/Application Support/BBrainX/app/current/bin/bbrainx.mjs';
+  const base = at('Users', 'u', 'Library', 'Application Support', 'BBrainX', 'app'), self = path.join(base, 'releases', 'f48cdcc', 'bin', 'bbrainx.mjs'), via = path.join(base, 'current', 'bin', 'bbrainx.mjs');
   assert.equal(host.stableEntryPath(self, { env: {}, realpath: fakeRealpath({ [self]: self, [via]: self }) }), via);
   assert.equal(host.stableEntryPath(self, { env: {}, realpath: fakeRealpath({ [self]: self }) }), self, 'sem current: o próprio arquivo');
-  assert.equal(host.stableEntryPath(self, { env: {}, realpath: fakeRealpath({ [self]: self, [via]: '/Users/u/Library/Application Support/BBrainX/app/releases/outra/bin/bbrainx.mjs' }) }), self, 'current aponta para outra release');
-  assert.equal(host.stableEntryPath('/repo/bin/bbrainx.mjs', { env: {}, realpath: fakeRealpath({ '/repo/bin/bbrainx.mjs': '/repo/bin/bbrainx.mjs' }) }), '/repo/bin/bbrainx.mjs', 'checkout comum não muda');
+  assert.equal(host.stableEntryPath(self, { env: {}, realpath: fakeRealpath({ [self]: self, [via]: path.join(base, 'releases', 'outra', 'bin', 'bbrainx.mjs') }) }), self, 'current aponta para outra release');
+  const plain = at('repo', 'bin', 'bbrainx.mjs');
+  assert.equal(host.stableEntryPath(plain, { env: {}, realpath: fakeRealpath({ [plain]: plain }) }), plain, 'checkout comum não muda');
 });
 
 test('BBRAINX_ENTRY só vale se for absoluto e resolver ao arquivo em execução', () => {
-  const self = '/app/releases/abc/bin/bbrainx.mjs', via = '/app/current/bin/bbrainx.mjs', realpath = fakeRealpath({ [self]: self, [via]: self, '/app/releases/old/bin/bbrainx.mjs': '/app/releases/old/bin/bbrainx.mjs' });
+  const self = at('app', 'releases', 'abc', 'bin', 'bbrainx.mjs'), via = at('app', 'current', 'bin', 'bbrainx.mjs'), old = at('app', 'releases', 'old', 'bin', 'bbrainx.mjs');
+  const realpath = fakeRealpath({ [self]: self, [via]: self, [old]: old });
   assert.equal(host.stableEntryPath(self, { env: { BBRAINX_ENTRY: via }, realpath }), via);
   assert.equal(host.stableEntryPath(self, { env: { BBRAINX_ENTRY: '' }, realpath }), via, 'vazio equivale a ausente');
-  assert.throws(() => host.stableEntryPath(self, { env: { BBRAINX_ENTRY: '/app/releases/old/bin/bbrainx.mjs' }, realpath }), { code: 'ENTRY_PATH_MISMATCH' });
-  for (const bad of ['relativo.mjs', '/nao/existe.mjs']) assert.throws(() => host.stableEntryPath(self, { env: { BBRAINX_ENTRY: bad }, realpath }), { code: 'INVALID_ENTRY_PATH' }, bad);
+  assert.throws(() => host.stableEntryPath(self, { env: { BBRAINX_ENTRY: old }, realpath }), { code: 'ENTRY_PATH_MISMATCH' });
+  for (const bad of ['relativo.mjs', at('nao', 'existe.mjs')]) assert.throws(() => host.stableEntryPath(self, { env: { BBRAINX_ENTRY: bad }, realpath }), { code: 'INVALID_ENTRY_PATH' }, bad);
 });
 
 // ---- ponta a ponta: cada emissor roda de um "Homebrew" e de uma "release" fictícios montados em pasta temporária ----
@@ -77,14 +80,16 @@ function fakeRelease(t) {
 }
 const run = (node, args, env) => { const r = spawnSync(node, args, { encoding: 'utf8', timeout: 30000, env: { PATH: process.env.PATH, ...env } }); assert.equal(r.status, 0, r.stderr); return r.stdout; };
 
-test('bbrainx config emite o alias opt do Homebrew e o entry via app/current', { skip: !posix }, t => {
+test('bbrainx config emite o alias opt do Homebrew e o entry via app/current', {}, t => {
+  if (!posix) return;   // Cellar/opt e hardlink do node só existem em POSIX; sem skip para não contar como teste pulado
   const brew = fakeBrew(t), rel = fakeRelease(t), home = path.join(scratch(t), 'state');
   const out = JSON.parse(run(brew.node, [path.join(rel.current, 'bin', 'bbrainx.mjs'), 'config', '--project', 'p', '--client', 'cursor'], { BBRAINX_HOME: home }).replace(/^#.*\n/, ''));
   assert.equal(out.mcpServers.bbrainx.command, brew.alias);
   assert.deepEqual(out.mcpServers.bbrainx.args.slice(0, 2), [path.join(rel.current, 'bin', 'bbrainx.mjs'), 'mcp']);
 });
 
-test('scripts/codex-project.mjs e scripts/lanes.mjs config emitem o mesmo caminho estável', { skip: !posix }, t => {
+test('scripts/codex-project.mjs e scripts/lanes.mjs config emitem o mesmo caminho estável', {}, t => {
+  if (!posix) return;   // Cellar/opt e hardlink do node só existem em POSIX; sem skip para não contar como teste pulado
   const brew = fakeBrew(t), rel = fakeRelease(t), f = laneFixture(t);
   const env = { BBRAINX_HOME: f.home };
   const codex = JSON.parse(run(brew.node, [path.join(rel.current, 'scripts', 'codex-project.mjs'), '--project', 'product'], env));
@@ -96,7 +101,8 @@ test('scripts/codex-project.mjs e scripts/lanes.mjs config emitem o mesmo caminh
   assert.equal(server.args[0], path.join(rel.current, 'scripts', 'lanes.mjs'));
 });
 
-test('integrate --apply grava o alias estável e recusa BBRAINX_ENTRY que não resolve ao mesmo arquivo', { skip: !posix }, t => {
+test('integrate --apply grava o alias estável e recusa BBRAINX_ENTRY que não resolve ao mesmo arquivo', {}, t => {
+  if (!posix) return;   // Cellar/opt e hardlink do node só existem em POSIX; sem skip para não contar como teste pulado
   const brew = fakeBrew(t), rel = fakeRelease(t), dir = scratch(t), project = path.join(dir, 'project'), home = path.join(dir, 'state');
   fs.mkdirSync(project); fs.writeFileSync(path.join(project, 'README.md'), '# p\n');
   const entry = path.join(rel.current, 'bin', 'bbrainx.mjs');
