@@ -62,6 +62,8 @@ A saída é um relatório JSON com `destination`, `workspace` e `fragment`. **Me
 
 Abra Claude Code na worktree A e Codex na B. Recarregue as conexões e faça uma chamada real. Em ambos: indexar a própria lane, buscar um marcador exclusivo de seu código e recuperar/gravar um checkpoint com `expectedVersion`. Verifique que o `data.workspace.lane` e a raiz correspondem ao editor.
 
+**Claude Code pede uma aprovação única do `.mcp.json` do projeto.** Um servidor declarado ali só é iniciado depois que a pessoa o aprova no próprio Claude Code (confirmação na primeira abertura da pasta, ou `/mcp`). O BBrainX não escreve nessa aprovação, não altera `.claude*` nem aprova por você: sem ela, a lane simplesmente não aparece entre as ferramentas. Aprove uma vez por servidor; se o fragmento mudar e adicionar servidores, o pedido pode se repetir. Várias chamadas em paralelo do mesmo harness esperam sua vez na fila da lane (até 8 por processo) em vez de falhar.
+
 A extensão conserva as seis ferramentas existentes. `data.workspace` identifica o contexto host-owned nas respostas bem-sucedidas; o pacote textual também registra lane, epoch, raiz e revisão das memórias aprovadas, incluídos no orçamento. Não há ferramenta de shell, criação de worktrees ou aprovação de memória.
 
 ### Formatos emitidos — não certificações de clientes
