@@ -1,3 +1,63 @@
+# BBrainX 1.5.0 — Developer Preview — 10/10/2026
+
+| Medida | Valor |
+|---|---|
+| `context_search`, média por resposta, 36 consultas | 17.778 → 3.666 tokens (−79,4 %); arquivo localizado 31/36 → 31/36 |
+| Piso de recuperação (godmode), hit@10 | 0,889 |
+| Testes automatizados | 735/735 no Node 24.21.0 e no Node 22.22.2 (macOS arm64) |
+| Playwright (painel · uso · controle) | 24/24 · 6/6 · 3/3 |
+| Controles negativos MCP | 7/7 detectados |
+| Clientes reais | Claude Code e Codex chamam `context_search` |
+
+Oportunidades: gate MEDIUM em dois Macs; ícone por ferramenta e na barra de status do VS Code; favicon próprio de 16 px; wordmark para fundo claro; resultado enviado em `content` e `structuredContent`; eco do checkpoint; corrida rara do ledger de admissão Laya (2 em 9.000 aberturas). Detalhes em [HOMOLOGACAO_2026-10-10.md](HOMOLOGACAO_2026-10-10.md).
+
+# Custo em tokens do que o agente lê — 10/10/2026
+
+Base `5acad77`. Medido em payload com o200k_base (`gpt-tokenizer`), um proxy: não é cobrança do provedor, `billingSavings` continua `null`. Cada item abaixo traz o teste que o fixa; mudanças de contrato público estão marcadas.
+
+- **Contrato:** `context_search` ganha `budget` (256 a 16000, padrão 4000 tokens) e a resposta ganha `omitted`; `truncated` também vale quando o orçamento corta. O que o orçamento deixa de fora volta em `more` como `caminho:linhas` (cerca de 10 tokens cada, até 25, dentro do mesmo orçamento). O melhor acerto é sempre servido. Antes, 12 trechos de 60 linhas custavam cerca de 15,5 mil tokens por chamada e `limit: 50` cerca de 62 mil; agora a resposta padrão tem cerca de 3,8 mil. Quem precisa de todos os trechos com corpo passa `budget: 16000`. A CLI `search` aceita `--budget`; o botão Buscar do painel recebe o mesmo teto.
+- **Contrato:** `tools/list` deixa de repetir a regex dos identificadores como `pattern` em cada propriedade (a validação no servidor é a mesma: mesmos seis ids inválidos recusados, mensagem de erro de 55 para 43 tokens) e `outputSchema.data` passa a ser objeto JSON ou null, sem o esquema recursivo de `z.json()` repetido nas seis ferramentas. `tools/list` no fio: 2.431 para 1.925 tokens (-20,8%); o que o modelo vê por turno (instruções + nome, descrição e esquema de entrada): 1.498 para 1.382 (-7,7%), já com o `budget` novo de `context_search`. O ganho de `outputSchema` só chega ao modelo se o harness o injeta no prompt (não verificado).
+- **Contrato:** o cabeçalho de cada seção do pacote traz 12 hex do hash do arquivo (o hash completo de 64 hex continua em `sources[].hash`), e trechos abaixo de `BBRAINX_PACK_MIN_RELEVANCE` (padrão 0,3 do melhor score; `0` desliga; valor fora de 0 a 1 é recusado com `INVALID_LIMIT`) deixam de entrar, exceto os dois melhores e o melhor de código e de documentação. Novo campo `sourcesOmittedByRelevance`. O piso vem do ambiente do host, nunca de argumento de ferramenta. Medido em 60 consultas rotuladas deste repositório (36 `eval-natural` e 24 `eval-self`, corpus `5acad77`): pacote entregue 4.573 para 4.389 tokens (-4,0%), arquivo esperado presente em 45 de 60 antes e depois; nas 5 tarefas com linhas de referência, 4.818 para 4.126 (-14,4%) com a mesma cobertura de linhas (0,83). O cabeçalho curto sozinho não reduz o pacote (4.650): o espaço liberado é preenchido com mais uma seção.
+- **Contrato:** `context_search` devolve um acerto por arquivo, o melhor trecho, e `limit` passa a contar arquivos. Os outros trechos do mesmo arquivo entre os acertos (até 2) vêm no próprio item como `also`, faixas `inicio-fim` sem corpo. `search()` ganha `{byFile:false}` para a lista crua de trechos, que o pacote de contexto e os scripts de evidência continuam usando. Medido em 36 consultas de `eval-natural` (corpus `5acad77`): acerto em 3 de 0,639 para 0,694, em 10 de 0,861 para 0,889, vagas repetidas no top-10 de 38 para 0. Nas 5 tarefas com linhas de referência a resposta padrão passa de 3.831 para 3.466 tokens (-9,5%), as linhas de referência localizadas (corpo, `also` ou `more`) de 0,898 para 0,922, e as que chegam com corpo caem de 0,833 para 0,718: a segunda faixa do mesmo arquivo agora vem como `also` e o agente a lê com um `Read`. Com `limit: 50` os arquivos de referência localizados sobem de 0,90 para 1,00. Fundir os trechos num item só, com corpo, foi medido e descartado (ver o commit).
+- **Contrato:** projeto ou lane sem índice deixa de passar por "nada encontrado". `context_search` (e `search()`) agora recusa com `INDEX_REQUIRED` em vez de `ok: true, items: []`, e `INDEX_REQUIRED` (também no `context_bootstrap`) traz `detail`: "Projeto sem índice. Chame context_index e repita." (antes `detail: null`). Um projeto indexado sem arquivo elegível continua devolvendo lista vazia legítima. As instruções do servidor ganham uma frase ("If a call returns INDEX_REQUIRED, call context_index once and retry."): 175 para 189 tokens, +14 por turno (1.382 para 1.396 no total por turno). A asserção de `test/turbo.test.mjs` que fixava `detail: null` foi atualizada para o texto novo.
+- **Contrato:** `MANDATORY_CONTEXT_EXCEEDS_BUDGET` deixa de vir com `detail: null`. A mensagem diz quanto o obrigatório pesa (exato: com `budget` igual a esse número o pacote monta), de onde vem (memórias `always`, memórias casadas com o objetivo, checkpoint, cabeçalho) e o que fazer: aumentar `budget` (até 16000) ou pedir ao humano que revogue memórias ou as mude para `relevant`; se nem 16000 bastam, só a segunda opção. O obrigatório continua sem ser cortado em silêncio: o pacote ou monta inteiro ou é recusado. Com 50 memórias `always` de ~100 tokens, a recusa passa de 25 para ~110 tokens, só no caso de erro.
+
+# Alinhamento SDD por projeto — 08/10/2026
+
+Detecção de artefatos Spec Kit e SDD genérico, avaliação de cobertura documental por feature e criação exclusiva de rascunho técnico quando ausente. Inclui CLI, HTTP/painel e MCP opt-in `--sdd`, quotas, fontes por hash e testes de escopo/concorrência. A nota não é avaliação semântica ou certificação de qualidade. [Especificação](specs/sdd-alignment.md), [operação](integrations/SDD.md) e [ADR](decisions/0002-sdd-coverage.md). Nenhum runtime MetaGPT/Spec Kit ou chamada paga foi incorporado.
+
+# Decisões locais Laya — 08/10/2026
+
+Capacidade opcional no painel, CLI e MCP, com cache exato isolado, limites do broker, cancelamento e abstenção por perda de entrada. Perfil Python recuperável com seleção explícita de runtime compatível. O núcleo de contexto continua determinístico: o benchmark com janela maior ainda não superou a baseline lexical. [Contratos](integrations/LAYA.md) e [evidência](engineering/LAYA_2026-10-08.md). Sem alteração de pesos, API paga ou comparação vencedora com JEV.
+
+# Candidato consolidado (PR #12) — incorporado na 1.5.0
+
+A PR #12 reúne Atlas, MEDIUM/replay, Observatory, contratos, lanes e os laboratórios isolados das PRs #6–#11. O estado integrado está em [research/INTEGRATION.md](research/INTEGRATION.md); as notas anteriores abaixo conservam o escopo e os resultados de suas rodadas, não descrevem sozinhas o estado atual.
+
+A revisão de lançamento acrescenta revalidação da raiz autorizada, quotas transacionais no refresh parcial, operação por teclado do Atlas e gates de CI que exigem a validação consolidada antes da publicação. Não muda o schema, não instala modelos e não incorpora automaticamente o candidato histórico de worker/cache Laya. Evidências e limites: [RELEASE_READINESS.md](RELEASE_READINESS.md).
+
+---
+
+# Histórico do candidato de integridade de contratos (PR #10)
+
+Base de estudo: 0.4.0 em `a9636e9`. As alterações abaixo só entram no produto após revisão e merge; não alteram o schema ou as configurações dos harnesses.
+
+## Contratos que mudam neste candidato
+
+- O deadline cobre validação de entrada, autorização, execução e saída. Uma chamada já cancelada não inicia validação ou acesso. Conferências monotônicas nas fronteiras impedem prosseguir depois de um estágio síncrono esgotar o prazo; isso não preempta esse estágio nem desfaz seus efeitos.
+- Entrada e principal são capturados antes do primeiro await. A autorização não modifica a identidade entregue à ação através de uma referência compartilhada.
+- `describe()` retorna árvores de schema desconectadas do catálogo interno. Editar a descrição recebida não altera o contrato visto por outro cliente.
+- `decisions` e `blockers` do checkpoint não são mais substituídos por contagens quando o histórico é compactado. Se os obrigatórios excedem o orçamento, a montagem é recusada. O histórico auxiliar continua podendo ser omitido com aviso. O teste anterior que exigia a omissão de decisões foi atualizado para exigir sua preservação literal; não foi removido.
+- Schemas Zod assíncronos podem ser explicitamente adaptados por `asyncZodSchema`, usando a API pública `safeParseAsync` sem sondagem síncrona repetida. O motor permanece Standard Schema. Sem mudança silenciosa dos schemas existentes.
+
+## Trabalho repetido evitado
+
+Uma leitura/hash por arquivo e versão em cada rodada de montagem, e quota documental avaliada antes da retokenização integral. O mapa não persiste entre chamadas; BPE continua exato. Medições e limites estão em `docs/core-contracts/` e nos artefatos da CI do commit, não nos números históricos abaixo.
+
+O candidato não incorpora automaticamente os PRs #6/#8/#9 ou o patch Laya anterior. Integração com #9 precisa preservar sua instrumentação de contexto e rerodar as duas suítes.
+
+---
+
 # BBrainX 0.4.0 — Developer Preview
 
 Motor e servidor MCP próprios, busca em linguagem natural entre português e inglês, perfil Laya instalável e o mapa do estudo. Duas dependências a menos.
@@ -9,7 +69,7 @@ Motor e servidor MCP próprios, busca em linguagem natural entre português e in
 - **Busca em linguagem natural.** Dois estágios somados: termos exatos e, com metade do peso, os mesmos termos por radical e por um glossário de programação português → inglês. Palavras vazias saem da consulta quando sobra algum termo que discrimina. Em 79 perguntas cegas sobre dois repositórios de terceiros, o arquivo esperado ficou entre os 10 primeiros em 84 % dos casos (antes, 54 %) e em 1.º em 46 % (antes, 33 %).
 - **Pacote de contexto.** Documentação fica com no máximo metade do orçamento enquanto houver código candidato.
 - **Um passo para começar.** `bbrainx up --root <pasta>` registra, indexa e mostra como ligar cada harness. `doctor` passa a informar o melhor cenário da máquina. `config --client` imprime a configuração de Claude Code, Codex, Cursor, VS Code e Gemini CLI.
-- **Perfil Laya.** `bbrainx laya install | status | ask | remove`: ambiente Python isolado, pesos fixados por revisão e SHA-256, processo sem rede. Medido no M5 Pro: não melhora as duas decisões testadas sem ajuste fino, então não altera o pacote.
+- **Perfil Laya.** `bbrainx laya install | status | ask | remove`: ambiente Python isolado, pesos fixados por revisão e SHA-256, bibliotecas em modo offline no processo (`HF_HUB_OFFLINE=1`; não é bloqueio de rede do sistema operacional). Medido no M5 Pro: não melhora as duas decisões testadas sem ajuste fino, então não altera o pacote.
 - **Avaliação.** O relatório informa intervalo de confiança de 95 % e o snapshot do corpus. `scripts/laya-bench.mjs` mede o perfil contra o caminho determinístico.
 - **Mapa do estudo.** Nova aba do painel e `docs/STUDY_MAP.md`, gerados da mesma fonte: 37 ferramentas em cinco situações, com o porquê de cada uma.
 
@@ -110,3 +170,10 @@ Download the source ZIP and verify SHA256SUMS. Read docs/QUICKSTART.md. Run npm 
 This is a developer preview, not a notarized Mac application or a production multi-tenant service. No model inference, provider cache savings, automatic desktop control or individual IDE certification is claimed. Optional model profiles remain opt-in research. The validation report names the exact tested revision and environment.
 
 Source, screenshots, locks and the original video are included; installed node_modules, upstream reference checkouts, credentials and font files are not redistributed. Remotion has separate licensing. No private project data was used in tests.
+
+
+## State 03B — alterações do contrato MCP (candidato incremental)
+
+Limites de invocações e de frames por conexão, bytes de saída com backpressure e escrita com prazo. IDs em voo não podem ser reutilizados; duplicata encerra a conexão sem resposta concorrente. IDs numéricos precisam ser inteiros seguros e strings têm teto de 1024 bytes. UTF-8 inválido e cauda incompleta são recusados, não normalizados/descartados silenciosamente. EOF cancela tools e drena respostas concluídas sob prazo. O suporte de batch existente continua como extensão limitada a 32 membros.
+
+A superfície de ferramentas, versões anunciadas, memória, credenciais e allowlist não mudam. O rate limiter continua 300 chamadas por minuto, agora com relógio monotônico e ring exato. Quota MCP é por conexão/engine promise, não um limite físico global. Consulte `MCP_TRANSPORT.md` para parâmetros, erros, limites e escopo da verificação.

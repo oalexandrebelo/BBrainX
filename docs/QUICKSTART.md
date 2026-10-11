@@ -22,7 +22,7 @@ npm run demo
 npm start
 ```
 
-Abra http://127.0.0.1:4317. `demo` cria somente arquivos sintéticos no diretório privado de estado e não sobrescreve exemplos já alterados. O painel não abre portas públicas. Para outra porta: `node bin/bbrainx.mjs serve --port 4318`.
+`npm start` executa `node bin/bbrainx.mjs serve` e **não abre o navegador**: abra http://127.0.0.1:4317. `demo` cria somente arquivos sintéticos no diretório privado de estado e não sobrescreve exemplos já alterados. O painel não abre portas públicas. Para outra porta: `node bin/bbrainx.mjs serve --port 4318`.
 
 Na aba Laboratório, selecione `demo`, busque autenticação/sessão, compile o pacote e observe as fontes. Use Reindexar após editar os arquivos. O checkpoint do painel é de **revisão pendente**, não uma aprovação de testes inexistentes.
 
@@ -43,12 +43,49 @@ A snapshot é do conjunto textual indexado, não uma prova de revisão completa 
 ## 4. Conectar harnesses
 
 ```sh
-node bin/bbrainx.mjs config --project meu-app --client claude
-node bin/bbrainx.mjs config --project meu-app --client codex
-node bin/bbrainx.mjs config --project meu-app --client cursor    # também: vscode, gemini
+node bin/bbrainx.mjs integrate --root "/Users/seu-usuario/Projetos/meu-app"
+node bin/bbrainx.mjs integrate --root "/Users/seu-usuario/Projetos/meu-app" --apply
 ```
 
-Cada cliente recebe o seu formato: o comando `claude mcp add` e o JSON de `.mcp.json`; o comando `codex mcp add` e o bloco TOML de `~/.codex/config.toml`; o JSON de `.cursor/mcp.json`, de `.vscode/mcp.json` ou de `~/.gemini/settings.json`. Os formatos foram conferidos na documentação oficial de cada cliente em 4 de outubro de 2026. O comando só imprime: revise e cole no arquivo indicado. Para outro cliente MCP, use os mesmos `command`, `args` e `env`.
+O primeiro comando só planeja. `--apply` registra a raiz com o nome existente ou derivado da pasta (ou `--project ID`), aplica configurações suportadas e indexa. Uma raiz já concedida a outro ID ou sobreposta a outro projeto é recusada. Sem `--clients`, seleciona instalações detectadas; `--clients codex,claude,vscode,kilo` escolhe explicitamente os destinos, mesmo sem o cliente instalado. `--lane ID` exige lane existente com raiz correspondente.
+
+Os destinos são `.codex/config.toml`, `.mcp.json`, `.vscode/mcp.json` e o único config Kilo reconhecido (por padrão `.kilo/kilo.json`). Preserva demais servidores, comentários, provedores/OmniRoute, credenciais, trust e aprovações. Codex só carrega a configuração de projeto quando o cliente confia nele. Antigravity IDE retorna `manual-required`; não há fallback global nem servidor com acesso a todos os projetos. Instalação detectada não comprova extensão habilitada, carregamento da configuração ou conexão nativa. [Formatos e fontes oficiais](integrations/INSTALLER.md).
+
+Revise o plano antes de `--apply`. Uma colisão bloqueia todo o plano. Para instalação do gerador anterior, `--adopt-existing` aceita somente a forma exata com mesmo Node, script, estado, projeto e lane; outras entradas continuam bloqueadas. A aplicação retorna recibo e conserva bytes anteriores em backups privados. Para desfazer:
+
+```sh
+node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO
+```
+
+Rollback recusa arquivos editados posteriormente. Se a indexação falhar após aplicação, a CLI retorna recibo e `indexError`: corrija a indexação ou use esse rollback. Configurações com caminhos absolutos do estado/runtime merecem revisão antes de serem versionadas. `config --project meu-app --client cursor` continua imprimindo fragmentos manuais (também claude, codex, vscode e gemini); ele não escreve arquivos. Na 1.5.0, Cursor e Gemini CLI só têm esse fragmento: a conexão não foi verificada. Claude Code e Codex foram verificados com clientes reais; VS Code, com o `.vscode/mcp.json` gerado exercitado por um cliente do SDK MCP (o início pela interface é manual). Evidência: [HOMOLOGACAO_2026-10-10.md](HOMOLOGACAO_2026-10-10.md).
+
+### Plugin e descoberta de pastas abertas
+
+```sh
+node scripts/package-extension.mjs
+node bin/bbrainx.mjs discover --root "/Users/seu-usuario/Projetos/meu-app"
+```
+
+O empacotador exige Python 3 para ZIP e gera `artifacts/extensions/bbrainx-workspace-<versão>.vsix` (versão de `extensions/vscode/package.json`), preview local não assinado, com o ícone da marca na Activity Bar e na lista de extensões. Instale pelo comando **Extensions: Install from VSIX** no editor. Configure **BBrainX: Executable** em settings de usuário; padrão `~/.local/bin/bbrainx`, launcher instalado separadamente. Para apontar direto para `bin/bbrainx.mjs`, configure também o caminho absoluto de **Node Executable**. Windows exige executável real ou Node + script; wrappers `.cmd` não recebem shell implícito.
+
+A extensão usa `workspaceFolders` para listar pastas locais abertas e confiáveis. **Detectar** planeja; **Conectar** aplica a integração. Heartbeats de metadados a cada 30 s expiram em 90 s e não registram/indexam projetos automaticamente. Pastas virtuais, não salvas ou sem trust não iniciam processos. **Iniciar painel local** é explícito; **Abrir painel** usa URL HTTP loopback configurada. Host remoto exige launcher remoto e encaminhamento de porta. VSIX/API e MCP no Antigravity IDE ainda precisam de prova nativa na versão instalada. [Contrato do plugin](../extensions/vscode/README.md).
+
+`discover` separa pastas abertas reportadas, projetos registrados e sessões históricas com raiz validada. Não analisa títulos de janelas, não inicia clientes e não afirma capturar sessões ativas de todos os harnesses. Histórico validado atualmente: Claude, Codex e Cursor. Os demais ficam explicitamente sem adapter histórico.
+
+### Testes locais e contexto histórico
+
+```sh
+node bin/bbrainx.mjs test --project meu-app --task AUTH-1 --file test/auth.test.mjs,test/session.test.mjs --timeout 300000
+node bin/bbrainx.mjs control --project meu-app
+node bin/bbrainx.mjs test-history archive --project meu-app --id ID_DA_EXECUCAO
+node bin/bbrainx.mjs import-context --project meu-app --harness claude --file "/caminho/absoluto/sessao.jsonl"
+```
+
+O runner suporta **node:test**, não `npm test` arbitrário nem shell: até 100 arquivos concretos relativos à raiz registrada, sem glob, travessia ou symlink. Timeout em milissegundos: 100–3.600.000, padrão 300.000. Guarda revisão, estado, contagens e até 20 falhas/32 KiB de diagnósticos, com truncamento indicado. Stderr é contado, não armazenado. Ambiente reduzido e HOME temporário não são sandbox de SO; o código de teste continua com permissões do usuário e pode acessar disco/rede. Execute somente testes de repositórios confiáveis. Falha, cancelamento ou timeout retornam exit code não zero. Arquivamento aceita apenas execução terminada; o painel mostra histórico, progresso e dados desconhecidos sem inventar aprovação ou custo.
+
+Importação exige escolha explícita de um arquivo JSONL nas pastas nativas: `~/.claude/projects`, `~/.codex/sessions` ou `~/.cursor/projects/.../agent-transcripts`. Confere raiz canônica exata, recusa sessões filhas/subagents, symlinks, formatos desconhecidos e arquivos acima de 32 MiB. Só trechos textuais visíveis de usuário/assistente entram no checkpoint, até 20 mensagens/32 KiB de cauda e limites menores no checkpoint; não segue históricos referenciados. Prompts de sistema/developer, reasoning e saídas de ferramentas não são contexto importado.
+
+A fonte completa selecionada e manifesto ficam privados no estado local; o checkpoint é `review_needed` e marca o texto como não confiável. Isso não promove memória nem concede acesso. `--task ID` escolhe o checkpoint; `--version N` aplica controle de versão. Repetir a mesma fonte é idempotente, mas uma versão conflitante é recusada. Cursor sem cwd embutido exige `--confirm-workspace /raiz/canonica`, mantém `CURSOR_WORKSPACE_UNVERIFIED` e recusa colisão de nomes entre projetos registrados. Não marque essa confirmação como origem verificada.
 
 Se preferir que o próprio agente faça a ligação, cole na sessão dele o prompt de [prompts/ACTIVATE.md](prompts/ACTIVATE.md): ele registra, indexa, grava só a entrada `bbrainx` e prova o resultado pelo fio.
 
@@ -86,7 +123,7 @@ Sem `snapshot`, o serviço reindexa a worktree e carimba o snapshot resultante. 
 node bin/bbrainx.mjs checkpoint --project meu-app --task AUTH-1 --file checkpoint.json --version 0 --key auth-attempt-1
 ```
 
-Para a próxima alteração, use a versão retornada. Não reutilize a mesma chave para conteúdo diferente. `VERSION_CONFLICT` significa reconciliar o checkpoint, não repetir cegamente. Os estados aceitos são `in_progress`, `paused`, `blocked`, `review_needed`.
+Para a próxima alteração, use a versão retornada. Não reutilize a mesma chave para conteúdo diferente. `VERSION_CONFLICT` significa reconciliar o checkpoint, não repetir cegamente. `STORE_BUSY` significa que outro processo segurou o banco além do prazo: repita a mesma chamada, com a mesma chave. Os estados aceitos são `in_progress`, `paused`, `blocked`, `review_needed`.
 
 ## 6. Memória com revisão
 
@@ -109,7 +146,7 @@ A fonte é registrada como evidência fornecida, não automaticamente certificad
 | Linux | `$XDG_DATA_HOME/bbrainx` ou `~/.local/share/bbrainx` |
 | Windows | `%LOCALAPPDATA%/BBrainX` |
 
-`BBRAINX_HOME` fixa outro diretório, independentemente do cwd do harness. Não coloque o banco vivo em pastas de sincronização de arquivos.
+`BBRAINX_HOME` fixa outro diretório, independentemente do cwd do harness. Não coloque o banco vivo em pastas de sincronização de arquivos: iCloud (`~/Library/Mobile Documents`), `~/Library/CloudStorage/*`, Dropbox, OneDrive, Google Drive ou volume de rede (SMB/NFS/AFP) são recusados com `STATE_HOME_SYNCED` antes de qualquer pasta ou banco ser criado, também quando um symlink de ancestral aponta para elas. `bbrainx doctor` mostra `stateSync`. Quem aceita o risco define `BBRAINX_ALLOW_SYNCED_HOME=1`. Uma pasta como `~/Documents` com "Desktop e Documentos no iCloud" ligado não é detectável pelo nome: escolha um `BBRAINX_HOME` fora dela.
 
 ```sh
 node bin/bbrainx.mjs backup --file "/caminho/seguro/bbrainx-backup.sqlite"
@@ -132,11 +169,22 @@ node bin/bbrainx.mjs laya remove     # apaga só a pasta do perfil
 
 `perguntas.json` segue o contrato do Laya. Exemplo: `{"tipo":{"type":"choice","instructions":"Que tipo de tarefa é esta?","criteria":{"correcao":"corrigir um defeito","funcionalidade":"construir algo novo"}},"urgente":{"type":"noul","instructions":"O texto diz que é urgente?"}}`.
 
-A instalação precisa do `uv` ou de um Python de 3.10 a 3.13; não usa `sudo` nem mexe no Python do sistema. O processo do modelo não acessa a rede e não recebe caminho de arquivo, só texto. **O perfil não altera o pacote de contexto**: medido em 4 de outubro de 2026, sem ajuste fino ele acertou menos que o caminho lexical. Para repetir a medição na sua máquina: `node scripts/laya-bench.mjs --project <id> --cases test/fixtures/eval-natural.cases --memory test/fixtures/eval-memory.cases`.
+A instalação precisa do `uv` ou de um Python de 3.10 a 3.13; não usa `sudo` nem muda o Python do sistema. `BBRAINX_PYTHON=/caminho/absoluto/python3.12` seleciona explicitamente o interpretador. Execução usa pesos locais e flags offline das bibliotecas; isso não é sandbox de rede do SO.
 
-## 9. Atualizar da 0.2 para a 0.3 ou a 0.4
+Para decisões protegidas contra truncamento, use `node bin/bbrainx.mjs laya decide --project <id> --state "texto" --file perguntas.json`, `serve --laya` no painel ou `mcp --project <id> --laya`. O MCP acrescenta `decision_evaluate` somente quando habilitado. [Guia completo, limites, cache e verificação real](integrations/LAYA.md). O perfil continua sem alterar o pacote de contexto. O benchmark aceita `--max-len` de 256 a 8192 (padrão 1024), `--batch-size` de 1 a 64 (padrão 4), `--timeout-ms` de 1000 a 600000 (padrão 120000) e `--out <arquivo.json>`.
 
-Da 0.3 para a 0.4 não há migração: o esquema do banco é o mesmo. Vindo da 0.2, na primeira abertura o serviço migra o banco sozinho, numa transação:
+## Alinhar especificações do projeto
+
+```sh
+node bin/bbrainx.mjs sdd --project meu-projeto --mode assess
+node bin/bbrainx.mjs sdd --project meu-projeto
+```
+
+O primeiro comando somente avalia. O segundo avalia e cria uma base `SDD.md` se não houver artefatos SDD reconhecidos; nunca substitui especificações existentes. O rascunho expõe fatos e lacunas para revisão. No painel, use a aba **SDD**. Para expor a capacidade ao harness, acrescente `--sdd` ao servidor MCP já autorizado para o projeto. `--sdd --laya` pode habilitar as duas capacidades opcionais; preserve workspace/lane/home e escopo. [Rubrica, formatos e limites](integrations/SDD.md).
+
+## 9. Atualizar da 0.2 para a 0.3, a 0.4 ou a 1.5
+
+Da 0.3 ou da 0.4 para a 1.5 não há migração do banco principal: o esquema é o mesmo (versão 2, `src/store.mjs`). Vindo da 0.2, na primeira abertura o serviço migra o banco sozinho, numa transação:
 
 1. Grava antes uma cópia íntegra em `brain.v1-backup.sqlite`, na pasta de estado.
 2. Preserva projetos, checkpoints, histórico, memórias e eventos.
@@ -159,7 +207,9 @@ Não copie a cópia por cima do `brain.sqlite` em uso: os arquivos `brain.sqlite
 |---|---|
 | Node incompatível | Use Node 24 no terminal e no caminho absoluto do cliente. |
 | Lockfile ausente | Atualize para uma revisão publicada após CI bem-sucedida; não use dependências flutuantes sem revisão. |
+| `STATE_HOME_SYNCED` | `BBRAINX_HOME` está em pasta sincronizada ou volume de rede. Use um disco local (padrão no macOS: `~/Library/Application Support/BBrainX`), mova os dados com `backup` ou, sob sua responsabilidade, `BBRAINX_ALLOW_SYNCED_HOME=1`. |
 | `PROJECT_NOT_REGISTERED` | Registre o ID e raiz pelo CLI no mesmo `BBRAINX_HOME`. |
+| `INTEGRATION_PRIVATE_DIRECTORY_REQUIRED` | `BBRAINX_HOME` já existe com permissão para grupo ou outros. Use uma pasta nova (o BBrainX a cria com 0700) ou aplique `chmod 700` nela. |
 | `PROJECT_ROOT_ALREADY_REGISTERED` | A pasta já tem um nome; a mensagem diz qual. Use esse nome. |
 | `STALE_INDEX` | Só ocorre com `--strict` ou quando o arquivo muda sem parar. Reindexe; não aceite código antigo como atual. |
 | `INDEX_FILE_LIMIT` / `INDEX_BYTE_LIMIT` | Registre uma raiz menor, ignore diretórios pelo Git ou aumente o teto pela variável indicada na mensagem. |

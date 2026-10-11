@@ -1,0 +1,388 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-06",
+  "base_directory": "/Users/alexandrebelo/Projetos/BBrainX",
+  "local_main_head": "a9636e9402e3fa673ae05b3489202da1048aef5e",
+  "scope": "Leitura documental estatica; nenhuma execucao de produto, modelo, teste ou codigo upstream. Nenhum segredo/configuracao de harness lido. News lido integralmente, exceto .DS_Store nao textual excluido.",
+  "news_files": [
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/pesquisa/news/BBrainX_Atlas_X99_Guia.md",
+      "relative_path": "pesquisa/news/BBrainX_Atlas_X99_Guia.md",
+      "sha256": "5802faf1ca00be3760cc92b278dbca730c6b67dfcf61cf119fd3613452e581e2",
+      "bytes": 7410,
+      "lines": 103,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/pesquisa/news/BBrainX_Posicionamento_Tecnico.md",
+      "relative_path": "pesquisa/news/BBrainX_Posicionamento_Tecnico.md",
+      "sha256": "9e8758cfed083e9a21f7b1b753d6528d73b0d9796b0426573b232f0ae324285c",
+      "bytes": 5720,
+      "lines": 61,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/pesquisa/news/BBrainX_X99_Dossie.md",
+      "relative_path": "pesquisa/news/BBrainX_X99_Dossie.md",
+      "sha256": "de5f679b63ae23b996247e8e7daba7982c8ec55e05e1fbd248f001d085dbdfc3",
+      "bytes": 55362,
+      "lines": 441,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/pesquisa/news/BBrainX_X99_Protocolo_Consistencia_Desempenho.md",
+      "relative_path": "pesquisa/news/BBrainX_X99_Protocolo_Consistencia_Desempenho.md",
+      "sha256": "c20ba258a4aa70af56dc3bc2188f72530b7cedd997669e624f882a12abe0ee81",
+      "bytes": 82586,
+      "lines": 1069,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/pesquisa/news/BBrainX_X99_Protocolo_Validacao.json",
+      "relative_path": "pesquisa/news/BBrainX_X99_Protocolo_Validacao.json",
+      "sha256": "b97677ac802945792dfed760a7f7ad9ae94f008c8f7de57280443cfe7904f380",
+      "bytes": 3009,
+      "lines": 104,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib.",
+      "json_valid": true,
+      "top_level_keys": [
+        "schema_version",
+        "date",
+        "environment",
+        "tests_run",
+        "failures",
+        "errors",
+        "skipped",
+        "passed",
+        "analytical",
+        "gcra_exhaustive_histories",
+        "actual_execution",
+        "not_executed",
+        "scope"
+      ]
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/pesquisa/news/BBrainX_X99_Validacao.json",
+      "relative_path": "pesquisa/news/BBrainX_X99_Validacao.json",
+      "sha256": "bf4b494eeb79897398762aa78d10862fa21c66c8621058b6fa8b35706f76ff14",
+      "bytes": 9551,
+      "lines": 352,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib.",
+      "json_valid": true,
+      "top_level_keys": [
+        "schema_version",
+        "date",
+        "candidate",
+        "remote_base_commit",
+        "remote_tested_code",
+        "publication",
+        "environment",
+        "executed",
+        "negative_control",
+        "attempted_but_blocked",
+        "syntax_checks",
+        "not_executed",
+        "measurements",
+        "interfaces_changed",
+        "cache",
+        "log_format",
+        "patch",
+        "modified_files"
+      ]
+    }
+  ],
+  "news_totals": {
+    "files": 6,
+    "bytes": 163638,
+    "lines": 2130
+  },
+  "additional_full_reads": [
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/README.md",
+      "relative_path": "repo/README.md",
+      "sha256": "c4b50f34ead36e5cabd4f353dd6125887208e3bd9d2982bfa5ef9b43b70685db",
+      "bytes": 9188,
+      "lines": 116,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/SECURITY_MODEL.md",
+      "relative_path": "repo/docs/SECURITY_MODEL.md",
+      "sha256": "8bf6607b9fe7a69bbc56d175946ac809d9a6f5dd3229b075ff37f7bbb1adab2c",
+      "bytes": 7829,
+      "lines": 77,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/OPTIONAL_PROFILES.md",
+      "relative_path": "repo/docs/OPTIONAL_PROFILES.md",
+      "sha256": "ad796fc9495eb2727495b4f6ffa95208c4e29f9289aac601cdb6663c69d33840",
+      "bytes": 4856,
+      "lines": 45,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/RELEASE_NOTES.md",
+      "relative_path": "repo/docs/RELEASE_NOTES.md",
+      "sha256": "003e3a847663292989df9e30449e8b73721cc418681279fd376abca6bc4d6d13",
+      "bytes": 10262,
+      "lines": 112,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/EVALUATION.md",
+      "relative_path": "repo/docs/EVALUATION.md",
+      "sha256": "06f1efecaf97e13e175d45496764b111ddf84a00a3981604b51b070ad190f8d4",
+      "bytes": 9444,
+      "lines": 108,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/FEASIBILITY.md",
+      "relative_path": "repo/docs/FEASIBILITY.md",
+      "sha256": "457592051e5e16981eeb2b6c7c59e9e59d9526ca7a9d3c6605e46945be47da46",
+      "bytes": 16416,
+      "lines": 158,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/QUICKSTART.md",
+      "relative_path": "repo/docs/QUICKSTART.md",
+      "sha256": "77578d0f094d4be78607883801029f3bed6328cef335e9d6c6959a5e521750f5",
+      "bytes": 13535,
+      "lines": 173,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/HANDOFF.md",
+      "relative_path": "repo/docs/HANDOFF.md",
+      "sha256": "b449e8011ce698977b3e6fec4c2e29a20ebe73b0a017851097b9518ef09da09a",
+      "bytes": 20246,
+      "lines": 286,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/DOSSIER.md",
+      "relative_path": "repo/docs/DOSSIER.md",
+      "sha256": "61a883c75c9e9db9bc5c6eb858489de5c65da09b84d511abadc0557b7bc11d90",
+      "bytes": 21264,
+      "lines": 231,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/STUDY_MAP.md",
+      "relative_path": "repo/docs/STUDY_MAP.md",
+      "sha256": "a757a870ccb3f48b84e0c6e780083caff5e3ccd77001dbda81c87a18b9a5d12f",
+      "bytes": 26526,
+      "lines": 557,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/prompts/ACTIVATE.md",
+      "relative_path": "repo/docs/prompts/ACTIVATE.md",
+      "sha256": "3e230197114d85bf77a4bc72e3b67f7d91b6881cb2c8b420f281e0b657f2b106",
+      "bytes": 6346,
+      "lines": 96,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/prompts/LAYA_FINETUNE.md",
+      "relative_path": "repo/docs/prompts/LAYA_FINETUNE.md",
+      "sha256": "e594ed25dee70530bf179830fcea78dc9292b731d4c77bffe2cf89e59c71293e",
+      "bytes": 26557,
+      "lines": 290,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/validation/ci-report.json",
+      "relative_path": "repo/docs/validation/ci-report.json",
+      "sha256": "13c4c1e642a026b9ee370270af9b4eb47ba86a7c1ed997da84484379478d78e9",
+      "bytes": 19863,
+      "lines": 619,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib.",
+      "json_valid": true
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/validation/benchmark-macos-latest.json",
+      "relative_path": "repo/docs/validation/benchmark-macos-latest.json",
+      "sha256": "2a93ada43f123d9fa2101f82e1e72a6168f5a8e4b4243c1e1780eab91e0a0602",
+      "bytes": 2808,
+      "lines": 110,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib.",
+      "json_valid": true
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/LEIA-ME.md",
+      "relative_path": "LEIA-ME.md",
+      "sha256": "97c0c717e4ae68318c4cc75737528ae365f45a3a5e155c48ecedf8addd7a6708",
+      "bytes": 4826,
+      "lines": 60,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/BBrainX_Guia_MacOS.md",
+      "relative_path": "BBrainX_Guia_MacOS.md",
+      "sha256": "633afd36bd12b550a03b8054c604be94ad6691acbe99b0c7e0f79440e42416c4",
+      "bytes": 7522,
+      "lines": 121,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/BBrainX_Dossie_Tecnico_v0.2.md",
+      "relative_path": "BBrainX_Dossie_Tecnico_v0.2.md",
+      "sha256": "cdc697f7eeed04690863d2b3f008c196947f92fc95e916a212a4bf446d9be1d7",
+      "bytes": 18660,
+      "lines": 213,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/dossi_t_cnico_x99_power_code_v4_0.md",
+      "relative_path": "dossi_t_cnico_x99_power_code_v4_0.md",
+      "sha256": "391ba3527fce3b4d8384eba59edda8cb9532b2d24bde90008a92e8a7d2be5443",
+      "bytes": 16731,
+      "lines": 358,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba, em blocos contiguos quando necessario; sha256 de bytes originais por hashlib stdlib."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/src/clients.mjs",
+      "relative_path": "repo/src/clients.mjs",
+      "sha256": "3df94643e009337e9b37a4d1fd133ab35b5aa322b420523991d312188035fbb1",
+      "bytes": 2349,
+      "lines": 20,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba; hash de bytes originais por hashlib stdlib. Leitura estatica adicional para posicionamento/interoperabilidade; sem executar."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/scripts/sources.mjs",
+      "relative_path": "repo/scripts/sources.mjs",
+      "sha256": "09ae1e2565195c8e3615dc93d119a137a1186654968f6f0dc353f4509826d647",
+      "bytes": 2262,
+      "lines": 25,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba; hash de bytes originais por hashlib stdlib. Leitura estatica adicional para posicionamento/interoperabilidade; sem executar."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/package.json",
+      "relative_path": "repo/package.json",
+      "sha256": "8d60ae4c6e4c10d5401357a6192099c95de335df795f6428ec64ceabaf2c1402",
+      "bytes": 1129,
+      "lines": 37,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba; hash de bytes originais por hashlib stdlib. Leitura estatica adicional para posicionamento/interoperabilidade; sem executar.",
+      "json_valid": true
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/docs/upstreams.json",
+      "relative_path": "repo/docs/upstreams.json",
+      "sha256": "b1344f51c74c16bef1ed772601ca52540bf754918113fb888ec05bae3cf79ad0",
+      "bytes": 1699,
+      "lines": 17,
+      "read_completely": true,
+      "review_method": "Conteudo integral visualizado com nl -ba; hash de bytes originais por hashlib stdlib. Leitura estatica adicional para posicionamento/interoperabilidade; sem executar.",
+      "json_valid": true
+    }
+  ],
+  "partial_reads": [
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/BBrainX_Relatorio_Validacao.json",
+      "lines_viewed": [
+        1,
+        180
+      ],
+      "purpose": "Confirmar revisao historica0a45553a e30 testes por plataforma; nao inventariar restante como leitura integral."
+    },
+    {
+      "path": "/Users/alexandrebelo/Projetos/BBrainX/repo/src/context.mjs",
+      "lines_viewed": [
+        20,
+        55
+      ],
+      "sha256_full_file": "77b45627ebdb9a51c82a9f0d60fc1ebd7129c388095fa0d629a7d150f458e4d5",
+      "purpose": "Confirmacao focal das linhas32-46: compactacao checkpoint elimina listas; memorias e required budget depois. Leitura estatica, sem execucao."
+    }
+  ],
+  "artifacts_referenced_by_news_not_present_at_news_directory": {
+    "BBrainX_X99_Candidato.patch": true,
+    "BBrainX_X99_Replay_Tests.log": true,
+    "local-tests.log": true,
+    "baseline-regression-probe.log": true,
+    "context-unavailable.log": true,
+    "verification/protocol_checks.py": true,
+    "verification/test_protocol.py": true,
+    "evidence/tests.log": true,
+    "Texto colado(20261005-124334).txt": true
+  },
+  "important_boundary": "Hashes confirmam identidade do material lido; relatos e JSON historicos nao sao reexecucao nem prova independente das medicoes. Ausencia registrada e somente no diretorio news.",
+  "external_primary_sources_observed_date": "2026-10-06",
+  "external_primary_sources": [
+    {
+      "url": "https://github.com/oraios/serena",
+      "purpose": "Recuperacao simbolica/LSP/limites/memoria desligavel"
+    },
+    {
+      "url": "https://docs.mem0.ai/open-source/configuration",
+      "purpose": "SDK local/configuracao vs Graph Memory plataforma"
+    },
+    {
+      "url": "https://docs.mem0.ai/platform/features/graph-memory",
+      "purpose": "Feature gerenciada distinta de OSS"
+    },
+    {
+      "url": "https://github.com/mem0ai/mem0",
+      "purpose": "Benchmarks da stack gerenciada nao SDK local"
+    },
+    {
+      "url": "https://github.com/getzep/graphiti",
+      "purpose": "Temporalidade/infraestrutura/Graphiti OSS vs Zep"
+    },
+    {
+      "url": "https://github.com/letta-ai/letta",
+      "purpose": "Migracao codigo ativo para letta-code"
+    },
+    {
+      "url": "https://github.com/letta-ai/letta-code",
+      "purpose": "Harness estatal/memoria/Letta Cloud"
+    },
+    {
+      "url": "https://github.com/NandhaKishorM/laya",
+      "purpose": "Upstream original Python/laya-ts/max_len/calibracao"
+    },
+    {
+      "url": "https://github.com/receptron/laya",
+      "purpose": "Adapter ONNX distinto"
+    },
+    {
+      "url": "https://github.com/receptron/laya/blob/main/src/laya.ts",
+      "purpose": "onnxruntime-node/providerCPU/modelDir"
+    },
+    {
+      "url": "https://code.visualstudio.com/docs/agent-customization/mcp-servers",
+      "purpose": "Formatos portable/legacy/Agent Host/sandbox/plataforma/SettingsSync"
+    }
+  ],
+  "external_source_boundary": "Pesquisa primaria por web, trechos pertinentes; sem afirmar leitura integral ou pin de branch upstream movel. Nao executou instalacoes, modelos, scripts ou configuracoes citadas."
+}

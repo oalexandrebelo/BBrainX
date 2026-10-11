@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "testedRevision": "a9636e9402e3fa673ae05b3489202da1048aef5e",
+  "observedAt": "2026-10-06T03:20:07.434Z",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "node": "24.18.0",
+  "kind": "actual-runtime-generated-workload",
+  "measurements": [
+    {
+      "files": 60,
+      "inputBytes": 7310,
+      "initialIndexMs": 16.112291999999997,
+      "unchangedIndexMs": 9.758083,
+      "search": {
+        "samples": 100,
+        "p50Ms": 0.05924999999999159,
+        "p95Ms": 0.10062499999999375,
+        "p99Ms": 0.11374999999999602,
+        "maxMs": 0.6593749999999972
+      },
+      "bootstrap": {
+        "samples": 100,
+        "p50Ms": 0.21366599999998925,
+        "p95Ms": 0.339500000000001,
+        "p99Ms": 3.095250000000007,
+        "maxMs": 3.420749999999998
+      },
+      "markerHits": 100,
+      "staleRefreshMs": 0.7797920000000147,
+      "memoryBytes": {
+        "rss": 137068544,
+        "heapTotal": 58556416,
+        "heapUsed": 32622968,
+        "external": 6745847,
+        "arrayBuffers": 143764
+      },
+      "databaseBytes": 208896,
+      "walCheckpoint": {
+        "busy": 0,
+        "log": 399,
+        "checkpointed": 399
+      }
+    },
+    {
+      "files": 1000,
+      "inputBytes": 122890,
+      "initialIndexMs": 52.34995799999999,
+      "unchangedIndexMs": 26.400708000000037,
+      "search": {
+        "samples": 100,
+        "p50Ms": 0.07070800000002464,
+        "p95Ms": 0.09200000000004138,
+        "p99Ms": 0.11750000000000682,
+        "maxMs": 0.22316699999998946
+      },
+      "bootstrap": {
+        "samples": 100,
+        "p50Ms": 0.21445799999997917,
+        "p95Ms": 0.26637499999998226,
+        "p99Ms": 0.38033400000000483,
+        "maxMs": 0.3808750000000032
+      },
+      "markerHits": 100,
+      "staleRefreshMs": 1.551290999999992,
+      "memoryBytes": {
+        "rss": 158154752,
+        "heapTotal": 58818560,
+        "heapUsed": 25719328,
+        "external": 6811310,
+        "arrayBuffers": 209187
+      },
+      "databaseBytes": 921600,
+      "walCheckpoint": {
+        "busy": 0,
+        "log": 579,
+        "checkpointed": 579
+      }
+    },
+    {
+      "files": 5000,
+      "inputBytes": 618890,
+      "initialIndexMs": 203.22825,
+      "unchangedIndexMs": 93.63487499999997,
+      "search": {
+        "samples": 100,
+        "p50Ms": 0.05958299999997507,
+        "p95Ms": 0.11374999999998181,
+        "p99Ms": 0.16629100000000108,
+        "maxMs": 0.248958000000016
+      },
+      "bootstrap": {
+        "samples": 100,
+        "p50Ms": 0.16654200000004948,
+        "p95Ms": 0.2910419999999476,
+        "p99Ms": 0.5952910000000884,
+        "maxMs": 3.414041999999995
+      },
+      "markerHits": 100,
+      "staleRefreshMs": 3.933375000000069,
+      "memoryBytes": {
+        "rss": 164872192,
+        "heapTotal": 64012288,
+        "heapUsed": 45434936,
+        "external": 7008148,
+        "arrayBuffers": 406025
+      },
+      "databaseBytes": 3907584,
+      "walCheckpoint": {
+        "busy": 0,
+        "log": 312,
+        "checkpointed": 312
+      }
+    }
+  ],
+  "reproductions": {
+    "rootSymlinkSwap": {
+      "observed": true,
+      "rootStored": "/private/var/folders/br/yny1ntj174x6bq9885x8k5rh0000gp/T/bbrainx-real-audit-htTcYa/symlink/root",
+      "rootResolved": "/private/var/folders/br/yny1ntj174x6bq9885x8k5rh0000gp/T/bbrainx-real-audit-htTcYa/outside-project",
+      "selectedFilesVerified": true,
+      "refreshedFiles": [
+        "source.js"
+      ]
+    },
+    "checkpointCompaction": {
+      "checkpointTrimmed": true,
+      "decisionPresent": false,
+      "blockerPresent": false,
+      "payloadTokens": 241,
+      "checkpointStillStored": true
+    },
+    "crossProcessCAS": {
+      "results": [
+        {
+          "version": null,
+          "error": "VERSION_CONFLICT"
+        },
+        {
+          "version": 1,
+          "error": null
+        }
+      ],
+      "storedVersion": 1,
+      "checkpointEvents": 1
+    },
+    "crossProcessIdempotency": {
+      "results": [
+        {
+          "version": 1,
+          "error": null
+        },
+        {
+          "version": 1,
+          "error": null
+        }
+      ],
+      "storedVersion": 1,
+      "checkpointEvents": 1
+    },
+    "processCrash": {
+      "exit": {
+        "code": null,
+        "signal": "SIGKILL",
+        "stderr": ""
+      },
+      "integrity": {
+        "integrity_check": "ok"
+      },
+      "uncommittedEvents": 0
+    }
+  },
+  "providerCalls": 0,
+  "providerBillingSavings": null,
+  "nativeHarnessApplicationsTested": false,
+  "limits": [
+    "Artificial corpus: this is not accepted coding-task success.",
+    "Sequential size trials: page/BPE caches are warm and order is not randomized.",
+    "SIGKILL tests process crash, not hardware power loss.",
+    "No changes to audited product source."
+  ],
+  "tokenizerProbe": {
+    "tinyExactTokens": 5,
+    "rssBytes": 164691968
+  }
+}

@@ -1,0 +1,661 @@
+TAP version 13
+# (node:15987) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: canonical order and identifier validation
+ok 1 - canonical order and identifier validation
+  ---
+  duration_ms: 0.703333
+  type: 'test'
+  ...
+# Subtest: excluded .env
+ok 2 - excluded .env
+  ---
+  duration_ms: 0.255542
+  type: 'test'
+  ...
+# Subtest: excluded .env.local
+ok 3 - excluded .env.local
+  ---
+  duration_ms: 0.143375
+  type: 'test'
+  ...
+# Subtest: excluded secret.json
+ok 4 - excluded secret.json
+  ---
+  duration_ms: 0.039208
+  type: 'test'
+  ...
+# Subtest: excluded key.pem
+ok 5 - excluded key.pem
+  ---
+  duration_ms: 0.03925
+  type: 'test'
+  ...
+# Subtest: excluded node_modules/x.ts
+ok 6 - excluded node_modules/x.ts
+  ---
+  duration_ms: 0.039791
+  type: 'test'
+  ...
+# Subtest: excluded ../a.ts
+ok 7 - excluded ../a.ts
+  ---
+  duration_ms: 0.030292
+  type: 'test'
+  ...
+# Subtest: state location independent from caller working directory
+ok 8 - state location independent from caller working directory
+  ---
+  duration_ms: 0.069417
+  type: 'test'
+  ...
+# Subtest: durable schema and FTS search
+ok 9 - durable schema and FTS search
+  ---
+  duration_ms: 40.441583
+  type: 'test'
+  ...
+# Subtest: changed, removed and renamed content invalidate occurrence
+ok 10 - changed, removed and renamed content invalidate occurrence
+  ---
+  duration_ms: 37.553042
+  type: 'test'
+  ...
+# Subtest: scoped retrieval never mixes projects
+ok 11 - scoped retrieval never mixes projects
+  ---
+  duration_ms: 30.848625
+  type: 'test'
+  ...
+# Subtest: FTS special syntax is treated as search data
+ok 12 - FTS special syntax is treated as search data
+  ---
+  duration_ms: 16.540584
+  type: 'test'
+  ...
+# Subtest: file traversal rejected
+ok 13 - file traversal rejected
+  ---
+  duration_ms: 2.957
+  type: 'test'
+  ...
+# Subtest: symlink rejected without following target
+ok 14 - symlink rejected without following target
+  ---
+  duration_ms: 2.33625
+  type: 'test'
+  ...
+# Subtest: context uses actual o200k token count and preserves code
+ok 15 - context uses actual o200k token count and preserves code
+  ---
+  duration_ms: 19.264041
+  type: 'test'
+  ...
+# Subtest: stale source rejected before context is served in strict mode
+ok 16 - stale source rejected before context is served in strict mode
+  ---
+  duration_ms: 14.197583
+  type: 'test'
+  ...
+# Subtest: checkpoint transaction, retry, collision and outbox
+ok 17 - checkpoint transaction, retry, collision and outbox
+  ---
+  duration_ms: 58.832792
+  type: 'test'
+  ...
+# Subtest: two database handles reject a stale writer
+ok 18 - two database handles reject a stale writer
+  ---
+  duration_ms: 36.78225
+  type: 'test'
+  ...
+# Subtest: memory requires explicit approval and supports revocation
+ok 19 - memory requires explicit approval and supports revocation
+  ---
+  duration_ms: 14.388541
+  type: 'test'
+  ...
+# Subtest: mandatory memory cannot be silently truncated
+ok 20 - mandatory memory cannot be silently truncated
+  ---
+  duration_ms: 14.954083
+  type: 'test'
+  ...
+# Subtest: no verified completion can be fabricated
+ok 21 - no verified completion can be fabricated
+  ---
+  duration_ms: 14.481833
+  type: 'test'
+  ...
+# Subtest: backup is a valid independent sqlite database
+ok 22 - backup is a valid independent sqlite database
+  ---
+  duration_ms: 15.480333
+  type: 'test'
+  ...
+# Subtest: Invokta enforces trusted project allowlist
+ok 23 - Invokta enforces trusted project allowlist
+  ---
+  duration_ms: 19.453458
+  type: 'test'
+  ...
+# Subtest: single-flight coalesces only outstanding reads
+ok 24 - single-flight coalesces only outstanding reads
+  ---
+  duration_ms: 21.361916
+  type: 'test'
+  ...
+# Subtest: engine validates input and output and reports the path of each issue
+ok 25 - engine validates input and output and reports the path of each issue
+  ---
+  duration_ms: 6.956291
+  type: 'test'
+  ...
+# Subtest: engine separates a missing principal from a refused one and never runs a refused call
+ok 26 - engine separates a missing principal from a refused one and never runs a refused call
+  ---
+  duration_ms: 3.30875
+  type: 'test'
+  ...
+# Subtest: engine tells a deadline from a cancellation and hides the cause of an unexpected failure
+ok 27 - engine tells a deadline from a cancellation and hides the cause of an unexpected failure
+  ---
+  duration_ms: 28.281542
+  type: 'test'
+  ...
+# Subtest: a call that is already cancelled never starts, and an abandoned run cannot crash the process
+ok 28 - a call that is already cancelled never starts, and an abandoned run cannot crash the process
+  ---
+  duration_ms: 42.202458
+  type: 'test'
+  ...
+# Subtest: the caller cannot change the input after validation, nor can the access rule
+ok 29 - the caller cannot change the input after validation, nor can the access rule
+  ---
+  duration_ms: 0.534333
+  type: 'test'
+  ...
+# Subtest: engine events carry identifiers and timing, never arguments or results; a failing observer changes nothing
+ok 30 - engine events carry identifiers and timing, never arguments or results; a failing observer changes nothing
+  ---
+  duration_ms: 1.376459
+  type: 'test'
+  ...
+# Subtest: engine refuses a capability it cannot describe or bound
+ok 31 - engine refuses a capability it cannot describe or bound
+  ---
+  duration_ms: 0.850875
+  type: 'test'
+  ...
+# Subtest: MCP catalog publishes portable names, hints and both schemas, and rejects a collision
+ok 32 - MCP catalog publishes portable names, hints and both schemas, and rejects a collision
+  ---
+  duration_ms: 1.364
+  type: 'test'
+  ...
+# Subtest: MCP legacy era: initialize negotiates the version, falsy ids survive, protocol errors use JSON-RPC codes
+ok 33 - MCP legacy era: initialize negotiates the version, falsy ids survive, protocol errors use JSON-RPC codes
+  ---
+  duration_ms: 1.108042
+  type: 'test'
+  ...
+# Subtest: MCP modern era: no handshake, version and capabilities travel in every request
+ok 34 - MCP modern era: no handshake, version and capabilities travel in every request
+  ---
+  duration_ms: 1.454625
+  type: 'test'
+  ...
+# Subtest: a cancelled request gets no further message, in either era; only its own call stops
+ok 35 - a cancelled request gets no further message, in either era; only its own call stops
+  ---
+  duration_ms: 43.575334
+  type: 'test'
+  ...
+# Subtest: a domain refusal is a tool error; too many calls are refused until the window moves
+ok 36 - a domain refusal is a tool error; too many calls are refused until the window moves
+  ---
+  duration_ms: 1.266542
+  type: 'test'
+  ...
+# Subtest: stdio: a line at the limit is served, one byte more stops the server; input end cancels what is running
+ok 37 - stdio: a line at the limit is served, one byte more stops the server; input end cancels what is running
+  ---
+  duration_ms: 3.477875
+  type: 'test'
+  ...
+# (node:15989) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: a Portuguese question reaches English code through stems and the pt → en bridge
+ok 38 - a Portuguese question reaches English code through stems and the pt → en bridge
+  ---
+  duration_ms: 49.844916
+  type: 'test'
+  ...
+# Subtest: stop words leave the query only when a discriminating term remains
+ok 39 - stop words leave the query only when a discriminating term remains
+  ---
+  duration_ms: 25.668875
+  type: 'test'
+  ...
+# Subtest: stems and bridge are bounded: short words, identifiers and long suffixes are left alone
+ok 40 - stems and bridge are bounded: short words, identifiers and long suffixes are left alone
+  ---
+  duration_ms: 0.226375
+  type: 'test'
+  ...
+# Subtest: an exact match still outranks a stem match
+ok 41 - an exact match still outranks a stem match
+  ---
+  duration_ms: 20.527708
+  type: 'test'
+  ...
+# Subtest: natural-language retrieval over this repository keeps a minimum quality
+ok 42 - natural-language retrieval over this repository keeps a minimum quality
+  ---
+  duration_ms: 1326.752625
+  type: 'test'
+  ...
+# Subtest: documentation takes at most half of the pack while code is a candidate
+ok 43 - documentation takes at most half of the pack while code is a candidate
+  ---
+  duration_ms: 19.612791
+  type: 'test'
+  ...
+# Subtest: without code among the candidates, documentation may use the whole pack
+ok 44 - without code among the candidates, documentation may use the whole pack
+  ---
+  duration_ms: 12.906
+  type: 'test'
+  ...
+# Subtest: Laya broker answers through the worker protocol and reports the runtime
+ok 45 - Laya broker answers through the worker protocol and reports the runtime
+  ---
+  duration_ms: 19.697166
+  type: 'test'
+  ...
+# Subtest: Laya broker never throws: deadline, refusal and crash become reasons, and three failures open the breaker
+ok 46 - Laya broker never throws: deadline, refusal and crash become reasons, and three failures open the breaker
+  ---
+  duration_ms: 2111.903166
+  type: 'test'
+  ...
+# Subtest: weights are installed only when size and SHA-256 match, and are not downloaded twice
+ok 47 - weights are installed only when size and SHA-256 match, and are not downloaded twice
+  ---
+  duration_ms: 14.542666
+  type: 'test'
+  ...
+# Subtest: the scenario finds tools on PATH without running them
+ok 48 - the scenario finds tools on PATH without running them
+  ---
+  duration_ms: 10.135417
+  type: 'test'
+  ...
+# Subtest: each client gets its own configuration shape, with paths that survive spaces
+ok 49 - each client gets its own configuration shape, with paths that survive spaces
+  ---
+  duration_ms: 0.445708
+  type: 'test'
+  ...
+# Subtest: `up` registers, indexes and names the next steps; running it again reuses the project
+ok 50 - `up` registers, indexes and names the next steps; running it again reuses the project
+  ---
+  duration_ms: 101.999708
+  type: 'test'
+  ...
+# (node:15990) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: HTTP loopback host, origin and CSRF boundaries
+ok 51 - HTTP loopback host, origin and CSRF boundaries
+  ---
+  duration_ms: 75.90675
+  type: 'test'
+  ...
+# (node:15991) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Git ignores remain effective in an explicitly registered nested root
+ok 52 - Git ignores remain effective in an explicitly registered nested root
+  ---
+  duration_ms: 85.201125
+  type: 'test'
+  ...
+# Subtest: changing ignore policy removes previously indexed files
+ok 53 - changing ignore policy removes previously indexed files
+  ---
+  duration_ms: 116.64125
+  type: 'test'
+  ...
+# (node:15992) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: wire: handshake, tool list and a tool call need nothing but JSON lines
+ok 54 - wire: handshake, tool list and a tool call need nothing but JSON lines
+  ---
+  duration_ms: 238.466042
+  type: 'test'
+  ...
+# Subtest: wire: protocol errors use JSON-RPC codes; refused or invalid calls come back as tool errors without leaking
+ok 55 - wire: protocol errors use JSON-RPC codes; refused or invalid calls come back as tool errors without leaking
+  ---
+  duration_ms: 140.489958
+  type: 'test'
+  ...
+# Subtest: wire: a line above the limit stops the server, and the trace never reaches standard output
+not ok 56 - wire: a line above the limit stops the server, and the trace never reaches standard output
+  ---
+  duration_ms: 243.812459
+  type: 'test'
+  location: '/private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:72:1'
+  failureType: 'testCodeFailure'
+  error: `Unexpected token '(', "(node:1626"... is not valid JSON`
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    JSON.parse (<anonymous>)
+    file:///private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:81:68
+    Array.map (<anonymous>)
+    TestContext.<anonymous> (file:///private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:81:53)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: wire: a modern client needs no handshake, and both eras share one process
+not ok 57 - wire: a modern client needs no handshake, and both eras share one process
+  ---
+  duration_ms: 125.041083
+  type: 'test'
+  location: '/private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:88:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '(node:16268) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n' +
+    +   '(Use `node --trace-warnings ...` to show where the warning was created)\n'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: |-
+    (node:16268) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:104:47)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: wire: the harness is told which project id to pass, in the tool schemas and in the instructions of both eras
+ok 58 - wire: the harness is told which project id to pass, in the tool schemas and in the instructions of both eras
+  ---
+  duration_ms: 120.138917
+  type: 'test'
+  ...
+# Subtest: wire: a call cancelled in the same write gets no answer and the server stays up; a domain refusal is a tool error
+not ok 59 - wire: a call cancelled in the same write gets no answer and the server stays up; a domain refusal is a tool error
+  ---
+  duration_ms: 146.447542
+  type: 'test'
+  location: '/private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:125:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '(node:16372) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n' +
+    +   '(Use `node --trace-warnings ...` to show where the warning was created)\n'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: |-
+    (node:16372) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:134:47)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# (node:15993) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: real MCP stdio: two independently started clients share a durable checkpoint
+ok 60 - real MCP stdio: two independently started clients share a durable checkpoint
+  ---
+  duration_ms: 327.229417
+  type: 'test'
+  ...
+# (node:15994) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: approved memory cannot disappear because a listing is paginated
+ok 61 - approved memory cannot disappear because a listing is paginated
+  ---
+  duration_ms: 84.076209
+  type: 'test'
+  ...
+# Subtest: backup restores a consistent checkpoint and its outbox event
+ok 62 - backup restores a consistent checkpoint and its outbox event
+  ---
+  duration_ms: 34.618584
+  type: 'test'
+  ...
+# Subtest: every studied tool has a situation, a reason, evidence and a way forward
+ok 63 - every studied tool has a situation, a reason, evidence and a way forward
+  ---
+  duration_ms: 1.015708
+  type: 'test'
+  ...
+# Subtest: the map lays every tool inside its situation, without overlap
+ok 64 - the map lays every tool inside its situation, without overlap
+  ---
+  duration_ms: 0.480541
+  type: 'test'
+  ...
+# Subtest: docs/STUDY_MAP.md is the rendering of the same source the panel uses
+ok 65 - docs/STUDY_MAP.md is the rendering of the same source the panel uses
+  ---
+  duration_ms: 1.905042
+  type: 'test'
+  ...
+# (node:15996) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: identifier splitting, file classes and declared names
+ok 66 - identifier splitting, file classes and declared names
+  ---
+  duration_ms: 3.055375
+  type: 'test'
+  ...
+# Subtest: a declaration outranks the tests and docs that mention it more often
+ok 67 - a declaration outranks the tests and docs that mention it more often
+  ---
+  duration_ms: 35.720583
+  type: 'test'
+  ...
+# Subtest: a declaration outranks other source files that use the name
+ok 68 - a declaration outranks other source files that use the name
+  ---
+  duration_ms: 26.974292
+  type: 'test'
+  ...
+# Subtest: hostile single-line files index in linear time
+ok 69 - hostile single-line files index in linear time
+  ---
+  duration_ms: 22.709792
+  type: 'test'
+  ...
+# Subtest: words and snake_case find a camelCase declaration
+ok 70 - words and snake_case find a camelCase declaration
+  ---
+  duration_ms: 22.063292
+  type: 'test'
+  ...
+# Subtest: a camelCase query finds a snake_case declaration in another language
+ok 71 - a camelCase query finds a snake_case declaration in another language
+  ---
+  duration_ms: 16.284792
+  type: 'test'
+  ...
+# Subtest: asking for tests lifts the test penalty
+ok 72 - asking for tests lifts the test penalty
+  ---
+  duration_ms: 21.242167
+  type: 'test'
+  ...
+# Subtest: labeled retrieval over this repository keeps a minimum quality
+ok 73 - labeled retrieval over this repository keeps a minimum quality
+  ---
+  duration_ms: 359.840375
+  type: 'test'
+  ...
+# Subtest: limits come from the host, fail with an actionable message and can be raised
+ok 74 - limits come from the host, fail with an actionable message and can be raised
+  ---
+  duration_ms: 33.336209
+  type: 'test'
+  ...
+# Subtest: a file that is not valid UTF-8 is skipped instead of aborting the index
+ok 75 - a file that is not valid UTF-8 is skipped instead of aborting the index
+  ---
+  duration_ms: 12.428333
+  type: 'test'
+  ...
+# Subtest: paths listed by Git but absent from disk do not count against the file limit
+ok 76 - paths listed by Git but absent from disk do not count against the file limit
+  ---
+  duration_ms: 72.718208
+  type: 'test'
+  ...
+# Subtest: files carrying well-known credential formats stay out of the index
+ok 77 - files carrying well-known credential formats stay out of the index
+  ---
+  duration_ms: 14.385542
+  type: 'test'
+  ...
+# Subtest: the search index follows an in-place update of a chunk
+ok 78 - the search index follows an in-place update of a chunk
+  ---
+  duration_ms: 12.004875
+  type: 'test'
+  ...
+# Subtest: the search index follows deletions and survives a backup
+ok 79 - the search index follows deletions and survives a backup
+  ---
+  duration_ms: 22.528125
+  type: 'test'
+  ...
+# Subtest: a changed file is re-read before being served and the snapshot matches a full index
+ok 80 - a changed file is re-read before being served and the snapshot matches a full index
+  ---
+  duration_ms: 26.43575
+  type: 'test'
+  ...
+# Subtest: a deleted file or one that gained a secret leaves the index instead of being served
+ok 81 - a deleted file or one that gained a secret leaves the index instead of being served
+  ---
+  duration_ms: 14.745375
+  type: 'test'
+  ...
+# Subtest: refresh only touches the given paths and reports what changed
+ok 82 - refresh only touches the given paths and reports what changed
+  ---
+  duration_ms: 13.328542
+  type: 'test'
+  ...
+# Subtest: the pack reports the evidence that did not fit the budget
+ok 83 - the pack reports the evidence that did not fit the budget
+  ---
+  duration_ms: 16.119583
+  type: 'test'
+  ...
+# Subtest: a checkpoint carries what was done, and the host stamps snapshot and Git state
+ok 84 - a checkpoint carries what was done, and the host stamps snapshot and Git state
+  ---
+  duration_ms: 135.694208
+  type: 'test'
+  ...
+# Subtest: stamping Git state never runs a filter configured by the repository
+ok 85 - stamping Git state never runs a filter configured by the repository
+  ---
+  duration_ms: 98.332167
+  type: 'test'
+  ...
+# Subtest: a repeated checkpoint call returns the stored answer without re-indexing, and invalid content never indexes
+ok 86 - a repeated checkpoint call returns the stored answer without re-indexing, and invalid content never indexes
+  ---
+  duration_ms: 34.491542
+  type: 'test'
+  ...
+# Subtest: a checkpoint is capped at 16 KiB, and a large one is trimmed inside the pack instead of breaking it
+ok 87 - a checkpoint is capped at 16 KiB, and a large one is trimmed inside the pack instead of breaking it
+  ---
+  duration_ms: 36.003875
+  type: 'test'
+  ...
+# Subtest: a declared snapshot must still be the current one, and host fields cannot be declared
+ok 88 - a declared snapshot must still be the current one, and host fields cannot be declared
+  ---
+  duration_ms: 27.291125
+  type: 'test'
+  ...
+# Subtest: a project that was never indexed cannot receive a checkpoint through the store
+ok 89 - a project that was never indexed cannot receive a checkpoint through the store
+  ---
+  duration_ms: 10.135167
+  type: 'test'
+  ...
+# Subtest: registering the same folder under a second name says which name owns it
+ok 90 - registering the same folder under a second name says which name owns it
+  ---
+  duration_ms: 1.851417
+  type: 'test'
+  ...
+# Subtest: relevant-only memories enter a pack only when they match the objective, and the omission is stated
+ok 91 - relevant-only memories enter a pack only when they match the objective, and the omission is stated
+  ---
+  duration_ms: 11.727875
+  type: 'test'
+  ...
+# Subtest: the same statement is not proposed twice and approval can change the mode
+ok 92 - the same statement is not proposed twice and approval can change the mode
+  ---
+  duration_ms: 11.087208
+  type: 'test'
+  ...
+# Subtest: the engine returns the reason of a domain error and accepts the richer checkpoint
+ok 93 - the engine returns the reason of a domain error and accepts the richer checkpoint
+  ---
+  duration_ms: 34.395
+  type: 'test'
+  ...
+# Subtest: a version 1 database migrates keeping tasks and memories, and leaves a restorable copy
+ok 94 - a version 1 database migrates keeping tasks and memories, and leaves a restorable copy
+  ---
+  duration_ms: 17.57325
+  type: 'test'
+  ...
+# Subtest: rollback: the copy made before the migration opens as a working version 1 database
+ok 95 - rollback: the copy made before the migration opens as a working version 1 database
+  ---
+  duration_ms: 7.372458
+  type: 'test'
+  ...
+# Subtest: an unknown schema version or a tampered version 1 is refused, not overwritten
+ok 96 - an unknown schema version or a tampered version 1 is refused, not overwritten
+  ---
+  duration_ms: 7.318416
+  type: 'test'
+  ...
+1..96
+# tests 96
+# suites 0
+# pass 93
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3886.494417

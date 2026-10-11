@@ -25,7 +25,7 @@ export function scenario({home,env=process.env}={}){
   const tools={uv:!!onPath('uv',env),python:PYTHONS.filter(name=>onPath(name,env)),docker:!!onPath('docker',env),ffmpeg:!!onPath('ffmpeg',env)};
   const harnesses=Object.fromEntries(Object.keys(HARNESSES).map(name=>[name,!!onPath(name,env)]));
   const steps=[];
-  if(!core.ready)steps.push({area:'núcleo',state:'bloqueado',detail:'Instale Node 24 LTS e Git. Nada mais é necessário para o núcleo.'});
+  if(!core.ready)steps.push({area:'núcleo',state:'bloqueado',detail:core.blockers.join(' ')+' Nada mais é necessário para o núcleo.'});
   else steps.push({area:'núcleo',state:'pronto',detail:'Busca, pacote de contexto, checkpoints e memórias funcionam sem modelo, rede ou conta.',command:'node bin/bbrainx.mjs up --root /caminho/do/projeto'});
   const found=Object.entries(harnesses).filter(([,present])=>present).map(([name])=>name);
   if(found.length)for(const name of found)steps.push({area:'harness',state:'encontrado',detail:HARNESSES[name]+' está no PATH. O comando imprime a configuração; quem grava é você.',command:'node bin/bbrainx.mjs config --project <id> --client '+(name==='cursor-agent'?'cursor':name)});

@@ -1,0 +1,107 @@
+TAP version 13
+# (node:20216) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: wire: handshake, tool list and a tool call need nothing but JSON lines
+ok 1 - wire: handshake, tool list and a tool call need nothing but JSON lines
+  ---
+  duration_ms: 156.316166
+  type: 'test'
+  ...
+# Subtest: wire: protocol errors use JSON-RPC codes; refused or invalid calls come back as tool errors without leaking
+ok 2 - wire: protocol errors use JSON-RPC codes; refused or invalid calls come back as tool errors without leaking
+  ---
+  duration_ms: 119.037292
+  type: 'test'
+  ...
+# Subtest: wire: a line above the limit stops the server, and the trace never reaches standard output
+not ok 3 - wire: a line above the limit stops the server, and the trace never reaches standard output
+  ---
+  duration_ms: 217.786375
+  type: 'test'
+  location: '/private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:72:1'
+  failureType: 'testCodeFailure'
+  error: `Unexpected token '(', "(node:2023"... is not valid JSON`
+  code: 'ERR_TEST_FAILURE'
+  name: 'SyntaxError'
+  stack: |-
+    JSON.parse (<anonymous>)
+    file:///private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:81:68
+    Array.map (<anonymous>)
+    TestContext.<anonymous> (file:///private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:81:53)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: wire: a modern client needs no handshake, and both eras share one process
+not ok 4 - wire: a modern client needs no handshake, and both eras share one process
+  ---
+  duration_ms: 119.76025
+  type: 'test'
+  location: '/private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:88:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '(node:20241) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n' +
+    +   '(Use `node --trace-warnings ...` to show where the warning was created)\n'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: |-
+    (node:20241) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:104:47)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: wire: the harness is told which project id to pass, in the tool schemas and in the instructions of both eras
+ok 5 - wire: the harness is told which project id to pass, in the tool schemas and in the instructions of both eras
+  ---
+  duration_ms: 116.682666
+  type: 'test'
+  ...
+# Subtest: wire: a call cancelled in the same write gets no answer and the server stays up; a domain refusal is a tool error
+not ok 6 - wire: a call cancelled in the same write gets no answer and the server stays up; a domain refusal is a tool error
+  ---
+  duration_ms: 138.32375
+  type: 'test'
+  location: '/private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:125:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + '(node:20253) ExperimentalWarning: SQLite is an experimental feature and might change at any time\n' +
+    +   '(Use `node --trace-warnings ...` to show where the warning was created)\n'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: |-
+    (node:20253) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+    (Use `node --trace-warnings ...` to show where the warning was created)
+    
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///private/tmp/bbrainx-audit-20261006/source/test/mcp-wire.test.mjs:134:47)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 3
+# fail 3
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 909.84725

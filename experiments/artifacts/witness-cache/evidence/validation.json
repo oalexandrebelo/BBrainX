@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "moduleVersion": "witness-cache-lab-v1",
+  "observedAt": "2026-10-07T09:11:10.103Z",
+  "environment": {"node":"v22.16.0","platform":"linux","architecture":"x64","release":"6.18.44","pythonNotRequired":true},
+  "tests": {"tests":34,"pass":34,"fail":0,"cancelled":0,"skipped":0,"todo":0},
+  "boundedEnumeration": {"sequences":1296,"eventsPerSequence":4,"alphabetSize":6,"readsCompared":1728},
+  "negativeControls": [
+    {"id":"stale-publication","detected":true,"assertionFailures":1,"exitCode":1,"mutantSha256":"e65f7a2ca2b0b38bcc2b0e34f717eb43d37503b5204f51e574cb66d1f40bf560"},
+    {"id":"revocation-not-checked","detected":true,"assertionFailures":1,"exitCode":1,"mutantSha256":"97336b539e990ef858b57b7b624ccf17d6f3048455eaaaeecbc9969cfa508d87"},
+    {"id":"shared-buffer-poisoning","detected":true,"assertionFailures":1,"exitCode":1,"mutantSha256":"fcbc7f5429d03b40e15bd04da8854e8bd67d3212ca22be6f2dba07e78b494966"},
+    {"id":"missing-negative-dependency","detected":true,"assertionFailures":1,"exitCode":1,"mutantSha256":"86bbfb55236b5940a1ec6a82261ebb606208a3382cdea210f7182cfb970e984f"}
+  ],
+  "experiment": {
+    "kind":"synthetic-invalidation-retention-not-performance","beforeEntries":101,"changedArtifacts":1,
+    "observed":{"artifactHits":99,"artifactMisses":1,"searchInvalidatedDespiteUnchangedSelectedDocument":true,"entriesAfter":99,"totalInvalidations":2},
+    "coarseBaseline":{"kind":"declared-global-generation-policy-count-not-executed-system","entriesToInvalidate":101},
+    "baselineExplanation":"Uma política explicitamente global invalida as 101 entradas; a contagem é derivada da definição, não benchmark de outro produto.",
+    "modelCalls":0,"providerBillingSavings":null,"endToEndSpeedup":null,"taskAccuracy":null,
+    "limitation":"Retenção de trabalho independente em cenário construído; 99 hits não representam 99% de acerto de agentes. A autoridade atualizou corretamente a geração de índice."
+  },
+  "sources":[{"file":"lab/witness-cache.mjs","bytes":11372,"sha256":"feee4bec1b568c457319c7758711249dc2810e814ff4a7d8e6e8effa90c05734"},{"file":"lab/witness-cache.test.mjs","bytes":12622,"sha256":"233f02a74f4b68069e52c4124a776b482dbbcbbc3a3ffde792d78e4504a132db"}],
+  "productionDependenciesAdded":0,"scope":"standalone-module-local-verification","githubPublished":false,"bbrainxRuntimeIntegrated":false,"bbrainxFullSuiteRun":false,"macOSBenchmarked":false,"modelInference":false,"externalBillingVerified":false,"formalUnboundedProof":false,
+  "limitations":["Um isolate Node; não há persistência, watcher, transporte, sandbox ou cache KV.","Host deve autenticar o principal e informar todas as dependências e revisões; o módulo não demonstra sua completude.","Limites de bytes contabilizados não são teto de RSS; Hash não é assinatura.","Testes finitos e corpus construído não certificam uso em produção crítica nem tolerância a falhas de armazenamento."]
+}

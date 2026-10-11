@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "kind": "real-test-failure-through-default-shell-pipeline",
+  "node": "22.23.2",
+  "command": "bash -e -c \"node --test test/mcp-wire.test.mjs | tee <temporary-log>\"",
+  "shellExitCode": 0,
+  "tests": 6,
+  "passed": 3,
+  "failed": 3,
+  "pipefailEnabled": false,
+  "limitation": "Reproduces shell masking with existing Node22 failure, not an observed failed Atlas run on GitHub Node24."
+}

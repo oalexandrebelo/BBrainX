@@ -1,0 +1,18 @@
+✔ atlas: componentes e percursos têm IDs únicos (0.294333ms)
+✔ atlas: todo componente tem maturidade, fonte e gate explícitos (0.119042ms)
+✔ atlas: relações e componentes de todos os percursos são válidos (0.100458ms)
+✔ atlas: runtime não promove propostas a integração existente (0.208917ms)
+✔ atlas: filtros jamais deixam relações órfãs (1.129167ms)
+✔ atlas: busca ignora acentos e casos, estado vazio é explícito (0.3685ms)
+✔ atlas: toda relação planejada permanece documental (0.134542ms)
+✔ atlas: exportação determinística preserva revisão e status (0.137041ms)
+✔ atlas: SVG faz escape de texto, não incorpora script nem URLs remotas (0.282583ms)
+✔ atlas: evidências anteriores ficam separadas e sem total enganoso (0.109375ms)
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 35.772458

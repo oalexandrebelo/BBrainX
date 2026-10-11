@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto';
+import { composeCapabilityLibraries } from './capability-composition.mjs';
 
 /**
  * Motor de capacidades do BBrainX: uma capacidade declara entrada, saída, acesso e prazo; o motor valida,
@@ -52,10 +53,17 @@ const timedOut=Symbol('timeout');
 /** Liga o sinal de quem chama ao prazo da capacidade. O motivo do aborto distingue prazo de cancelamento. */
 function deadline(received,timeoutMs){
   const controller=new AbortController();let timer;
+  const expiresAt=timeoutMs===undefined?Infinity:performance.now()+timeoutMs;
   const forward=()=>controller.abort(received.reason);
   if(received){if(received.aborted)forward();else received.addEventListener('abort',forward,{once:true});}
   if(timeoutMs!==undefined)timer=setTimeout(()=>controller.abort(timedOut),timeoutMs);
-  return {signal:controller.signal,cleanup(){clearTimeout(timer);received?.removeEventListener('abort',forward);}};
+  return {signal:controller.signal,
+    check(){
+      // Timer não preempta código síncrono: conferir também na fronteira de cada etapa.
+      if(!controller.signal.aborted&&performance.now()>=expiresAt)controller.abort(timedOut);
+      if(controller.signal.aborted)throw interrupted(controller.signal);
+    },
+    cleanup(){clearTimeout(timer);received?.removeEventListener('abort',forward);}};
 }
 function interrupted(signal){
   return signal.reason===timedOut?new EngineError('TIMEOUT','Capability invocation timed out.'):new EngineError('CANCELLED','Capability invocation was cancelled.',{cause:signal.reason});
@@ -75,9 +83,10 @@ function race(work,signal){
  * `onEvent` recebe invocation.started|completed|failed com identificador, capacidade, duração e código; nunca
  * recebe argumentos nem resultado. Falha no observador não muda o resultado da chamada.
  */
-export function createEngine({name,version,capabilities,onEvent}){
+export function createEngine({name,version,capabilities={},libraries=[],onEvent}){
+  const composed=composeCapabilityLibraries(libraries,capabilities);
   const registry=new Map(), descriptions=new Map();
-  for(const [id,capability] of Object.entries(capabilities)){
+  for(const [id,capability] of Object.entries(composed.capabilities)){
     const {timeoutMs}=capability;
     if(timeoutMs!==undefined&&(!Number.isInteger(timeoutMs)||timeoutMs<1||timeoutMs>MAX_TIMEOUT_MS))throw new TypeError('Capability '+id+' timeoutMs must be an integer from 1 through '+MAX_TIMEOUT_MS+'.');
     registry.set(id,Object.freeze({...capability}));
@@ -87,27 +96,34 @@ export function createEngine({name,version,capabilities,onEvent}){
   const notFound=id=>new EngineError('CAPABILITY_NOT_FOUND','Capability not found.',{publicDetails:{capabilityId:id}});
   return {
     name,version,
-    list:()=>[...descriptions.values()].map(({id,description,title,annotations})=>({id,description,...(title===undefined?{}:{title}),...(annotations===undefined?{}:{annotations})})),
-    describe(id){const description=descriptions.get(id);if(!description)throw notFound(id);return description;},
+    provenance:()=>structuredClone(composed.provenance),
+    list:()=>[...descriptions.values()].map(({id,description,title,annotations})=>({id,description,...(title===undefined?{}:{title}),...(annotations===undefined?{}:{annotations:structuredClone(annotations)})})),
+    describe(id){const description=descriptions.get(id);if(!description)throw notFound(id);return structuredClone(description);},
     async invoke(id,rawInput,{principal=null,source='direct',signal,requestId=randomUUID()}={}){
       const started=performance.now();let limit;
       emit({type:'invocation.started',requestId,capabilityId:id,source,startedAt:new Date().toISOString()});
       try{
         const capability=registry.get(id);if(!capability)throw notFound(id);
-        const input=structuredClone(await validate(capability.input,rawInput,'INPUT_INVALID','Capability input validation failed.'));
-        const who=snapshotPrincipal(principal);
-        await enforceAccess(id,capability,structuredClone(input),Object.freeze({requestId,source,principal:who,signal:signal??new AbortController().signal}));
-        limit=deadline(signal,capability.timeoutMs);
-        // Chamada já cancelada não começa: `run` pode ter efeito colateral.
-        if(limit.signal.aborted)throw interrupted(limit.signal);
+        // O prazo é da invocação inteira: entrada, acesso, execução e saída.
+        limit=deadline(signal,capability.timeoutMs);limit.check();
+        // Capture dados do chamador antes do primeiro await; sem referências mutáveis atravessando etapas.
+        const receivedInput=structuredClone(rawInput), receivedPrincipal=structuredClone(principal);
+        const stage=async work=>{
+          limit.check();
+          const result=await race(Promise.resolve().then(()=>{limit.check();return work();}),limit.signal);
+          limit.check();return result;
+        };
+        const input=structuredClone(await stage(()=>validate(capability.input,receivedInput,'INPUT_INVALID','Capability input validation failed.')));
+        const who=snapshotPrincipal(receivedPrincipal);
+        await stage(()=>enforceAccess(id,capability,structuredClone(input),Object.freeze({requestId,source,principal:structuredClone(who),signal:limit.signal})));
         const context=Object.freeze({requestId,source,principal:who,signal:limit.signal});
-        const raw=await race(Promise.resolve().then(()=>capability.run({input,context})),limit.signal);
-        const output=await race(validate(capability.output,raw,'OUTPUT_INVALID','Capability output validation failed.'),limit.signal);
+        const raw=await stage(()=>capability.run({input,context}));
+        const output=await stage(()=>validate(capability.output,raw,'OUTPUT_INVALID','Capability output validation failed.'));
         emit({type:'invocation.completed',requestId,capabilityId:id,durationMs:performance.now()-started});
         return output;
       }catch(cause){
         // Só erro do próprio motor atravessa com código e mensagem; qualquer outro vira EXECUTION_FAILED sem detalhe.
-        const error=cause instanceof EngineError&&ERROR_CODES.includes(cause.code)?cause:limit?.signal.aborted?interrupted(limit.signal):new EngineError('EXECUTION_FAILED','Capability execution failed.',{cause});
+        const error=limit?.signal.aborted?interrupted(limit.signal):cause instanceof EngineError&&ERROR_CODES.includes(cause.code)?cause:new EngineError('EXECUTION_FAILED','Capability execution failed.',{cause});
         emit({type:'invocation.failed',requestId,capabilityId:id,durationMs:performance.now()-started,code:error.code});
         throw error;
       }finally{limit?.cleanup();}

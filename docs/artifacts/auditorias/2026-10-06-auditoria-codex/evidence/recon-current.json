@@ -1,0 +1,53 @@
+{
+  "observedAtUtc": "2026-10-06T03:27:15Z",
+  "head": "a9636e9402e3fa673ae05b3489202da1048aef5e",
+  "status": "",
+  "trackedFiles": 110,
+  "extensions": {
+    "yml": 3,
+    "gitignore": 1,
+    "nvmrc": 1,
+    "md": 19,
+    "noext": 1,
+    "command": 1,
+    "mjs": 41,
+    "json": 12,
+    "log": 3,
+    "html": 1,
+    "jsx": 2,
+    "txt": 1,
+    "py": 2,
+    "svg": 5,
+    "png": 5,
+    "gif": 1,
+    "mp4": 1,
+    "cases": 5,
+    "js": 3,
+    "css": 2
+  },
+  "commitsPerMonth": {
+    "2026-10": 27
+  },
+  "activeBranches": [
+    "main a9636e9402e3fa673ae05b3489202da1048aef5e 2026-10-05 05:03:45 +0000",
+    "fix/scope-instructions 862e7e8fc9d25b9215b07d9a2f517c6ae13b4611 2026-10-05 01:59:28 -0300",
+    "docs/activation-notes ccbb88862e3ad18022137e023bd86793b4930039 2026-10-04 09:43:33 -0300",
+    "feat/brand-bx-prompts-handoff 71b045e4636e7a0e8435320f4d16c5cc31c0e1b5 2026-10-04 09:34:08 -0300",
+    "feat/godmodcode 4785d4da9f8f01c5318e8791e8ac91eae7c2c341 2026-10-04 09:03:16 -0300",
+    "feat/turbo-nucleo 4a009f86c85964083573f809f5752228121bff71 2026-10-04 07:18:42 -0300"
+  ],
+  "authors": [
+    "21\tAlexandre Luiz da Vitoria Belo <32547904+oalexandrebelo@users.noreply.github.com>",
+    "     6\tgithub-actions[bot] <41898282+github-actions[bot]@users.noreply.github.com>"
+  ],
+  "lockfilePackages": 161,
+  "productionPackagesExcludingRoot": 25,
+  "declaredDirectDependencies": {
+    "@xyflow/react": "^12.10.0",
+    "gpt-tokenizer": "4.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "4.5.4"
+  },
+  "artifactType": "read-only-repository-recon"
+}

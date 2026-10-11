@@ -1,5 +1,7 @@
 # Handoff do BBrainX (4 de outubro de 2026)
 
+> **Registro histórico.** Para assumir a engenharia atual, comece em [engineering/CONTINUITY.md](engineering/CONTINUITY.md) e execute `npm run project:status`. A consolidação, lanes, Observatory e correções posteriores não estão integralmente descritas abaixo. A consulta ao GitHub em 07/10/2026 informou repositório público; a afirmação de privacidade abaixo registra uma decisão antiga, não o estado atual.
+
 > Para quem assume o projeto sem ter acompanhado as rodadas anteriores: outro agente, outro harness ou o próprio dono daqui a um mês. Tudo aqui foi conferido no código ou na saída de um comando nessa data. Se este texto divergir do código, o código está certo.
 
 ## 1. O que é
@@ -78,7 +80,7 @@ node scripts/laya-bench.mjs --memory test/fixtures/eval-memory.cases
 | Caminho | Papel |
 |---|---|
 | `bin/bbrainx.mjs` | O CLI inteiro, em um arquivo |
-| `profiles/laya/worker.py`, `requirements.txt` | Processo do modelo (JSON por linha, sem rede) e as versões fixadas |
+| `profiles/laya/worker.py`, `requirements.txt` | Processo do modelo (JSON por linha, bibliotecas em modo offline) e as versões fixadas |
 | `scripts/setup.mjs` | `npm run setup`: confere a máquina, instala pelo lockfile, testa e compila |
 | `scripts/eval-retrieval.mjs`, `make-definition-cases.mjs` | Avaliação da busca com casos rotulados e geração de casos por declaração |
 | `scripts/laya-bench.mjs` | Laya contra o caminho determinístico |

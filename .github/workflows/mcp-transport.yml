@@ -1,0 +1,40 @@
+name: Verify MCP Flow Contract
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'test/**'
+      - 'scripts/*mcp*.mjs'
+      - 'package*.json'
+      - '.github/workflows/mcp-transport.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: mcp-flow-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  contract:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Full suite, repeated pressure, mutations and paired ring measurements
+        run: node scripts/verify-mcp-transport.mjs --minimum-tests 396 --repeat 5
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-MCP-Flow-${{ matrix.os }}
+          path: artifacts/mcp-transport/
+          retention-days: 14

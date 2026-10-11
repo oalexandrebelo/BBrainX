@@ -146,13 +146,18 @@ test('each client gets its own configuration shape, with paths that survive spac
   const jsonOf=textValue=>JSON.parse(textValue.slice(textValue.indexOf('{')));
   assert.deepEqual(jsonOf(clientConfig('cursor',options)).mcpServers.bbrainx,{type:'stdio',command:'/opt/node',args:[options.entry,'mcp','--project','app'],env:{BBRAINX_HOME:options.home}});
   assert.equal(jsonOf(clientConfig('vscode',options)).servers.bbrainx.type,'stdio');
-  assert.deepEqual(jsonOf(clientConfig('gemini',options)).mcpServers.bbrainx.args,[options.entry,'mcp','--project','app']);
+  // ~/.gemini/settings.json é global: a chave leva o projeto, para dois projetos não se sobrescreverem.
+  assert.deepEqual(Object.keys(jsonOf(clientConfig('gemini',options)).mcpServers),['bbrainx-app']);
+  assert.deepEqual(jsonOf(clientConfig('gemini',options)).mcpServers['bbrainx-app'].args,[options.entry,'mcp','--project','app']);
+  assert.notDeepEqual(Object.keys(jsonOf(clientConfig('gemini',{...options,project:'other'})).mcpServers),Object.keys(jsonOf(clientConfig('gemini',options)).mcpServers));
+  assert.deepEqual(jsonOf(clientConfig('antigravity',options)),{mcpServers:{'bbrainx-app':{command:options.node,args:[options.entry,'mcp','--project','app'],env:{BBRAINX_HOME:options.home}}}});
+  assert.deepEqual(jsonOf(clientConfig('kilo',options)),{mcp:{bbrainx:{type:'local',command:[options.node,options.entry,'mcp','--project','app'],environment:{BBRAINX_HOME:options.home},enabled:true,timeout:60000}}});
   const claude=clientConfig('claude',options);
   assert.match(claude,/claude mcp add bbrainx --env BBRAINX_HOME='\/Users\/me\/Library\/Application Support\/BBrainX' -- \/opt\/node '\/Users\/me\/My Apps\/bbrainx\.mjs' mcp --project app/);
-  assert.match(clientConfig('codex',options),/codex mcp add bbrainx --env BBRAINX_HOME='\/Users\/me\/Library\/Application Support\/BBrainX' -- \/opt\/node '\/Users\/me\/My Apps\/bbrainx\.mjs' mcp --project app\n/);
-  assert.match(clientConfig('codex',options),/\[mcp_servers\.bbrainx\]\ncommand = "\/opt\/node"\nargs = \["\/Users\/me\/My Apps\/bbrainx\.mjs","mcp","--project","app"\]/);
+  assert.match(clientConfig('codex',options),/\n#\s+codex mcp add bbrainx-app --env BBRAINX_HOME='\/Users\/me\/Library\/Application Support\/BBrainX' -- \/opt\/node '\/Users\/me\/My Apps\/bbrainx\.mjs' mcp --project app\n/);
+  assert.match(clientConfig('codex',options),/\[mcp_servers\.bbrainx-app\]\ncommand = "\/opt\/node"\nargs = \["\/Users\/me\/My Apps\/bbrainx\.mjs","mcp","--project","app"\]/);
   assert.throws(()=>clientConfig('unknown',options),error=>error.code==='UNKNOWN_CLIENT');
-  assert.deepEqual([...CLIENTS],['claude','codex','cursor','vscode','gemini']);
+  assert.deepEqual([...CLIENTS],['claude','codex','cursor','vscode','gemini','antigravity','kilo']);
 });
 test('`up` registers, indexes and names the next steps; running it again reuses the project',t=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-up-')), root=path.join(dir,'My Project (v2)');t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
@@ -163,5 +168,9 @@ test('`up` registers, indexes and names the next steps; running it again reuses 
   assert.deepEqual(Object.keys(first.next.connect),[...CLIENTS]);assert.match(first.next.connect.codex,/config --project My-Project-v2 --client codex$/);
   const again=run('up','--root',root,'--project','another-name');
   assert.equal(again.project,'My-Project-v2','the folder keeps the name it already has');assert.equal(again.changed,0);
+  const legacy=new BrainStore(path.join(dir,'state'));
+  try{legacy.db.prepare('UPDATE projects SET root=? WHERE id=?').run(fs.realpathSync(root),first.project);}finally{legacy.close();}
+  const reopened=run('up','--root',fs.realpathSync.native(root),'--project','third-name');
+  assert.equal(reopened.project,first.project,'legacy stored path spelling preserves project identity');assert.equal(reopened.changed,0);
   assert.equal(run('search','--project','My-Project-v2','--query','greet').items[0].path,'main.py');
 });

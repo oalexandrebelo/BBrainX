@@ -1,0 +1,12 @@
+import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {spawnSync,execFileSync} from 'node:child_process';import {createHash} from 'node:crypto';import {gzipSync} from 'node:zlib';
+const out='artifacts/observatory';fs.mkdirSync(out,{recursive:true});
+const files=['test/usage-contract.test.mjs','test/usage-store.test.mjs','test/usage-integration.test.mjs'];
+const run=spawnSync(process.execPath,['--test','--test-reporter=tap',...files],{encoding:'utf8',timeout:120000,maxBuffer:8000000});
+const text=(run.stdout||'')+(run.stderr||'');fs.writeFileSync(path.join(out,'tests.log'),text);
+const n=key=>Number(text.match(new RegExp('^# '+key+' (\\d+)','m'))?.[1]??NaN);
+const tests=n('tests'),passed=n('pass'),failed=n('fail'),skipped=n('skipped'),cancelled=n('cancelled'),todo=n('todo');
+if(run.error||run.status!==0||tests<=0||tests!==passed||failed!==0||skipped!==0||cancelled!==0||todo!==0)throw new Error('OBSERVATORY_TESTS_INCOMPLETE_OR_FAILED');
+const sha=p=>createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+const assets=['index.html','observatory.css','observatory.js'].map(file=>{const data=fs.readFileSync('public/observatory/'+file);return {file,bytes:data.length,gzipBytes:gzipSync(data).length,sha256:sha('public/observatory/'+file)};});
+const report={schemaVersion:1,revision:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),runId:process.env.GITHUB_RUN_ID||null,observedAt:new Date().toISOString(),environment:{node:process.version,platform:process.platform,architecture:process.arch,totalMemoryBytes:os.totalmem()},tests:{tests,passed,failed,skipped,cancelled,todo,files},assets,dependenciesAdded:0,modelInference:false,externalBillingVerified:false,syntheticFixturesAreBenchmarks:false,knownLimitations:['Somente recibos explicitamente importados; não coleta todas as chamadas dos harnesses.','Fonte importada não é autenticada. Preços fornecidos não equivalem à fatura.','Não valida estação MEDIUM nativa com carga concorrente de trabalho.']};
+fs.writeFileSync(path.join(out,'validation.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));

@@ -1,0 +1,136 @@
+{
+  "head": "a9636e9402e3fa673ae05b3489202da1048aef5e",
+  "status": "",
+  "count": "27",
+  "first": "2026-10-04",
+  "latest": "2026-10-05",
+  "branches": [
+    "docs/activation-notes",
+    "  feat/brand-bx-prompts-handoff",
+    "  feat/godmodcode",
+    "  feat/turbo-nucleo",
+    "  fix/scope-instructions",
+    "* main",
+    "  remotes/origin/HEAD -> origin/main",
+    "  remotes/origin/docs/activation-notes",
+    "  remotes/origin/feat/brand-bx-prompts-handoff",
+    "  remotes/origin/feat/godmodcode",
+    "  remotes/origin/feat/turbo-nucleo",
+    "  remotes/origin/fix/scope-instructions",
+    "  remotes/origin/main"
+  ],
+  "authors": "17\tAlexandre Luiz da Vitoria Belo\n     6\tgithub-actions[bot]",
+  "hotspots": [
+    [
+      "bin/bbrainx.mjs",
+      8
+    ],
+    [
+      "docs/validation/benchmark-macos-latest.json",
+      6
+    ],
+    [
+      "docs/validation/benchmark-ubuntu-latest.json",
+      6
+    ],
+    [
+      "docs/validation/benchmark-windows-latest.json",
+      6
+    ],
+    [
+      "docs/validation/ci-report.json",
+      6
+    ],
+    [
+      "docs/validation/tests-macos-latest.log",
+      6
+    ],
+    [
+      "docs/validation/tests-ubuntu-latest.log",
+      6
+    ],
+    [
+      "docs/validation/tests-windows-latest.log",
+      6
+    ],
+    [
+      "docs/validation/upstream-inventory.json",
+      6
+    ],
+    [
+      "public/demo/bbrainx-workbench-desktop.png",
+      6
+    ]
+  ],
+  "fixHotspots": [
+    [
+      "bin/bbrainx.mjs",
+      6
+    ],
+    [
+      "docs/RELEASE_NOTES.md",
+      5
+    ],
+    [
+      "test/godmode.test.mjs",
+      4
+    ],
+    [
+      "test/mcp-wire.test.mjs",
+      4
+    ],
+    [
+      "docs/QUICKSTART.md",
+      3
+    ],
+    [
+      "src/clients.mjs",
+      3
+    ],
+    [
+      ".github/workflows/release.yml",
+      3
+    ],
+    [
+      "README.en.md",
+      3
+    ],
+    [
+      "src/context.mjs",
+      3
+    ],
+    [
+      "docs/HANDOFF.md",
+      2
+    ]
+  ],
+  "history": [
+    "a9636e9402e3fa673ae05b3489202da1048aef5e\t2026-10-05T05:03:45Z\tgithub-actions[bot]\tdocs: publish verified locks and evidence for 912aa253 [skip ci]",
+    "912aa2533c064aed81f1f81a17bde083ec4232fd\t2026-10-05T02:02:02-03:00\tAlexandre Luiz da Vitoria Belo\tMerge pull request #5 from oalexandrebelo/fix/scope-instructions",
+    "862e7e8fc9d25b9215b07d9a2f517c6ae13b4611\t2026-10-05T01:59:28-03:00\tAlexandre Luiz da Vitoria Belo\tfix(mcp): say which project and folder the server serves, and print the tested Codex command",
+    "2638ae3774f406d1bd7cec708b8062709aa5db79\t2026-10-04T12:47:23Z\tgithub-actions[bot]\tdocs: publish verified locks and evidence for 2a921d69 [skip ci]",
+    "2a921d6903db6a389830263d4a26902495716a66\t2026-10-04T09:45:45-03:00\tAlexandre Luiz da Vitoria Belo\tMerge pull request #4 from oalexandrebelo/docs/activation-notes",
+    "ccbb88862e3ad18022137e023bd86793b4930039\t2026-10-04T09:43:33-03:00\tAlexandre Luiz da Vitoria Belo\tdocs: remove an ambiguity in the fine-tuning prompt",
+    "a09f9d3fafe81a176b1595ad37c97eb97b6ca6dc\t2026-10-04T09:43:02-03:00\tAlexandre Luiz da Vitoria Belo\tdocs: state the mid-session limit as observed, on Claude Code only",
+    "1c28574def92466dd2a5bbdbfb660072b6823f87\t2026-10-04T09:42:05-03:00\tAlexandre Luiz da Vitoria Belo\tfix(mcp): tell the harness which project id to pass",
+    "ea4718b5469e52442ee54d249b676ce931086da9\t2026-10-04T09:39:28-03:00\tAlexandre Luiz da Vitoria Belo\tdocs: record what the first real activation showed",
+    "6e220ca0e0beda9690023e91712750e78a94ea73\t2026-10-04T12:38:37Z\tgithub-actions[bot]\tdocs: publish verified locks and evidence for 7d6e7214 [skip ci]",
+    "7d6e721416cbbd7b9d370ce0e8dd894349f6cb4a\t2026-10-04T09:36:30-03:00\tAlexandre Luiz da Vitoria Belo\tMerge pull request #3 from oalexandrebelo/feat/brand-bx-prompts-handoff",
+    "71b045e4636e7a0e8435320f4d16c5cc31c0e1b5\t2026-10-04T09:34:08-03:00\tAlexandre Luiz da Vitoria Belo\tdocs: add the handoff, the harness activation prompt and the Laya fine-tuning context prompt",
+    "0644beab3bd419394b3754d7c0acde9971d7e2f7\t2026-10-04T09:34:08-03:00\tAlexandre Luiz da Vitoria Belo\tfeat(brand): use the BX monogram as the provisional mark and cycle the three options in a GIF",
+    "e69dbc0fffd25223926a3854c65bfae006ff8362\t2026-10-04T12:07:43Z\tgithub-actions[bot]\tdocs: publish verified locks and evidence for 337ff85c [skip ci]",
+    "337ff85c9a0acee49705c568ce22a0fb14430ec6\t2026-10-04T09:06:09-03:00\tAlexandre Luiz da Vitoria Belo\tMerge pull request #2 from oalexandrebelo/feat/godmodcode",
+    "4785d4da9f8f01c5318e8791e8ac91eae7c2c341\t2026-10-04T09:03:16-03:00\tAlexandre Luiz da Vitoria Belo\tfeat: study map in React Flow with a generated dossier, blind evaluation, 0.4.0 docs, logo options and film update",
+    "b0f3c54a5fcec133161f1e7202cb78118aa007fa\t2026-10-04T08:49:47-03:00\tAlexandre Luiz da Vitoria Belo\tfeat: serve both MCP eras (2026-07-28 stateless and the handshake revisions), fix cancellation before start",
+    "5c14640850b95fc2a111b524ebc6a0e4610aef07\t2026-10-04T08:41:39-03:00\tAlexandre Luiz da Vitoria Belo\tfeat: natural-language search across pt and en, doc quota in the pack, Laya profile, scenario doctor and one-step setup",
+    "f68f688f525fb3bc59f0b3308d0ed4542e71c564\t2026-10-04T08:22:58-03:00\tAlexandre Luiz da Vitoria Belo\tfeat: own capability engine and MCP stdio server, no Invokta or MCP SDK at runtime",
+    "4a009f86c85964083573f809f5752228121bff71\t2026-10-04T07:18:42-03:00\tAlexandre Luiz da Vitoria Belo\tfeat: rank declarations first, re-read changed files, richer checkpoints and schema v2",
+    "406ac174cfb1d14ce81702615109979504f2b979\t2026-10-04T06:11:04Z\tgithub-actions[bot]\tdocs: publish verified locks and evidence for 0a45553a [skip ci]",
+    "0a45553a6cd1affb9e6e0ffdcb4b401b9553102d\t2026-10-04T03:09:24-03:00\tAlexandre Luiz da Vitoria Belo\tfix: verify mobile graph rendering, preserve approved memory limits and prepare immutable preview",
+    "4f79b58f2bb51035952f07c71e4cdc047a731dae\t2026-10-04T06:04:00Z\tgithub-actions[bot]\tdocs: publish verified locks and evidence for 9ebf55ee [skip ci]",
+    "9ebf55ee4691c452837e88385f393bb7130a73a0\t2026-10-04T03:02:24-03:00\tAlexandre Luiz da Vitoria Belo\tfeat: ship macOS launcher, research dossier, source inventory and reproducible media validation",
+    "0015d1d0334907084dcde5a068a30673b22ec09e\t2026-10-04T02:45:02-03:00\tAlexandre Luiz da Vitoria Belo\tfeat: implement local context runtime, Invokta MCP, durable checkpoints and React Flow workbench",
+    "05a485f096eed25bd621964bcdde3b0ee6fb81b2\t2026-10-04T02:30:16-03:00\tAlexandre Luiz da Vitoria Belo\tchore: initialize BBrainX repository for executable macOS-first release",
+    "ad79045dc1202e739f272aad74e58b161cd7fb01\t2026-10-04T02:07:21-03:00\tAlexandre Luiz da Vitoria Belo\tInitial commit"
+  ]
+}

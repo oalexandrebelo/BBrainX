@@ -1,0 +1,13 @@
+{
+  "name": "bbrainx-witness-cache-laboratory",
+  "version": "0.1.0-experimental",
+  "private": true,
+  "type": "module",
+  "description": "Standalone dependency-validated cache experiment; not integrated with the BBrainX runtime",
+  "scripts": {
+    "test": "node --test --test-reporter=tap lab/witness-cache.test.mjs",
+    "verify": "node lab/verify.mjs",
+    "example": "node lab/example.mjs"
+  },
+  "engines": {"node": ">=22.16.0"}
+}

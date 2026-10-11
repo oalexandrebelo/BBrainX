@@ -4,6 +4,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { ensure, hash, text } from './primitives.mjs';
 import { classify, definitions, isStopword, plainWord, splitIdentifier, stemPrefix, symbolTerms } from './analyze.mjs';
 import { translate } from './glossary.mjs';
+import { verifyRoot } from './source-root.mjs';
 
 const allowed = new Set(['.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
 const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
@@ -35,6 +36,9 @@ export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
   ensure(typeof relative==='string'&&!path.isAbsolute(relative),'UNSAFE_PATH');
   const full=path.resolve(root,relative), rel=path.relative(root,full);
   ensure(rel&&!rel.startsWith('..'+path.sep)&&rel!=='..'&&!path.isAbsolute(rel),'UNSAFE_PATH');
+  // Chamadas locais podem usar aliases de ancestrais (por exemplo /var no macOS).
+  // O vínculo canonicalizado do registro é conferido pelas operações do projeto.
+  ensure(!fs.lstatSync(root).isSymbolicLink(),'SYMLINK_REJECTED');
   let cursor=root;
   for(const component of rel.split(path.sep)){cursor=path.join(cursor,component);ensure(!fs.lstatSync(cursor).isSymbolicLink(),'SYMLINK_REJECTED');}
   const stat=fs.statSync(full);ensure(stat.isFile()&&stat.size<=maxBytes,'FILE_TOO_LARGE');
@@ -45,6 +49,7 @@ export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
   return {body,hash:hash(bytes),bytes:bytes.length};
 }
 function candidates(root, limits) {
+  verifyRoot(root);
   const base=['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',root];
   const options={encoding:'utf8',timeout:5000,maxBuffer:65536,stdio:['ignore','pipe','pipe'],windowsHide:true,shell:false,env:{...process.env,LC_ALL:'C'}};
   const probe=spawnSync('git',[...base,'rev-parse','--is-inside-work-tree'],options);
@@ -88,38 +93,62 @@ function replaceFile(store,project,file,content){
 }
 function megabytes(bytes){return (bytes/1048576).toFixed(1)+' MiB';}
 
+// Escrita do índice em lotes curtos: o lock de escrita do banco é segurado só durante os INSERTs de um lote, nunca durante leitura de arquivos.
+const INDEX_BATCH_FILES=250, INDEX_BATCH_BYTES=4*1048576;
 /**
  * Reconcilia o índice com a worktree. Um arquivo por vez: a memória não cresce com o repositório.
  * Arquivo inalterado (mesmo hash) mantém seus trechos. Nada é executado; nada sai da máquina.
+ * Duas fases: (1) varredura sem lock de escrita (lê e confere cada arquivo, aplica os tetos; só guarda caminho e hash), de modo que
+ * recusas não alteram nada; (2) gravação dos arquivos que mudaram em lotes curtos. Cada lote publica o snapshot calculado sobre o
+ * manifesto realmente indexado, então todo estado confirmado tem snapshot coerente com seus arquivos; a remoção dos que sumiram e o
+ * snapshot final saem numa última transação. Falha no meio deixa um índice coerente que a próxima chamada completa.
  */
 export function indexProject(store, project, override) {
   const limits=resolveLimits(override), {root}=store.project(project);
   const names=[...new Set(candidates(root,limits).filter(included).map(x=>x.replaceAll('\\','/')))].sort();
-  return store.transaction(()=>{
-    const previous=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
-    const entries=[], skipped=[], skippedByReason={};let totalBytes=0,changed=0,reused=0,removed=0;
-    for(const relative of names){
-      let file;
-      try{file=readSafe(root,relative,limits.maxFileBytes);}
-      catch(e){
-        if(!skippable.has(e.code))throw e;
-        // Checkout esparso lista caminhos que não estão no disco: conta, mas não infla a resposta.
-        skippedByReason[e.code]=(skippedByReason[e.code]||0)+1;if(skipped.length<100)skipped.push({path:relative,reason:e.code});continue;
-      }
-      // O teto conta arquivos lidos de fato, não caminhos listados pelo Git.
-      ensure(entries.length<limits.maxFiles,'INDEX_FILE_LIMIT','Mais de '+limits.maxFiles+' arquivos elegíveis. Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxFiles+'.');
-      totalBytes+=file.bytes;
-      ensure(totalBytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' (em '+relative+'). Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxBytes+'.');
-      entries.push({path:relative,hash:file.hash});
-      if(previous.get(relative)===file.hash){reused++;continue;}
-      replaceFile(store,project,relative,file);changed++;
+  const previous=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
+  const entries=[], skipped=[], skippedByReason={};let totalBytes=0;
+  for(const relative of names){
+    let file;
+    try{file=readSafe(root,relative,limits.maxFileBytes);}
+    catch(e){
+      if(!skippable.has(e.code))throw e;
+      // Checkout esparso lista caminhos que não estão no disco: conta, mas não infla a resposta.
+      skippedByReason[e.code]=(skippedByReason[e.code]||0)+1;if(skipped.length<100)skipped.push({path:relative,reason:e.code});continue;
     }
-    const present=new Set(entries.map(x=>x.path));
-    for(const old of previous.keys())if(!present.has(old)){removeFile(store,project,old);removed++;}
-    const snapshot=snapshotOf(entries);
-    store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);
-    const result={project,snapshot,files:entries.length,changed,reused,removed,bytes:totalBytes,skipped,skippedByReason,limits,scope:'supported-text-files',automaticWatcher:false};
-    store.event(project,'index.completed',{snapshot,files:entries.length,changed,reused,removed}); return result;
+    // O teto conta arquivos lidos de fato, não caminhos listados pelo Git.
+    ensure(entries.length<limits.maxFiles,'INDEX_FILE_LIMIT','Mais de '+limits.maxFiles+' arquivos elegíveis. Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxFiles+'.');
+    totalBytes+=file.bytes;
+    ensure(totalBytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' (em '+relative+'). Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxBytes+'.');
+    entries.push({path:relative,hash:file.hash});
+  }
+  const present=new Set(entries.map(x=>x.path)), stale=entries.filter(x=>previous.get(x.path)!==x.hash);
+  const publish=()=>{const snapshot=snapshotOf(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project));store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);return snapshot;};
+  let changed=0;
+  for(let at=0;at<stale.length;){
+    const batch=[];let batchBytes=0;
+    while(at<stale.length&&batch.length<INDEX_BATCH_FILES&&batchBytes<INDEX_BATCH_BYTES){
+      const {path:relative}=stale[at++];
+      let file=null;
+      // O arquivo é lido de novo aqui, fora do lock: vale o conteúdo de agora, mesmo que tenha mudado desde a varredura.
+      try{file=readSafe(root,relative,limits.maxFileBytes);batchBytes+=file.bytes;}catch(e){if(!skippable.has(e.code))throw e;}
+      batch.push({relative,file});
+    }
+    store.transaction(()=>{
+      for(const {relative,file} of batch){
+        const known=store.stmt('SELECT hash FROM files WHERE project=? AND path=?').get(project,relative);
+        if(!file){if(known)removeFile(store,project,relative);}
+        else if(known?.hash!==file.hash){replaceFile(store,project,relative,file);changed++;}
+      }
+      publish();
+    });
+  }
+  return store.transaction(()=>{
+    let removed=0;
+    for(const {path:old} of store.stmt('SELECT path FROM files WHERE project=?').all(project))if(!present.has(old)){removeFile(store,project,old);removed++;}
+    const snapshot=publish(), files=store.stmt('SELECT count(*) AS n FROM files WHERE project=?').get(project).n;
+    const result={project,snapshot,files,changed,reused:entries.length-stale.length,removed,bytes:totalBytes,skipped,skippedByReason,limits,scope:'supported-text-files',automaticWatcher:false};
+    store.event(project,'index.completed',{snapshot,files,changed,reused:result.reused,removed}); return result;
   });
 }
 
@@ -129,6 +158,7 @@ export function indexProject(store, project, override) {
  */
 export function refreshFiles(store, project, paths, override) {
   const limits=resolveLimits(override), {root}=store.project(project);
+  verifyRoot(root);
   return store.transaction(()=>{
     const changed=[], removed=[];
     for(const relative of new Set(paths)){
@@ -138,6 +168,10 @@ export function refreshFiles(store, project, paths, override) {
       if(!file){if(known){removeFile(store,project,relative);removed.push(relative);}}
       else if(!known||known.hash!==file.hash){replaceFile(store,project,relative,file);changed.push(relative);}
     }
+    // Refresh tem a mesma política de admissão do index integral; falha reverte também chunks/FTS.
+    const totals=store.stmt('SELECT count(*) AS files,coalesce(sum(bytes),0) AS bytes FROM files WHERE project=?').get(project);
+    ensure(totals.files<=limits.maxFiles,'INDEX_FILE_LIMIT','Mais de '+limits.maxFiles+' arquivos elegíveis após atualização.');
+    ensure(totals.bytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' após atualização.');
     const snapshot=snapshotOf(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project));
     store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);
     if(changed.length||removed.length)store.event(project,'index.refreshed',{snapshot,changed:changed.length,removed:removed.length});
@@ -147,7 +181,7 @@ export function refreshFiles(store, project, paths, override) {
 
 // Peso por coluna do FTS5: caminho, corpo, nomes declarados, partes de identificadores.
 const columnWeights='2.0, 1.0, 8.0, 1.5';
-const kindWeight={source:1,doc:.7,config:.6,test:.4,generated:.25};
+const kindWeight={source:1,doc:.5,config:.6,test:.4,generated:.25};
 const asksForTests=/\b(?:tests?|testes?|specs?|fixtures?|mocks?)\b/i;
 // Peso do segundo estágio (radicais e glossário pt → en) em relação ao casamento exato.
 const LOOSE_WEIGHT=.5;
@@ -156,9 +190,18 @@ const LOOSE_WEIGHT=.5;
  * por radical e pela ponte pt → en, com metade do peso. Depois: reforço quando o termo é um nome DECLARADO no
  * trecho e desconto para teste, documentação e gerado (a menos que a consulta peça testes).
  * Palavras vazias saem da consulta sempre que sobra algum termo que discrimina.
+ * Por padrão (`byFile`) cada arquivo ocupa uma vaga só, com o seu melhor trecho; os outros trechos do arquivo entre os acertos (até 2)
+ * viram `also`, faixas `inicio-fim` sem corpo. `limit` conta arquivos. `byFile:false` devolve os trechos crus, como o pacote precisa.
  */
-export function search(store,project,query,limit=12){
-  const meta=store.project(project);text(query,1000);ensure(Number.isInteger(limit)&&limit>=1&&limit<=50,'INVALID_LIMIT');
+const ALSO_RANGES=2;
+/** Projeto (ou lane) registrado e com índice. Sem índice a busca não devolve "nada encontrado": recusa e diz o que chamar. */
+export function requireIndex(store,project){
+  const meta=store.project(project);
+  ensure(meta.snapshot,'INDEX_REQUIRED','Projeto sem índice. Chame context_index e repita.');
+  return meta;
+}
+export function search(store,project,query,limit=12,{byFile=true}={}){
+  const meta=requireIndex(store,project);text(query,1000);ensure(Number.isInteger(limit)&&limit>=1&&limit<=50,'INVALID_LIMIT');
   const all=query.match(/[\p{L}\p{N}_$]+/gu)?.slice(0,24)||[];
   if(!all.length)return {project,snapshot:meta.snapshot,items:[],truncated:false};
   const content=all.filter(word=>!isStopword(word)), words=content.length?content:all;
@@ -183,11 +226,16 @@ export function search(store,project,query,limit=12){
     const declared=new Set(defs.toLowerCase().split(' ')), share=lowered.filter(x=>declared.has(x)).length/lowered.length;
     return {...row,declares:share>0,score:-row.rank*(row.kind==='test'&&keepTests?1:kindWeight[row.kind]??1)*(1+2*share)};
   }).sort((a,b)=>b.score-a.score||byPath(a,b)||a.start_line-b.start_line);
-  return {project,snapshot:meta.snapshot,items:items.slice(0,limit),truncated:overflow||items.length>limit};
+  if(!byFile)return {project,snapshot:meta.snapshot,items:items.slice(0,limit),truncated:overflow||items.length>limit};
+  const files=new Map();
+  for(const item of items){const chunks=files.get(item.path);if(chunks)chunks.push(item);else files.set(item.path,[item]);}
+  const hits=[...files.values()].map(([best,...rest])=>rest.length?{...best,also:rest.slice(0,ALSO_RANGES).map(chunk=>chunk.start_line+'-'+chunk.end_line)}:best);
+  return {project,snapshot:meta.snapshot,items:hits.slice(0,limit),truncated:overflow||hits.length>limit};
 }
 export function verifyChunk(store, project, chunk){
   ensure(chunk.project===project,'FORBIDDEN');
-  const file=readSafe(store.project(project).root,chunk.path,resolveLimits().maxFileBytes);
+  const {root}=store.project(project);verifyRoot(root);
+  const file=readSafe(root,chunk.path,resolveLimits().maxFileBytes);
   ensure(file.hash===chunk.file_hash,'STALE_INDEX','Arquivo alterado após indexação. Execute index novamente.');
   return file;
 }

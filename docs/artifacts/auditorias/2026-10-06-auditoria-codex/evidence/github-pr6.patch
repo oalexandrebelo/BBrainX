@@ -1,0 +1,665 @@
+diff --git a/.github/workflows/atlas.yml b/.github/workflows/atlas.yml
+new file mode 100644
+index 0000000..1ee9a2e
+--- /dev/null
++++ b/.github/workflows/atlas.yml
+@@ -0,0 +1,56 @@
++name: Verify Architecture Atlas
++on:
++  push:
++    branches: [docs/x99-architecture-atlas]
++  workflow_dispatch:
++permissions:
++  contents: read
++concurrency:
++  group: atlas-${{ github.ref }}
++  cancel-in-progress: true
++jobs:
++  atlas:
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    steps:
++      - uses: actions/checkout@v4
++      - uses: actions/setup-node@v4
++        with:
++          node-version: '24'
++          cache: npm
++      - run: npm ci --ignore-scripts --no-fund
++      - name: Validate architecture data and SVG export
++        run: |
++          mkdir -p artifacts/atlas
++          node --test --test-reporter=tap test/atlas.test.mjs | tee artifacts/atlas/unit-tests.log
++          node scripts/atlas-export.mjs
++      - run: npm run build
++      - run: npx playwright install --with-deps chromium
++      - name: Verify real browser interactions
++        run: npx playwright test e2e/atlas.spec.mjs --reporter=list,json
++        env:
++          PLAYWRIGHT_JSON_OUTPUT_NAME: artifacts/atlas/browser-report.json
++      - name: Build static-only publication
++        run: |
++          npx vite build --config vite.atlas.config.mjs
++          node scripts/atlas-publish.mjs
++      - name: Package source and publication evidence
++        if: success()
++        run: |
++          mkdir -p artifacts/atlas/source/web artifacts/atlas/source/test artifacts/atlas/source/e2e artifacts/atlas/source/scripts artifacts/atlas/source/docs
++          cp -R web/atlas artifacts/atlas/source/web/
++          cp test/atlas.test.mjs artifacts/atlas/source/test/
++          cp e2e/atlas.spec.mjs artifacts/atlas/source/e2e/
++          cp scripts/atlas-*.mjs artifacts/atlas/source/scripts/
++          cp atlas.html vite.config.mjs vite.atlas.config.mjs package.json package-lock.json LICENSE artifacts/atlas/source/
++          cp docs/ATLAS_X99.md docs/POSICIONAMENTO_X99.md artifacts/atlas/source/docs/
++          cp -R dist-atlas artifacts/atlas/static
++          printf '%s\n' "$GITHUB_SHA" > artifacts/atlas/tested-revision.txt
++      - uses: actions/upload-artifact@v4
++        if: always()
++        with:
++          name: BBrainX-Architecture-Atlas
++          path: |
++            artifacts/atlas/
++            test-results/
++          if-no-files-found: error
+diff --git a/atlas.html b/atlas.html
+new file mode 100644
+index 0000000..e0fbf8a
+--- /dev/null
++++ b/atlas.html
+@@ -0,0 +1 @@
++<!doctype html><html lang="pt-BR"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><meta name="color-scheme" content="dark"/><title>BBrainX — Atlas X99 de arquitetura</title><style>html,body{margin:0;background:#091118;color:#edf4fa;font-family:system-ui,sans-serif}</style></head><body><div id="atlas-root"></div><script type="module" src="/web/atlas/entry.jsx"></script></body></html>
+diff --git a/docs/ATLAS_X99.md b/docs/ATLAS_X99.md
+new file mode 100644
+index 0000000..325b6c5
+--- /dev/null
++++ b/docs/ATLAS_X99.md
+@@ -0,0 +1,103 @@
++# Atlas X99 — arquitetura BBrainX × Laya
++
++Versão do atlas: **1.0**. Data-base do estudo: **5 de outubro de 2026**. Código examinado: `a9636e9402e3fa673ae05b3489202da1048aef5e` (BBrainX 0.4.0). Este documento descreve a implementação da visualização e a situação dos componentes; não declara que todas as propostas foram instaladas.
++
++## Abrir e reproduzir
++
++Na branch que contém este atlas, com o runtime Node suportado pelo projeto:
++
++```sh
++npm ci --ignore-scripts
++npm run build
++npm start
++```
++
++Abra `http://127.0.0.1:4317/atlas.html`. A página principal do laboratório continua em `/`. Nenhum arquivo de `src/`, credencial, configuração de harness ou migração de banco é alterado por este trabalho. A visualização não chama a API do produto, não carrega Laya e não coleta telemetria.
++
++Para uma publicação que contenha **somente** o atlas documental:
++
++```sh
++npx vite build --config vite.atlas.config.mjs
++node scripts/atlas-publish.mjs
++```
++
++O diretório `dist-atlas` tem uma allowlist de arquivos. Não copia `public/`, banco de dados, documentos de projetos, o backend ou mapas de fonte. A configuração de visibilidade do repositório não é modificada. Links para arquivos privados continuam exigindo permissão no GitHub.
++
++## Cinco percursos
++
++| Percurso | Conteúdo | O que não significa |
++|---|---|---|
++| Arquitetura alvo | Combina a base com as evoluções propostas, mantendo a maturidade de cada nó visível. | Não é uma topologia de produção já instalada. |
++| Runtime atual | Componentes presentes na base 0.4.0, incluindo o perfil Laya opt-in. | Não certifica toda versão de todo harness. |
++| Laya + cache | Worker, modelo, cache exato, versões, snapshot e alternativa ONNX. | Não transporta KV entre modelos nem habilita o cache candidato. |
++| Protocolo X99 | Autorização, admissão, reservas, leitura consistente, fencing, segredos e observabilidade. | Laboratório não equivale a integração no runtime. |
++| Novas incorporações | SuperTokens, Infisical, Medusa, SigNoz e Unkey vinculados aos mecanismos que inspiram. | As cinco plataformas não são instaladas pelo BBrainX. |
++
++Há **32 componentes** e **sete classes de maturidade**. Os filtros não mudam o estado do produto; apenas selecionam o conteúdo visível. Linhas tracejadas significam relação documental/proposta. O percurso manual é explicação, não animação de agentes em execução.
++
++## Maturidade é parte do contrato
++
++- **Na base 0.4:** código examinado no commit indicado.
++- **Opt-in:** perfil existente, dependente de ativação explícita; Laya não reordena o contexto padrão.
++- **Patch candidato:** alterações entregues na auditoria anterior, sem incorporação à base examinada.
++- **Laboratório:** mecanismo verificado isoladamente, sem integração de produto.
++- **Proposto:** arquitetura cuja implementação e homologação ainda são gates futuros.
++- **Referência:** fonte técnica; não dependência de execução.
++- **Não incorporar:** desenho recusado na forma analisada.
++
++O termo "incorporação" neste atlas pode significar **incorporação ao desenho ou ao estudo**. Só a classe "Na base 0.4" afirma presença na base. Não renomear componentes de candidato/laboratório para implementado apenas porque receberam um nó.
++
++## O que cada nova fonte acrescenta
++
++**SuperTokens → autorização versionada:** separar validade criptográfica do token de permissão vigente; explicitar revisão e ponto de liberação. A documentação oficial distingue verificação stateless de verificação da sessão autoritativa.
++
++**Infisical → segredos e egress:** referências opacas, rotação versionada e injeção restrita a destinos autorizados. Não introduzir proxy MITM ou ler credenciais nativas como efeito de abrir o atlas.
++
++**Medusa → reservas e compensação:** reservar orçamento antes de executar, identificar cada operação e manter estado desconhecido até reconciliação. Compensação não desfaz universalmente efeitos externos.
++
++**SigNoz/OTel → observabilidade limitada:** métricas e traces com população explícita, fila limitada e auditoria crítica separada. Um dashboard não é fonte autoritativa de sucesso.
++
++**Unkey → admissão e contenção:** custos por operação, limites e hidratação do estado. Convergência entre réplicas não deve ser descrita como teto financeiro global linearizável.
++
++As fontes estão ligadas nos nós e em `web/atlas/data.js`. Os sistemas completos não foram executados para produzir este atlas.
++
++## Três populações de testes anteriores, não um total
++
++| Evidência | Quantidade | Escopo |
++|---|---:|---|
++| CI da base | 96 por plataforma | Relatório do commit testado `912aa253`; não testes deste atlas. |
++| Patch X99 anterior | 43 aprovados | 38 novos e cinco existentes; seis testes de integração do compilador não executados. Patch não incorporado. |
++| Protocolo X99 | 35 verificações | Python, SQLite e processos em Linux; sem inferência e sem integração de runtime. |
++
++O atlas possui testes próprios em `test/atlas.test.mjs` e `e2e/atlas.spec.mjs`. O resultado só deve ser informado a partir da execução correspondente, em **Verify Architecture Atlas**, não da existência desses arquivos.
++
++## Interface e exportação
++
++A interface usa `@xyflow/react` já presente no lockfile. Componentes personalizados e callbacks estáveis evitam reconstrução desnecessária. Não há autoloop animado nem polling. Busca remove acentos para a comparação; o texto exibido preserva grafia original. A lista acessível oferece seleção sem depender de atingir um nó pequeno no canvas.
++
++URLs guardam `view`, `status`, `q` e `node`. Recarregar preserva o recorte e o inspetor quando o estado é válido. Entradas inválidas usam a visão padrão. Não há interpolação de HTML de busca.
++
++SVG e JSON saem do mesmo dataset. SVG é um desenho vetorial do modelo, **não screenshot do canvas**; PNGs gerados pelo teste são capturas reais da aplicação. O JSON inclui revisão, classificação e status; não é um arquivo de configuração de runtime.
++
++```sh
++node --test test/atlas.test.mjs
++npx playwright install chromium
++npx playwright test e2e/atlas.spec.mjs
++node scripts/atlas-export.mjs
++```
++
++O workflow exporta SVG/JSON, screenshots desktop/mobile, resultados de testes e o bundle estático. Não publica automaticamente esses artefatos sobre `main`.
++
++## Evolução sem perder evidência
++
++A fonte única é `web/atlas/data.js`. Uma promoção de maturidade exige referência ao commit de implementação, execução de teste pertinente e descrição do limite que permanece. Preservar `inspectedRevision`: uma nova auditoria deve gerar uma versão nova do atlas, não reescrever os resultados antigos como se todos fossem atuais.
++
++Não usar o ranking de estrelas como teste de correção. O objetivo técnico de reputação é demonstrar que a troca de harness preserva objetivo, decisões, evidências, escopo e custo observado.
++
++## Referências de interface e revisão
++
++- React Flow: https://reactflow.dev/learn/customization/custom-nodes
++- React Flow performance: https://reactflow.dev/learn/advanced-use/performance
++- Base auditada: https://github.com/oalexandrebelo/BBrainX/tree/a9636e9402e3fa673ae05b3489202da1048aef5e
++- CI da base: https://github.com/oalexandrebelo/BBrainX/actions/runs/37266010282
++- Comparação técnica: [POSICIONAMENTO_X99.md](POSICIONAMENTO_X99.md)
+diff --git a/docs/POSICIONAMENTO_X99.md b/docs/POSICIONAMENTO_X99.md
+new file mode 100644
+index 0000000..a5b4d4c
+--- /dev/null
++++ b/docs/POSICIONAMENTO_X99.md
+@@ -0,0 +1,61 @@
++# BBrainX: posicionamento verificável, não ranking presumido
++
++**Data-base: 5 de outubro de 2026.** Comparação documental de capacidades, não benchmark pareado, auditoria integral dos concorrentes ou certificação de mercado.
++
++## Parecer
++
++O BBrainX é um projeto promissor com um recorte útil: contexto local compartilhado entre harnesses, memória explicitamente aprovada, checkpoints com proveniência e Laya como perfil de decisão controlado. A base possui testes de domínio e protocolo e um caminho local sem API de IA obrigatória. Isso é evidência de trabalho de engenharia, não demonstração de que já seja um dos melhores sistemas do segmento.
++
++Ainda não há neste conjunto de evidências: comparação independente de tarefas completas; daemon e cache Laya compartilhados entre todos os processos; recuperação semântica por LSP; sincronização entre máquinas; avaliação externa de segurança; série de versões operadas pela comunidade. Algumas dessas propriedades não são requisitos do primeiro usuário local, mas delimitam a comparação.
++
++## Referências equivalentes por capacidade
++
++| Referência | Capacidade documentada | Pergunta que o BBrainX precisa responder |
++|---|---|---|
++| Serena | Navegação e edição por símbolos/referências, com language servers e MCP. | O BBrainX encontra e entrega evidência correta em uma tarefa multiarquivo com menos trabalho repetido? |
++| Mem0 | Memória persistente e suite de avaliação de memória. Resultados da plataforma não são automaticamente os do SDK OSS. | Qual é a taxa de recuperação de decisões, atualização/revogação e continuidade em holdout? |
++| Letta / Letta Code | Agentes stateful, identidade e memória persistente em um harness próprio. | A portabilidade BBrainX entre harnesses externos compensa limitações e custo operacional? |
++| Graphiti | Grafo temporal incremental, episódios, invalidação e recuperação híbrida. | As consultas temporais e contradições do BBrainX exigem grafo, ou seu modelo governado resolve o recorte mais barato? |
++
++Fontes: repositórios oficiais abaixo. Descrições upstream não são prova de superioridade universal. Não comparar top-k de arquivos do BBrainX com acurácia de resposta de memória sem igualar tarefa, modelos e critérios.
++
++## Forças atuais
++
++**Escopo local estreito:** o fluxo determinístico não exige modelo, Python ou conta externa. **Proveniência:** pacote com caminho, revisão e hash. **Governança:** hipótese e decisão aprovada não são a mesma entidade. **Continuidade:** checkpoint recuperável por outra sessão. **Honestidade de produto:** Laya permanece fora do ranking de contexto quando o experimento registrado piora a busca lexical.
++
++Nenhuma dessas ideias isoladamente é exclusiva. O diferencial pretendido é a composição operacional comprovada, não a descoberta de que agentes precisam de memória.
++
++## Lacunas prioritárias
++
++1. Concluir a validação do patch X99 anterior; o atlas não o incorpora ao runtime.
++2. Registrar instalação, execução, cancelamento, checkpoint e retomada em cada harness e versão suportados.
++3. Instalar uma autoridade por usuário com worker compartilhado, limites e revisão de acesso, sem um modelo duplicado por cliente.
++4. Separar identidade do projeto, worktree, tarefa e snapshot para evitar evidências cruzadas.
++5. Acrescentar recuperação estrutural somente com ablação que demonstre ganho.
++6. Calibrar Laya por workload com holdout, abstention e custo de erro; latência curta sozinha não justifica promoção.
++7. Publicar testes adversariais de revogação, timeout, fila cheia, processo morto e resultado desconhecido.
++8. Medir custo e tempo por tarefa aceita, não somente tokens novos ou taxa de cache.
++
++## Plano de comparação proposto
++
++Congelar versões, raízes autorizadas e snapshots. Separar tarefas de localização, bug local, alteração multiarquivo, memória temporal e handoff. Definir aceitação por testes e revisão antes de executar. Não fornecer soluções do conjunto ao treinamento ou à memória dos candidatos. Randomizar ordem e separar frio/quente. Publicar scripts, falhas e intervalos, sem extrapolar um pequeno conjunto exploratório para liderança global.
++
++O mesmo serviço pode vencer em custo local e perder em cobertura semântica. Registrar e explicar esse trade-off é mais útil à comunidade que uma nota arbitrária de 9,8/10.
++
++## Reputação e GitHub
++
++Estrelas medem atenção; não substituem segurança, manutenção, suporte, testes, qualidade de recuperação ou sucesso de tarefa. Não foi calculado um ranking de estrelas neste estudo. A visibilidade privada atual do repositório é preservada; publicar este diagrama não abre o código à comunidade automaticamente.
++
++A meta recomendada para lançamento é uma demonstração reproduzível: iniciar uma tarefa em um harness, alternar para outro, recuperar decisões e evidências válidas, concluir a mudança e contabilizar o retrabalho evitado. Repetir esse resultado em contribuições externas é um marco de confiança mais forte que prometer top 1 antes do lançamento.
++
++## Fontes primárias consultadas
++
++- BBrainX base: https://github.com/oalexandrebelo/BBrainX/tree/a9636e9402e3fa673ae05b3489202da1048aef5e
++- Serena: https://github.com/oraios/serena
++- Mem0: https://github.com/mem0ai/mem0
++- Mem0 Memory Benchmarks: https://github.com/mem0ai/memory-benchmarks
++- Letta: https://github.com/letta-ai/letta
++- Letta Code: https://github.com/letta-ai/letta-code
++- Graphiti: https://github.com/getzep/graphiti
++
++Os links de branch podem evoluir. O commit do BBrainX comparado está fixado; os concorrentes foram examinados documentalmente, não executados nesta entrega.
+diff --git a/e2e/atlas.spec.mjs b/e2e/atlas.spec.mjs
+new file mode 100644
+index 0000000..e576db9
+--- /dev/null
++++ b/e2e/atlas.spec.mjs
+@@ -0,0 +1,64 @@
++import {test,expect} from '@playwright/test';
++import fs from 'node:fs';
++import path from 'node:path';
++const out=path.resolve('artifacts/atlas');
++const list=page=>page.getByRole('generic',{name:'Lista acessível dos componentes'});
++async function loaded(page,count){await expect(page.locator('.react-flow__node-atlas')).toHaveCount(count);await expect(page.locator('.react-flow__node-atlas').first()).toBeVisible();}
++async function screenshot(page,name){fs.mkdirSync(out,{recursive:true});await page.screenshot({path:path.join(out,name),fullPage:true,animations:'disabled'});}
++
++test('atlas: renderiza arquitetura sem consultar API, com status e fontes',async({page})=>{
++ const errors=[],api=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(new URL(r.url()).pathname.startsWith('/api/'))api.push(r.url());});
++ await page.goto('/atlas.html');await loaded(page,16);
++ await expect(page.getByRole('heading',{level:1})).toContainText('Vários harnesses.');
++ await expect(page.getByTestId('atlas-inspector')).toContainText('Compilador de contexto');
++ await expect(page.getByRole('tab',{name:'Arquitetura alvo'})).toHaveAttribute('aria-selected','true');
++ await expect(page.locator('.react-flow__attribution')).toBeVisible();
++ await screenshot(page,'atlas-target-desktop.png');
++ assertEmpty(errors);assertEmpty(api);
++});
++function assertEmpty(values){expect(values).toEqual([]);}
++
++test('atlas: alterna as cinco visões e inspeciona por lista acessível',async({page})=>{
++ await page.goto('/atlas.html');await loaded(page,16);
++ const specs=[['Runtime atual',12,'runtime'],['Laya + cache',8,'laya'],['Protocolo X99',12,'governance'],['Novas incorporações',15,'ecosystem']];
++ for(const [label,count,id] of specs){await page.getByRole('tab',{name:label}).click();await loaded(page,count);await expect(page).toHaveURL(new RegExp('view='+id));await screenshot(page,'atlas-'+id+'-desktop.png');}
++ await page.locator('.atlas-node-list').getByRole('button',{name:'SuperTokens',exact:true}).click();
++ await expect(page.getByTestId('atlas-inspector')).toContainText('Referência');
++ await expect(page.getByTestId('atlas-inspector')).toContainText('não é uma dependência instalada');
++});
++
++test('atlas: filtro e busca não promovem o cache candidato',async({page})=>{
++ await page.goto('/atlas.html?view=laya');await loaded(page,8);
++ await page.getByLabel('Filtrar por maturidade').selectOption('candidate');await loaded(page,3);
++ await page.locator('.atlas-node-list').getByRole('button',{name:'Cache exato de decisões',exact:true}).click();
++ await expect(page.getByTestId('atlas-inspector')).toContainText('Desligado por padrão');
++ await expect(page.getByTestId('atlas-inspector')).toContainText('Patch candidato');
++ await page.getByLabel('Buscar componentes').fill('zzzz-no-match');await expect(page.getByText('Nenhum componente encontrado.',{exact:true})).toBeVisible();
++ await page.getByRole('button',{name:'Limpar filtros',exact:true}).click();await loaded(page,8);
++});
++
++test('atlas: deep link recupera visão e componente após reload',async({page})=>{
++ await page.goto('/atlas.html?view=governance&node=budget');await loaded(page,12);
++ await expect(page.getByTestId('atlas-inspector')).toContainText('Reserva de orçamento');
++ await page.reload();await expect(page.getByTestId('atlas-inspector')).toContainText('OUTCOME_UNKNOWN');
++ await page.getByRole('button',{name:'Percorrer',exact:false}).click();await expect(page).not.toHaveURL(/node=budget/);
++});
++
++test('atlas: exporta JSON e SVG da visão selecionada',async({page})=>{
++ await page.goto('/atlas.html?view=laya');await loaded(page,8);fs.mkdirSync(out,{recursive:true});
++ for(const [button,extension] of [['JSON ↓','json'],['SVG ↓','svg']]){
++  const downloading=page.waitForEvent('download');await page.getByRole('button',{name:button,exact:true}).click();const download=await downloading;
++  const file=path.join(out,'download-laya.'+extension);await download.saveAs(file);const value=fs.readFileSync(file,'utf8');
++  if(extension==='json'){const doc=JSON.parse(value);expect(doc.nodes.length).toBe(8);expect(doc.view).toBe('laya');expect(doc.inspectedRevision).toMatch(/^a9636e9/);}else expect(value).toContain('<svg');
++ }
++});
++
++test('atlas: mobile não vaza horizontalmente e mantém inspeção utilizável',async({page})=>{
++ await page.setViewportSize({width:390,height:844});await page.goto('/atlas.html?view=laya&node=cache');await loaded(page,8);
++ await expect(page.getByTestId('atlas-inspector')).toContainText('Cache exato de decisões');
++ expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1)).toBe(true);
++ await screenshot(page,'atlas-mobile.png');
++ await page.locator('.atlas-node-list').getByRole('button',{name:'Laya · decisões locais',exact:true}).click();
++ await expect(page.getByTestId('atlas-inspector')).toContainText('Opt-in');
++});
++
+diff --git a/scripts/atlas-export.mjs b/scripts/atlas-export.mjs
+new file mode 100644
+index 0000000..9f1d859
+--- /dev/null
++++ b/scripts/atlas-export.mjs
+@@ -0,0 +1,9 @@
++import fs from 'node:fs';
++import path from 'node:path';
++import {createHash} from 'node:crypto';
++import {views,components,stages,revision,inspectedAt} from '../web/atlas/data.js';
++import {exportDocument,exportSvg} from '../web/atlas/export.js';
++const root=path.resolve('artifacts/atlas');fs.mkdirSync(root,{recursive:true});
++for(const v of views){const doc=exportDocument(v.id);fs.writeFileSync(path.join(root,v.id+'.json'),JSON.stringify(doc,null,2)+'\n');fs.writeFileSync(path.join(root,v.id+'.svg'),exportSvg(doc));}
++fs.writeFileSync(path.join(root,'architecture-manifest.json'),JSON.stringify({schemaVersion:1,atlasVersion:'1.0',inspectedAt,inspectedRevision:revision,generatedForCommit:process.env.GITHUB_SHA||null,kind:'documentary-atlas',components:components.length,views:views.length,counts:Object.fromEntries(Object.keys(stages).map(s=>[s,components.filter(c=>c.status===s).length])),files:fs.readdirSync(root).filter(f=>/\.(json|svg)$/.test(f)&&f!=='architecture-manifest.json').map(file=>({file,sha256:createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex')}))},null,2)+'\n');
++console.log('Exportadas '+views.length+' visões com revisão e status explícitos.');
+diff --git a/scripts/atlas-publish.mjs b/scripts/atlas-publish.mjs
+new file mode 100644
+index 0000000..c8d66e9
+--- /dev/null
++++ b/scripts/atlas-publish.mjs
+@@ -0,0 +1,10 @@
++import fs from 'node:fs';
++import path from 'node:path';
++import {createHash} from 'node:crypto';
++const dir=path.resolve('dist-atlas');
++if(!fs.existsSync(path.join(dir,'atlas.html')))throw new Error('Build estático ausente. Execute vite.atlas.config.mjs.');
++fs.copyFileSync(path.join(dir,'atlas.html'),path.join(dir,'index.html'));
++const files=[];
++function walk(folder){for(const e of fs.readdirSync(folder,{withFileTypes:true})){const full=path.join(folder,e.name);if(e.isSymbolicLink())throw new Error('Symlink não permitido no pacote estático.');if(e.isDirectory())walk(full);else{const relative=path.relative(dir,full).split(path.sep).join('/');if(relative==='atlas-deployment-manifest.json')continue;if(!/^(?:index\.html|atlas\.html|assets\/[A-Za-z0-9_.-]+\.(?:js|css))$/.test(relative))throw new Error('Arquivo não autorizado no deploy: '+relative);const content=fs.readFileSync(full);files.push({file:relative,bytes:content.length,sha256:createHash('sha256').update(content).digest('hex')});}}}
++walk(dir);fs.writeFileSync(path.join(dir,'atlas-deployment-manifest.json'),JSON.stringify({schemaVersion:1,kind:'static-documentary-atlas',sourceRevision:process.env.VERCEL_GIT_COMMIT_SHA||process.env.GITHUB_SHA||null,containsBackend:false,containsProjectMemory:false,files},null,2)+'\n');
++console.log('Pacote estático validado: '+files.length+' arquivos, sem backend ou dados de projeto.');
+diff --git a/test/atlas.test.mjs b/test/atlas.test.mjs
+new file mode 100644
+index 0000000..67b4ade
+--- /dev/null
++++ b/test/atlas.test.mjs
+@@ -0,0 +1,53 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import {components,views,stages,sources,graphFor,visibleComponents,revision,evidence} from '../web/atlas/data.js';
++import {exportDocument,exportSvg} from '../web/atlas/export.js';
++
++test('atlas: componentes e percursos têm IDs únicos',()=>{
++ assert.equal(new Set(components.map(c=>c.id)).size,components.length);
++ assert.equal(new Set(views.map(v=>v.id)).size,views.length);
++ assert.equal(components.length,32);assert.equal(views.length,5);
++});
++test('atlas: todo componente tem maturidade, fonte e gate explícitos',()=>{
++ for(const c of components){assert.ok(stages[c.status]);assert.ok(sources[c.source]);for(const field of ['title','why','limit','gate','layer'])assert.ok(c[field].length>3);if(c.code)assert.ok(c.code.includes(revision));}
++ for(const s of Object.values(sources))assert.equal(new URL(s.url).protocol,'https:');
++});
++test('atlas: relações e componentes de todos os percursos são válidos',()=>{
++ const all=new Set(components.map(c=>c.id)),seen=new Set();
++ for(const v of views){assert.equal(new Set(v.ids).size,v.ids.length);const ids=new Set(v.ids);for(const id of ids){assert.ok(all.has(id));seen.add(id);}assert.equal(new Set(v.links.map(e=>e.id)).size,v.links.length);for(const e of v.links){assert.ok(ids.has(e.source)&&ids.has(e.target));assert.notEqual(e.source,e.target);}}
++ assert.equal(seen.size,all.size);
++});
++test('atlas: runtime não promove propostas a integração existente',()=>{
++ for(const n of graphFor('runtime').nodes)assert.ok(['shipped','optional'].includes(n.data.status));
++ assert.equal(components.find(c=>c.id==='laya').status,'optional');
++ assert.equal(components.find(c=>c.id==='cache').status,'candidate');
++ assert.equal(components.find(c=>c.id==='unsafe').status,'excluded');
++ for(const id of ['supertokens','infisical','medusa','signoz','unkey'])assert.equal(components.find(c=>c.id===id).status,'reference');
++});
++test('atlas: filtros jamais deixam relações órfãs',()=>{
++ for(const view of views)for(const status of ['all',...Object.keys(stages)])for(const query of ['', 'Laya','memoria','zzzz-no-match']){
++  const g=graphFor(view.id,status,query),ids=new Set(g.nodes.map(n=>n.id));for(const e of g.edges)assert.ok(ids.has(e.source)&&ids.has(e.target));
++ }
++});
++test('atlas: busca ignora acentos e casos, estado vazio é explícito',()=>{
++ assert.deepEqual(visibleComponents('governance','all','AUTORIZAÇÃO'),visibleComponents('governance','all','autorizacao'));
++ assert.ok(visibleComponents('governance','all','autorizacao').some(c=>c.id==='authz'));
++ assert.equal(graphFor('target','all','zzzz-no-match').nodes.length,0);
++ assert.equal(graphFor('unknown').view.id,'target');
++});
++test('atlas: toda relação planejada permanece documental',()=>{
++ for(const v of views)for(const e of graphFor(v.id).edges){const expected=e.kind==='reference'||[e.source,e.target].some(id=>!['shipped','optional'].includes(components.find(c=>c.id===id).status));assert.equal(e.documentedOnly,expected);}
++});
++test('atlas: exportação determinística preserva revisão e status',()=>{
++ const one=exportDocument('target'),two=exportDocument('target');assert.deepEqual(one,two);
++ assert.equal(one.inspectedRevision,revision);assert.equal(one.classification,'documentary-architecture-not-runtime-telemetry');
++ assert.equal(one.nodes.length,16);assert.equal(exportDocument('laya','candidate').nodes.length,3);
++});
++test('atlas: SVG faz escape de texto, não incorpora script nem URLs remotas',()=>{
++ const doc=exportDocument('laya');doc.title='<script>alert("x")</script> &';doc.nodes[0].data={...doc.nodes[0].data,title:'<image href="bad"/>'};
++ const svg=exportSvg(doc);assert.ok(svg.includes('&lt;script&gt;'));assert.ok(!svg.includes('<script>'));assert.ok(!svg.includes('<image '));assert.ok(!svg.includes('foreignObject'));assert.ok(svg.startsWith('<svg'));
++});
++test('atlas: evidências anteriores ficam separadas e sem total enganoso',()=>{
++ assert.deepEqual(evidence.map(e=>e.value),['96','43','35']);assert.equal(evidence[0].url,sources.ci.url);
++ assert.match(evidence[1].note,/não executados/);assert.match(evidence[2].note,/Sem Laya/);
++});
+diff --git a/vite.atlas.config.mjs b/vite.atlas.config.mjs
+new file mode 100644
+index 0000000..147f5db
+--- /dev/null
++++ b/vite.atlas.config.mjs
+@@ -0,0 +1,4 @@
++import {defineConfig} from 'vite';
++import {fileURLToPath} from 'node:url';
++// Publicação exclusivamente documental: não copia public/, API, SQLite ou arquivos de projeto.
++export default defineConfig({publicDir:false,base:'./',build:{outDir:'dist-atlas',emptyOutDir:true,sourcemap:false,rollupOptions:{input:fileURLToPath(new URL('./atlas.html',import.meta.url))}}});
+diff --git a/vite.config.mjs b/vite.config.mjs
+new file mode 100644
+index 0000000..f7dcec5
+--- /dev/null
++++ b/vite.config.mjs
+@@ -0,0 +1,4 @@
++import {defineConfig} from 'vite';
++import {fileURLToPath} from 'node:url';
++// Página adicional; o runtime e a página principal continuam inalterados.
++export default defineConfig({build:{rollupOptions:{input:{main:fileURLToPath(new URL('./index.html',import.meta.url)),atlas:fileURLToPath(new URL('./atlas.html',import.meta.url))}}}});
+diff --git a/web/atlas/Atlas.jsx b/web/atlas/Atlas.jsx
+new file mode 100644
+index 0000000..5114891
+--- /dev/null
++++ b/web/atlas/Atlas.jsx
+@@ -0,0 +1,71 @@
++import React,{memo,useCallback,useEffect,useMemo,useState} from 'react';
++import {ReactFlow,ReactFlowProvider,Background,Controls,MiniMap,Handle,Position,useReactFlow,useNodesInitialized,MarkerType} from '@xyflow/react';
++import '@xyflow/react/dist/style.css';
++import './atlas.css';
++import {revision,inspectedAt,repo,stages,sources,components,views,graphFor,evidence,comparators,gates} from './data.js';
++import {exportDocument,exportSvg,saveDownload} from './export.js';
++
++const NODE_WIDTH=256;
++const AtlasNode=memo(function AtlasNode({data,selected}){
++ const stage=stages[data.status];
++ return <div className={'atlas-node'+(selected?' is-selected':'')} style={{'--stage':stage.color}}>
++  <Handle type="target" position={Position.Top}/>
++  <div className="atlas-node-meta"><span>{data.layer}</span><i aria-hidden="true"/></div>
++  <h3>{data.title}</h3><p>{data.why}</p>
++  <div className="atlas-node-status"><span>{stage.label}</span><b aria-hidden="true">↗</b></div>
++  <Handle type="source" position={Position.Bottom}/>
++ </div>;
++});
++const nodeTypes={atlas:AtlasNode};
++function AutoFit({signature}){
++ const {fitView}=useReactFlow(),ready=useNodesInitialized();
++ useEffect(()=>{if(!ready)return;const timer=requestAnimationFrame(()=>fitView({padding:0.09,maxZoom:1,duration:0}));return()=>cancelAnimationFrame(timer);},[signature,ready,fitView]);return null;
++}
++function initialState(){
++ const p=new URLSearchParams(window.location.search),view=views.some(x=>x.id===p.get('view'))?p.get('view'):'target';
++ const status=Object.hasOwn(stages,p.get('status'))?p.get('status'):'all';
++ const query=(p.get('q')||'').slice(0,120),graph=graphFor(view,status,query);
++ return {view,status,query,selected:graph.nodes.some(n=>n.id===p.get('node'))?p.get('node'):(graph.nodes.find(n=>n.id==='context')?.id||graph.nodes[0]?.id||null)};
++}
++const Mark=()=> <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M4 12H20A8 8 0 0 1 20 28H4Z M4 36H24A8 8 0 0 1 24 52H4Z M36 12H44L60 52H52Z M52 12H60L44 52H36Z" fill="currentColor"/></svg>;
++const External=({href,children,...props})=><a href={href} target="_blank" rel="noreferrer" {...props}>{children}<span aria-hidden="true"> ↗</span></a>;
++function AtlasContent(){
++ const [state,setState]=useState(initialState),[notice,setNotice]=useState('');
++ const graph=useMemo(()=>graphFor(state.view,state.status,state.query),[state.view,state.status,state.query]);
++ const selected=graph.nodes.find(n=>n.id===state.selected)?.data||null;
++ const connected=useMemo(()=>new Set(graph.edges.filter(e=>e.source===state.selected||e.target===state.selected).flatMap(e=>[e.source,e.target])),[graph.edges,state.selected]);
++ const nodes=useMemo(()=>graph.nodes.map(n=>({...n,selected:n.id===state.selected,draggable:false,ariaLabel:n.data.title+' — '+stages[n.data.status].label,style:{width:NODE_WIDTH}})),[graph.nodes,state.selected]);
++ const edges=useMemo(()=>graph.edges.map(e=>({...e,type:'smoothstep',animated:false,markerEnd:{type:MarkerType.ArrowClosed,color:e.documentedOnly?'#7f87ae':'#6dac9c'},style:{stroke:e.source===state.selected||e.target===state.selected?'#b9f8d8':e.documentedOnly?'#667195':'#4a776b',strokeWidth:e.source===state.selected||e.target===state.selected?2:1.1,strokeDasharray:e.documentedOnly?'6 6':undefined,opacity:!state.selected||e.source===state.selected||e.target===state.selected?1:0.45}})),[graph.edges,state.selected]);
++ const select=useCallback(id=>setState(old=>({...old,selected:id})),[]);
++ const nodeClick=useCallback((_,node)=>select(node.id),[select]);
++ function change(field,value){setState(old=>{const next={...old,[field]:value};const nextGraph=graphFor(next.view,next.status,next.query);if(!nextGraph.nodes.some(n=>n.id===next.selected))next.selected=nextGraph.nodes[0]?.id||null;return next;});setNotice('');}
++ useEffect(()=>{const p=new URLSearchParams();p.set('view',state.view);if(state.status!=='all')p.set('status',state.status);if(state.query)p.set('q',state.query);if(state.selected)p.set('node',state.selected);window.history.replaceState(null,'',window.location.pathname+'?'+p.toString()+window.location.hash);},[state]);
++ useEffect(()=>{const fn=()=>setState(initialState());window.addEventListener('popstate',fn);return()=>window.removeEventListener('popstate',fn);},[]);
++ function next(){const at=graph.nodes.findIndex(n=>n.id===state.selected);select(graph.nodes[(at+1)%graph.nodes.length]?.id||null);}
++ function download(kind){const data=exportDocument(state.view,state.status,state.query);saveDownload(kind==='json'?JSON.stringify(data,null,2):exportSvg(data),kind==='json'?'application/json':'image/svg+xml','BBrainX-Atlas-X99-'+state.view+'.'+kind);setNotice('Exportação '+kind.toUpperCase()+' concluída.');}
++ const counts=Object.fromEntries(Object.keys(stages).map(key=>[key,components.filter(c=>c.status===key).length]));
++ return <div className="atlas-shell">
++ <a className="atlas-skip" href="#atlas-map">Ir para o mapa</a>
++ <header className="atlas-top"><a className="atlas-brand" href="./atlas.html" aria-label="BBrainX Atlas"><Mark/><span>BBrain<span className="mint">X</span><small>GODMODCODE / ATLAS 01</small></span></a><nav aria-label="Seções do atlas"><a href="#atlas-map">Arquitetura</a><a href="#atlas-evidence">Evidências</a><a href="#atlas-comparison">Posicionamento</a></nav><External href={repo} className="atlas-repo">Repositório</External></header>
++ <main>
++ <section className="atlas-hero"><div><span className="atlas-eyebrow"><i/> ARQUITETURA EVOLUTIVA / MACOS PRIMEIRO</span><h1>Uma memória.<br/><em>Vários harnesses.</em></h1><p>O que roda, o que foi testado isoladamente e o que vem depois. Uma arquitetura que mostra suas evidências — e seus limites.</p></div><aside className="atlas-manifest"><div><span>REVISÃO AUDITADA</span><code>{revision.slice(0,8)}</code></div><div><span>BASE DO PRODUTO</span><strong>0.4.0 <small>developer preview</small></strong></div><div><span>CONTEÚDO DO ATLAS</span><strong>{components.length} <small>componentes · {views.length} percursos</small></strong></div><div className="atlas-manifest-note">Visão documental · {inspectedAt}<br/>Não é telemetria de agentes em execução.</div></aside></section>
++ <section className="atlas-map-section" id="atlas-map" aria-label="Atlas da arquitetura">
++ <div className="atlas-tabs" role="tablist" aria-label="Percursos de arquitetura">{views.map((v,i)=><button key={v.id} role="tab" aria-selected={state.view===v.id} aria-controls="atlas-panel" onClick={()=>change('view',v.id)}><span>0{i+1}</span>{v.label}</button>)}</div>
++ <div className="atlas-toolbar"><label className="atlas-search"><span aria-hidden="true">⌕</span><input aria-label="Buscar componentes" placeholder="Buscar componente, técnica ou camada…" maxLength={120} value={state.query} onChange={e=>change('query',e.target.value)}/>{state.query?<button aria-label="Limpar busca" onClick={()=>change('query','')}>×</button>:null}</label><select aria-label="Filtrar por maturidade" value={state.status} onChange={e=>change('status',e.target.value)}><option value="all">Todas as maturidades</option>{Object.entries(stages).map(([key,s])=><option key={key} value={key}>{s.label}</option>)}</select><div className="atlas-export"><button onClick={()=>download('svg')}>SVG ↓</button><button onClick={()=>download('json')}>JSON ↓</button></div></div>
++ <div className="atlas-layout" id="atlas-panel" role="tabpanel">
++ <div className="atlas-canvas-card"><div className="atlas-canvas-title"><div><span className="atlas-eyebrow">{String(views.findIndex(v=>v.id===state.view)+1).padStart(2,'0')} / {graph.nodes.length} COMPONENTES NESTA VISÃO</span><h2>{graph.view.title}</h2></div><button className="atlas-guide" onClick={next} disabled={!nodes.length}>Percorrer <span>→</span></button></div><p className="atlas-view-note">{graph.view.note}</p>
++ <div className="atlas-canvas" data-testid="atlas-canvas" aria-label="Grafo React Flow da arquitetura">
++ {nodes.length?<ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} onNodeClick={nodeClick} nodesDraggable={false} nodesConnectable={false} elementsSelectable edgesFocusable={false} minZoom={0.2} maxZoom={1.7} fitView fitViewOptions={{padding:0.09}} colorMode="dark"><Background color="#273441" gap={26} size={1}/><Controls showInteractive={false}/><MiniMap nodeColor={n=>stages[n.data.status].color} maskColor="#091018b0" pannable zoomable/><AutoFit signature={state.view+'|'+state.status+'|'+state.query}/></ReactFlow>:<div className="atlas-empty"><strong>Nenhum componente encontrado.</strong><p>Ajuste a busca ou o filtro de maturidade.</p><button onClick={()=>{setState(old=>({...old,status:'all',query:'',selected:views.find(v=>v.id===old.view).ids[0]}));}}>Limpar filtros</button></div>}
++ </div><div className="atlas-canvas-note"><span><i className="atlas-solid"/> relação na base / perfil</span><span><i className="atlas-dashed"/> relação documental ou proposta</span><span>Zoom, seleção e inspeção. Sem executar agentes.</span></div>
++ <div className="atlas-node-list" aria-label="Lista acessível dos componentes">{graph.nodes.map(n=><button key={n.id} aria-pressed={state.selected===n.id} onClick={()=>select(n.id)}><i style={{background:stages[n.data.status].color}}/>{n.data.title}</button>)}</div></div>
++ <aside className="atlas-inspector" data-testid="atlas-inspector" aria-live="polite">
++ {selected?<><div className="atlas-detail-top"><span className="atlas-eyebrow">INSPECIONAR COMPONENTE</span><span className="atlas-badge" style={{color:stages[selected.status].color,borderColor:stages[selected.status].color+'55'}}>{stages[selected.status].label}</span></div><div className="atlas-detail-symbol" style={{color:stages[selected.status].color}}>{String(components.findIndex(c=>c.id===selected.id)+1).padStart(2,'0')}</div><h2>{selected.title}</h2><p className="atlas-stage-explanation">{stages[selected.status].description}</p><dl><dt>POR QUE ESTÁ AQUI</dt><dd>{selected.why}</dd><dt>LIMITE QUE NÃO PODE SER OMITIDO</dt><dd>{selected.limit}</dd><dt>GATE PARA A PRÓXIMA VERSÃO</dt><dd>{selected.gate}</dd></dl><div className="atlas-detail-links"><External href={sources[selected.source].url}>{sources[selected.source].label}</External>{selected.code?<External href={selected.code}>Implementação na base auditada</External>:null}</div><div className="atlas-related"><h3>CONEXÕES NESTA VISÃO</h3>{[...connected].filter(id=>id!==selected.id).map(id=><button key={id} onClick={()=>select(id)}>{components.find(c=>c.id===id).title}<span>↗</span></button>)}{connected.size===0?<p>Sem ligação operacional representada nesta visão.</p>:null}</div></>:<div className="atlas-inspector-empty">Selecione um componente para inspecionar propósito, limite, fonte e próximo gate.</div>}
++ </aside></div>
++ <div className="atlas-legend" aria-label="Legenda de maturidade">{Object.entries(stages).map(([key,s])=><button key={key} title={s.description} onClick={()=>change('status',state.status===key?'all':key)} aria-pressed={state.status===key}><i style={{background:s.color}}/>{s.label}<b>{counts[key]}</b></button>)}</div><p className="atlas-notice" role="status">{notice||'Status é uma declaração de escopo, não um selo de produção.'}</p>
++ </section>
++ <section className="atlas-evidence" id="atlas-evidence"><div className="atlas-section-heading"><span className="atlas-eyebrow">EVIDÊNCIAS / POPULAÇÕES DIFERENTES</span><h2>Não somar testes.<br/>Não somar promessas.</h2><p>Três conjuntos anteriores, com revisões e escopos diferentes. Testes deste atlas são registrados separadamente na sua execução de CI.</p></div><div className="atlas-evidence-grid">{evidence.map(e=><article key={e.label}><span>{e.label}</span><div><strong>{e.value}</strong><small>{e.unit}</small></div><p>{e.note}</p>{e.url?<External href={e.url}>Abrir evidência da base</External>:<small>Relatório entregue na auditoria anterior; não é CI da base.</small>}</article>)}</div></section>
++ <section className="atlas-comparison" id="atlas-comparison"><div className="atlas-section-heading"><span className="atlas-eyebrow">POSICIONAMENTO / SEM RANKING INVENTADO</span><h2>Promissor. Ainda não<br/><em>liderança comprovada.</em></h2><p>Há um recorte defensável: continuidade local entre harnesses, memória aprovada e decisões Laya verificáveis. Para chamar de “um dos melhores”, faltam comparação de tarefas, operação real e validação externa.</p></div><div className="atlas-comparator-grid">{comparators.map(c=><article key={c.name}><span>{c.area}</span><h3>{c.name}</h3><p>{c.advantage}</p><p className="atlas-gap"><b>Gap a enfrentar</b>{c.gap}</p><External href={sources[c.source].url}>Fonte do projeto</External></article>)}</div><div className="atlas-gates"><h3>O caminho para conquistar reputação</h3>{gates.map((g,i)=><div key={g}><span>{String(i+1).padStart(2,'0')}</span><p>{g}</p></div>)}</div></section>
++ </main><footer className="atlas-footer"><span>BBrainX / GODMODCODE · Atlas X99 1.0</span><p>Memória compartilhada não é KV cache universal. O repositório mantém sua visibilidade atual.</p><External href="https://www.alexandrebelo.com.br/">por <strong>AB</strong></External></footer>
++ </div>;
++}
++export function ArchitectureAtlas(){return <ReactFlowProvider><AtlasContent/></ReactFlowProvider>;}
+diff --git a/web/atlas/atlas.css b/web/atlas/atlas.css
+new file mode 100644
+index 0000000..c62e202
+--- /dev/null
++++ b/web/atlas/atlas.css
+@@ -0,0 +1,5 @@
++:root{color-scheme:dark;--a-bg:#091118;--a-panel:#0e1922;--a-card:#101e29;--a-line:#253442;--a-muted:#a1b3c3;--a-text:#eff5fa;--a-mint:#9cebc3;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:var(--a-bg);color:var(--a-text)}button,input,select{font:inherit}button,a,input,select{-webkit-tap-highlight-color:transparent}a{color:inherit}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--a-mint);outline-offset:4px}::selection{background:#9cebc344}.atlas-shell{max-width:1920px;margin:auto}.atlas-skip{position:absolute;left:16px;top:-80px;padding:12px;background:var(--a-mint);color:#091118;z-index:100}.atlas-skip:focus{top:12px}.atlas-top{min-height:94px;border-bottom:1px solid var(--a-line);display:flex;align-items:center;gap:32px;padding:18px 4.2%}.atlas-brand{display:flex;gap:13px;align-items:center;text-decoration:none;font-size:26px;font-weight:700;letter-spacing:-1px}.atlas-brand svg{width:42px;height:42px;color:var(--a-mint)}.atlas-brand small{display:block;font:9px ui-monospace,monospace;letter-spacing:2px;color:var(--a-muted);margin-top:4px}.mint{color:var(--a-mint)}.atlas-top nav{margin:auto;display:flex;gap:30px}.atlas-top nav a{text-decoration:none;font-size:12px;color:var(--a-muted)}.atlas-top nav a:hover{color:var(--a-text)}.atlas-repo{font-size:12px;text-decoration:none;border:1px solid var(--a-line);padding:12px 18px;border-radius:7px;background:#12202a}.atlas-shell main{padding:0 4.2%}.atlas-hero{display:grid;grid-template-columns:1fr 340px;align-items:center;gap:60px;padding:55px 0 46px}.atlas-eyebrow{font:10px ui-monospace,SFMono-Regular,Consolas,monospace;letter-spacing:1.8px;color:var(--a-muted);line-height:1.65}.atlas-hero .atlas-eyebrow{color:var(--a-mint);display:flex;align-items:center;gap:9px}.atlas-eyebrow i{width:6px;height:6px;border-radius:50%;background:var(--a-mint)}.atlas-hero h1{font-size:clamp(40px,4.2vw,76px);line-height:1.04;letter-spacing:-3px;font-weight:620;margin:21px 0}.atlas-hero h1 em,.atlas-section-heading h2 em{font-style:normal;color:var(--a-mint)}.atlas-hero p{color:var(--a-muted);max-width:585px;font-size:15px;line-height:1.65;margin:20px 0 0}.atlas-manifest{border-top:1px solid var(--a-line);padding-top:4px}.atlas-manifest>div{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px 0;border-bottom:1px solid var(--a-line)}.atlas-manifest span{font:9px ui-monospace,monospace;color:var(--a-muted);letter-spacing:1px}.atlas-manifest code{color:var(--a-mint);font-size:13px}.atlas-manifest strong{font-size:19px}.atlas-manifest small{font-size:10px;font-weight:400;color:var(--a-muted);margin-left:5px}.atlas-manifest .atlas-manifest-note{color:var(--a-muted);font-size:11px;line-height:1.7;border-bottom:0;padding-bottom:0}.atlas-tabs{display:flex;gap:5px;border-bottom:1px solid var(--a-line);overflow:auto;scrollbar-width:thin}.atlas-tabs button{white-space:nowrap;display:flex;align-items:center;gap:10px;border:0;border-bottom:2px solid transparent;padding:17px 18px;background:none;color:var(--a-muted);font-size:12px}.atlas-tabs button span{font:10px ui-monospace,monospace;opacity:.6}.atlas-tabs button[aria-selected=true]{border-bottom-color:var(--a-mint);color:var(--a-text);background:linear-gradient(0deg,#9cebc309,transparent)}.atlas-toolbar{display:flex;align-items:center;gap:14px;padding:20px 0}.atlas-search{display:flex;align-items:center;gap:10px;flex:1;min-width:180px;background:var(--a-panel);border:1px solid var(--a-line);border-radius:7px;padding:0 13px}.atlas-search>span{color:var(--a-mint);font-size:23px}.atlas-search input{min-width:0;width:100%;border:0;background:transparent;color:var(--a-text);padding:12px 0;font-size:12px;outline-offset:0}.atlas-search input::placeholder{color:#8a9cad}.atlas-search button{background:none;border:0;color:var(--a-muted);font-size:21px}.atlas-toolbar select{background:var(--a-panel);border:1px solid var(--a-line);border-radius:7px;padding:12px;color:var(--a-muted);font-size:12px;max-width:230px}.atlas-export{display:flex;gap:8px}.atlas-export button,.atlas-guide,.atlas-empty button{color:var(--a-text);background:#14242e;border:1px solid #324656;border-radius:6px;padding:11px 13px;font-size:11px}.atlas-export button:hover,.atlas-guide:hover{background:#203440}.atlas-layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:18px;align-items:start}.atlas-canvas-card{border:1px solid var(--a-line);border-radius:12px;background:var(--a-panel);overflow:hidden;min-width:0}.atlas-canvas-title{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:24px 24px 8px}.atlas-canvas-title h2{font-size:22px;letter-spacing:-.6px;font-weight:550;margin:8px 0}.atlas-guide{white-space:nowrap;display:flex;gap:18px}.atlas-guide span{color:var(--a-mint)}.atlas-view-note{font-size:11px;line-height:1.6;color:var(--a-muted);margin:0;padding:0 24px 18px;max-width:770px}.atlas-canvas{height:680px;min-height:400px;background:radial-gradient(ellipse at 50% 20%,#112330 0,#0a131c 70%);border-top:1px solid var(--a-line);border-bottom:1px solid var(--a-line)}.atlas-node{width:256px;height:166px;background:linear-gradient(145deg,#142532,#101b26);border:1px solid #334653;border-top:2px solid var(--stage);border-radius:12px;box-shadow:0 6px 20px #0004;padding:16px 17px;display:flex;flex-direction:column;transition:border-color .15s,box-shadow .15s}.atlas-node.is-selected{border-color:var(--stage);box-shadow:0 0 0 3px color-mix(in srgb,var(--stage) 15%,transparent),0 8px 28px #0005}.atlas-node-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#a8bac8;font:9px ui-monospace,monospace;letter-spacing:1.2px}.atlas-node-meta i{width:5px;height:5px;border-radius:50%;background:var(--stage)}.atlas-node h3{font-size:16px;letter-spacing:-.3px;line-height:1.2;margin:12px 0 7px;color:#eef5fa}.atlas-node p{font-size:10px;line-height:1.5;color:#a7b8c7;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.atlas-node-status{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:10px;font-size:9px;color:var(--stage)}.atlas-node-status b{font-size:13px;font-weight:400}.atlas-node .react-flow__handle{width:6px;height:6px;background:var(--stage);border:0}.atlas-canvas .react-flow__controls{box-shadow:none;border:1px solid #344858;border-radius:6px;overflow:hidden}.atlas-canvas .react-flow__controls-button{background:#152632;border-bottom-color:#314555;fill:#b7c8d6;width:30px;height:30px}.atlas-canvas .react-flow__attribution{background:#101e2a;color:#8fa7b8;font-size:8px}.atlas-canvas .react-flow__minimap{background:#101b26!important;width:135px;height:90px;opacity:.85;border:1px solid var(--a-line);border-radius:7px}.atlas-canvas-note{display:flex;flex-wrap:wrap;gap:12px;padding:13px 18px;color:#9daebe;font-size:9px;border-bottom:1px solid var(--a-line)}.atlas-canvas-note span{display:flex;align-items:center;gap:7px}.atlas-solid,.atlas-dashed{display:inline-block;width:20px;border-top:1px solid #80b4a4}.atlas-dashed{border-top-style:dashed;border-top-color:#9298ca}.atlas-node-list{display:flex;flex-wrap:wrap;gap:6px;padding:13px 16px;max-height:130px;overflow:auto}.atlas-node-list button{display:flex;align-items:center;gap:6px;border:1px solid #273b48;border-radius:5px;background:#0b1720;color:#adbcc9;font-size:9px;padding:6px 8px}.atlas-node-list button[aria-pressed=true]{color:#eaf5f4;border-color:#718f92}.atlas-node-list i{width:4px;height:4px;border-radius:50%}.atlas-inspector{border:1px solid var(--a-line);border-radius:12px;background:linear-gradient(150deg,#13232f,#0d1822);padding:23px;min-height:750px;position:sticky;top:16px}.atlas-detail-top{display:flex;flex-wrap:wrap;gap:11px;justify-content:space-between}.atlas-detail-top .atlas-eyebrow{font-size:8px;letter-spacing:1.1px}.atlas-badge{border:1px solid;border-radius:99px;padding:5px 9px;font-size:9px;background:#07111a33}.atlas-detail-symbol{font:48px ui-monospace,monospace;letter-spacing:-3px;opacity:.9;margin:29px 0 16px}.atlas-inspector h2{font-size:29px;line-height:1.15;font-weight:560;letter-spacing:-1px;margin:0 0 14px}.atlas-stage-explanation{font-size:11px;color:var(--a-muted);line-height:1.65;padding-bottom:21px;border-bottom:1px solid var(--a-line)}.atlas-inspector dl{margin:24px 0}.atlas-inspector dt{font:8px ui-monospace,monospace;letter-spacing:1.2px;color:#adc0cf;margin:22px 0 8px}.atlas-inspector dd{font-size:12px;line-height:1.75;margin:0;color:#d0dce6}.atlas-detail-links{display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--a-line);padding:18px 0}.atlas-detail-links a{font-size:10px;color:var(--a-mint);text-decoration:none;line-height:1.6}.atlas-related{border-top:1px solid var(--a-line);padding-top:16px}.atlas-related h3{font:8px ui-monospace,monospace;letter-spacing:1.2px;color:var(--a-muted);margin:0 0 10px}.atlas-related button{background:none;border:0;border-bottom:1px solid #243746;width:100%;display:flex;justify-content:space-between;color:#c7d6e0;text-align:left;font-size:10px;padding:10px 0}.atlas-related button span{color:var(--a-mint)}.atlas-related p,.atlas-inspector-empty{color:var(--a-muted);font-size:12px;line-height:1.7}.atlas-legend{display:flex;gap:9px;flex-wrap:wrap;padding:20px 0 3px}.atlas-legend button{display:flex;align-items:center;gap:7px;border:1px solid var(--a-line);border-radius:6px;background:none;color:#b7c7d3;padding:8px 9px;font-size:9px}.atlas-legend button[aria-pressed=true]{border-color:#9cebc3}.atlas-legend i{width:6px;height:6px;border-radius:50%}.atlas-legend b{font:9px ui-monospace,monospace;color:#c8d8e4;margin-left:7px}.atlas-notice{font-size:10px;color:var(--a-muted);min-height:18px}.atlas-empty{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:var(--a-muted);padding:30px}.atlas-empty strong{font-size:21px;color:var(--a-text)}.atlas-empty p{font-size:13px}.atlas-section-heading{display:grid;grid-template-columns:1fr 1fr;gap:12px 70px;margin:65px 0 28px;padding-top:36px;border-top:1px solid var(--a-line)}.atlas-section-heading>.atlas-eyebrow{grid-column:1/-1;color:var(--a-mint)}.atlas-section-heading h2{font-size:35px;font-weight:560;line-height:1.15;letter-spacing:-1px;margin:6px 0}.atlas-section-heading p{color:var(--a-muted);font-size:13px;line-height:1.85;margin:6px 0}.atlas-evidence-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}.atlas-evidence-grid article{padding:26px;border:1px solid var(--a-line);border-radius:9px;background:var(--a-panel)}.atlas-evidence-grid article>span{font:10px ui-monospace,monospace;color:var(--a-mint);text-transform:uppercase;letter-spacing:1px}.atlas-evidence-grid article>div{display:flex;align-items:baseline;gap:15px;margin:23px 0 14px}.atlas-evidence-grid strong{font-size:54px;letter-spacing:-2px;font-weight:500}.atlas-evidence-grid small{font-size:10px;color:var(--a-muted);line-height:1.6}.atlas-evidence-grid p{font-size:12px;line-height:1.75;color:#bdcdda}.atlas-evidence-grid a{font-size:10px;color:var(--a-mint);text-decoration:none}.atlas-comparator-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.atlas-comparator-grid article{border:1px solid var(--a-line);border-radius:8px;padding:23px;background:#0e1b25}.atlas-comparator-grid article>span{font:9px ui-monospace,monospace;letter-spacing:1px;color:var(--a-muted)}.atlas-comparator-grid h3{font-size:24px;margin:15px 0 20px}.atlas-comparator-grid p{font-size:12px;line-height:1.75;color:#c6d3de}.atlas-comparator-grid .atlas-gap{color:var(--a-muted);border-top:1px solid var(--a-line);padding-top:17px}.atlas-gap b{display:block;color:#ecce9e;font-size:10px;font-weight:500;margin-bottom:7px}.atlas-comparator-grid a{font-size:10px;text-decoration:none;color:var(--a-mint);display:block;margin-top:22px}.atlas-gates{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--a-line);border-radius:9px;padding:28px;gap:12px 35px}.atlas-gates h3{grid-column:1/-1;margin:0 0 10px;font-size:19px;font-weight:500}.atlas-gates>div{display:flex;gap:16px;align-items:baseline;border-top:1px solid #203440}.atlas-gates span{font:12px ui-monospace,monospace;color:var(--a-mint)}.atlas-gates p{font-size:12px;line-height:1.7;color:#b5c5d3}.atlas-footer{display:flex;align-items:center;justify-content:space-between;gap:25px;border-top:1px solid var(--a-line);padding:28px 4.2%;margin-top:65px;color:var(--a-muted);font-size:10px;line-height:1.7}.atlas-footer p{max-width:410px}.atlas-footer a{white-space:nowrap;text-decoration:none}.atlas-footer strong{color:#e8f2f8}.atlas-map-section{scroll-margin-top:15px}
++@media(min-width:1700px){.atlas-layout{grid-template-columns:minmax(0,1fr) 380px}.atlas-canvas{height:780px}.atlas-inspector{min-height:800px}.atlas-inspector dd{font-size:13px}}
++@media(max-width:1100px){.atlas-hero{grid-template-columns:1fr 300px;gap:30px}.atlas-layout{grid-template-columns:minmax(0,1fr) 290px}.atlas-inspector{padding:19px}.atlas-canvas-title{padding:18px 18px 8px;align-items:start}.atlas-canvas-title h2{font-size:18px}.atlas-canvas-title .atlas-eyebrow{font-size:8px}.atlas-canvas{height:580px}.atlas-guide{padding:8px;font-size:9px;gap:9px}.atlas-comparator-grid{grid-template-columns:repeat(2,1fr)}.atlas-inspector h2{font-size:25px}.atlas-tabs button{padding:14px 12px;font-size:11px}.atlas-toolbar{flex-wrap:wrap}.atlas-hero h1{font-size:53px}.atlas-section-heading h2{font-size:30px}}
++@media(max-width:760px){.atlas-top{min-height:77px;padding:16px 5%;gap:14px}.atlas-top nav{display:none}.atlas-repo{margin-left:auto;font-size:10px;padding:10px}.atlas-brand{font-size:23px}.atlas-brand svg{width:34px}.atlas-brand small{font-size:7px}.atlas-shell main{padding:0 5%}.atlas-hero{grid-template-columns:1fr;gap:26px;padding:34px 0}.atlas-hero h1{font-size:47px;letter-spacing:-2px}.atlas-hero .atlas-eyebrow{font-size:8px;letter-spacing:1.1px}.atlas-hero p{font-size:13px;max-width:450px}.atlas-manifest{display:grid;grid-template-columns:1fr 1fr;gap:0 20px}.atlas-manifest>div{display:block;padding:13px 0}.atlas-manifest span{display:block;font-size:8px;margin-bottom:9px}.atlas-manifest strong{font-size:17px}.atlas-manifest small{font-size:9px;display:block;margin:5px 0 0}.atlas-manifest code{font-size:12px}.atlas-manifest .atlas-manifest-note{font-size:10px;display:flex;align-items:center}.atlas-tabs button{font-size:10px;padding:14px 10px}.atlas-layout{grid-template-columns:1fr;gap:14px}.atlas-canvas-title{padding:20px 17px 7px}.atlas-canvas-title h2{font-size:19px;max-width:240px}.atlas-view-note{font-size:10px;padding:0 17px 16px}.atlas-canvas{height:520px;min-height:400px}.atlas-canvas .react-flow__minimap{display:none}.atlas-toolbar{gap:9px;padding:14px 0}.atlas-search{flex-basis:100%}.atlas-search input{font-size:12px}.atlas-toolbar select{font-size:11px;flex:1;max-width:none;min-width:0;padding:11px 6px}.atlas-export button{font-size:10px;padding:11px}.atlas-inspector{position:static;min-height:0;padding:22px}.atlas-detail-symbol{font-size:35px;margin-top:20px}.atlas-inspector h2{font-size:28px}.atlas-inspector dd{font-size:13px}.atlas-inspector dt{font-size:9px}.atlas-canvas-note{font-size:8px;padding:12px}.atlas-node-list{max-height:145px;padding:10px}.atlas-node-list button{font-size:9px;padding:7px}.atlas-section-heading{grid-template-columns:1fr;gap:8px;margin-top:40px;padding-top:26px}.atlas-section-heading>.atlas-eyebrow{font-size:8px}.atlas-section-heading h2{font-size:31px}.atlas-section-heading p{font-size:13px}.atlas-evidence-grid{grid-template-columns:1fr}.atlas-evidence-grid article{padding:22px}.atlas-evidence-grid article>div{margin:17px 0 8px}.atlas-evidence-grid strong{font-size:44px}.atlas-comparator-grid{grid-template-columns:1fr}.atlas-gates{grid-template-columns:1fr;padding:22px}.atlas-gates h3{font-size:18px}.atlas-footer{flex-wrap:wrap;gap:6px;padding:24px 5%;margin-top:40px}.atlas-footer p{order:3;width:100%}.atlas-footer a{margin-left:auto}.atlas-legend button{font-size:8px}.atlas-legend b{font-size:8px}}
++@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+diff --git a/web/atlas/data.js b/web/atlas/data.js
+new file mode 100644
+index 0000000..386d711
+--- /dev/null
++++ b/web/atlas/data.js
+@@ -0,0 +1,111 @@
++/** Atlas documental. Status nunca é inferido a partir de uma animação ou de um clique. */
++export const revision = 'a9636e9402e3fa673ae05b3489202da1048aef5e';
++export const inspectedAt = '2026-10-05';
++export const repo = 'https://github.com/oalexandrebelo/BBrainX';
++export const stages = {
++  shipped: {label:'Na base 0.4', color:'#83e4bd', description:'Código presente na revisão auditada; não certifica todos os clientes.'},
++  optional: {label:'Opt-in', color:'#69c9ee', description:'Perfil existente, ativado explicitamente. Não pertence ao caminho padrão.'},
++  candidate: {label:'Patch candidato', color:'#f2c37c', description:'Código da revisão X99 entregue à parte, ainda não incorporado à base.'},
++  lab: {label:'Laboratório', color:'#d7a7f4', description:'Mecanismo exercitado isoladamente; não integrado ao runtime.'},
++  planned: {label:'Proposto', color:'#acaeff', description:'Contrato ou direção de arquitetura. Implementação de produto pendente.'},
++  reference: {label:'Referência', color:'#a6b9c7', description:'Fonte de técnica; a plataforma não é instalada pelo BBrainX.'},
++  excluded: {label:'Não incorporar', color:'#f59a9a', description:'Desenho recusado na forma fornecida, por falhas documentadas.'}
++};
++const base = path => repo+'/blob/'+revision+'/'+path;
++const sources = {
++  base:{label:'Código auditado · 0.4.0',url:base('README.md')},
++  ci:{label:'CI da base · 96 testes por plataforma',url:base('docs/validation/ci-report.json')},
++  study:{label:'Mapa do estudo existente',url:base('docs/STUDY_MAP.md')},
++  laya:{label:'Laya · upstream',url:'https://github.com/NandhaKishorM/laya'},
++  onnx:{label:'Laya ONNX · adapter alternativo',url:'https://github.com/receptron/laya'},
++  supertokens:{label:'SuperTokens · verificação de sessão',url:'https://supertokens.com/docs/post-authentication/session-management/advanced-workflows/access-token-blacklisting'},
++  infisical:{label:'Infisical · Agent',url:'https://infisical.com/docs/integrations/platforms/infisical-agent'},
++  medusa:{label:'Medusa · compensação de workflows',url:'https://docs.medusajs.com/learn/fundamentals/workflows/compensation-function'},
++  signoz:{label:'SigNoz · observabilidade',url:'https://github.com/SigNoz/signoz'},
++  unkey:{label:'Unkey · rate limiter auditado',url:'https://github.com/unkeyed/unkey/blob/f6180ba4e045839872d72d6765b74032f3601ee4/internal/services/ratelimit/ratelimit.go'},
++  lightrag:{label:'LightRAG · recuperação documental',url:'https://github.com/HKUDS/LightRAG'},
++  serena:{label:'Serena · ferramentas semânticas',url:'https://github.com/oraios/serena'},
++  mem0:{label:'Mem0 · memória e avaliação',url:'https://github.com/mem0ai/mem0'},
++  letta:{label:'Letta · agentes stateful',url:'https://github.com/letta-ai/letta'},
++  graphiti:{label:'Graphiti · grafo temporal',url:'https://github.com/getzep/graphiti'},
++  gcra:{label:'GCRA · redis-cell',url:'https://github.com/brandur/redis-cell'},
++  fencing:{label:'Fencing · Martin Kleppmann',url:'https://martin.kleppmann.com/2016/02/08/how-to-do-distributed-locking.html'},
++  sqlite:{label:'SQLite · WAL',url:'https://sqlite.org/wal.html'},
++  flow:{label:'React Flow · custom nodes',url:'https://reactflow.dev/learn/customization/custom-nodes'}
++};
++export {sources};
++// id, título, status, camada, propósito, limite, próximo gate, fonte, código na base
++const rows = [
++ ['harness','Harnesses / MCP','shipped','ENTRADA','Codex, Claude Code e outros clientes consultam o mesmo projeto por capacidades delimitadas.','Protocolo testado não é homologação de toda versão de toda IDE.','Publicar matriz de handoff por cliente e versão.','base','src/clients.mjs'],
++ ['mcp','Fronteira MCP','shipped','CONTRATOS','Servidor stdio próprio com seis ferramentas e escopo de projeto.','Não executa shell nem aprova memórias pelo agente.','Manter testes externos de protocolo e de cancelamento.','base','src/mcp.mjs'],
++ ['engine','Motor de capacidades','shipped','CONTRATOS','Validação e autorização de capacidades no motor próprio, inspirado no Invokta.','Invokta não é dependência de runtime da versão 0.4.','Saídas específicas por capability e deadlines completos.','study','src/capability.mjs'],
++ ['index','Índice incremental','shipped','RECUPERAÇÃO','Reutiliza chunks de conteúdo inalterado; reconcilia o índice textual.','Indexação síncrona pode bloquear o processo; não há watcher contínuo.','Worker de indexação com publicação atômica da geração.','base','src/retrieval.mjs'],
++ ['search','Busca lexical · FTS5','shipped','RECUPERAÇÃO','Termos exatos, radicais e glossário pt → en selecionam candidatos.','Não equivale a análise semântica completa por LSP.','Avaliar chunking por declaração e novas perguntas cegas.','study','src/retrieval.mjs'],
++ ['context','Compilador de contexto','shipped','CONTEXTO','Combina trechos, memórias aprovadas e checkpoint sob orçamento com proveniência.','o200k_base mede o payload, não a cobrança de todos os provedores.','Integrar e testar o patch de consistência antes de promovê-lo.','base','src/context.mjs'],
++ ['memory','Memória governada','shipped','AUTORIDADE','Propor, aprovar e revogar conhecimento; distinguir hipótese de decisão.','Revogar impede recuperação futura; não apaga cópias já entregues.','Revisões explícitas e reconciliação das projeções.','base','src/store.mjs'],
++ ['checkpoint','Checkpoint portátil','shipped','AUTORIDADE','Objetivo, próxima ação e evidências sobrevivem à troca de processo/harness.','Mesmo commit não significa mesma worktree ou mesmo conteúdo local.','Formalizar projeto, workspace, tarefa e snapshot separadamente.','base','src/session.mjs'],
++ ['sqlite','SQLite / estado local','shipped','AUTORIDADE','Transações preservam estado e eventos no host autorizado.','Não compartilhar o banco vivo por iCloud, NFS ou pasta sincronizada.','Autoridade de serviço explícita para múltiplas máquinas.','sqlite','src/store.mjs'],
++ ['laya','Laya · decisões locais','optional','DECISÃO','Perfil Python isolado com pesos verificados e execução local sob comando explícito.','Não altera o contexto padrão: os testes registrados de relevância pioraram o lexical.','Calibração e avaliação por tarefa antes da promoção.','laya','src/laya.mjs'],
++ ['doctor','Doctor / setup','shipped','OPERAÇÃO','Identifica requisitos e orienta instalação sem alterar as credenciais dos harnesses.','Recomendar um backend não é medir sua inferência.','Homologação de instalação, suspensão e retomada no host real.','base','src/host.mjs'],
++ ['ui','Atlas / laboratório UI','shipped','VISIBILIDADE','O painel atual explica arquitetura e oferece operações reais em um laboratório separado.','Este atlas novo é documental: navegar nele não executa agentes.','Validar interface, exportação e rotas sem modificar o núcleo.','flow','web/main.jsx'],
++ ['worker','Worker por geração','candidate','CONTENÇÃO','O patch X99 delimita frames, valida respostas e aposenta workers após timeout.','Testes controlados de processos não são inferência neural nem release homologada.','Suíte completa, MCP e inferência real no Mac.','base',null],
++ ['cache','Cache exato de decisões','candidate','REUSO','LRU/TTL limitado por bytes, com projeto, snapshot, memória, política e modelo na identidade.','Desligado por padrão e por processo; não é KV compartilhado entre modelos.','Medir reuso e invalidadores com Laya real antes de habilitar.','laya',null],
++ ['read','Snapshot de leitura','candidate','CONSISTÊNCIA','Monta o contexto sob leitura coerente e revalida o estado antes da publicação.','Seis testes de integração do compilador ficaram sem execução no patch anterior.','Executar esses testes com as dependências fixadas.','sqlite',null],
++ ['daemon','Autoridade por usuário','planned','COORDENAÇÃO','Um coordenador e um worker residente compartilhados pelos harnesses do mesmo usuário.','Ainda não existe daemon global entre os processos de harness.','IPC autenticado, lifecycle e isolamento por projeto.','base',null],
++ ['identity','Projeto / workspace / tarefa','planned','IDENTIDADE','Separa conhecimento do projeto das evidências de cada checkout, tarefa e revisão.','URL do Git não concede identidade nem autorização.','Migração de dados, vínculos explícitos e teste entre worktrees.','base',null],
++ ['authz','Autorização versionada','planned','SEGURANÇA','Revogações e políticas participam do selo de validade; revalidar antes de liberar conteúdo.','JWT válido não prova sessão vigente; não promete recolher bytes já enviados.','Definir ponto de linearização e testar partições/revogações.','supertokens',null],
++ ['admission','Admissão ponderada','lab','CONTROLE','Combina GCRA, bytes de fila e vagas efetivas; o laboratório verifica a aritmética.','5.670 sequências verificadas não são um rate limiter distribuído implantado.','Integrar controle atômico por cliente/projeto e medir fila.','gcra',null],
++ ['budget','Reserva de orçamento','lab','CONTROLE','Reservar antes da execução; manter OUTCOME_UNKNOWN até reconciliar.','Laboratório SQLite não inclui cobrança de provedores reais.','Adapters de custos e reconciliação idempotente no runtime.','medusa',null],
++ ['release','Publicação com fencing','lab','CONSISTÊNCIA','Escrita condicionada à geração; estado e evento crítico no mesmo commit.','Fencing só protege quando o destino rejeita gerações antigas.','Integrar destino, revisão de acesso e falhas após commit.','fencing',null],
++ ['secrets','Secrets / egress broker','planned','SEGURANÇA','Referências opacas; credenciais inseridas apenas no destino autorizado.','Não instala proxy MITM, não lê Keychain e não muda autenticação.','Escopo, rotação, políticas de egress e revisão de ameaça.','infisical',null],
++ ['otel','OTel / auditoria separada','planned','OBSERVABILIDADE','Diagnóstico em fila limitada; eventos críticos permanecem transacionais.','SigNoz não é requisito do Mac; sampling não mede todo o tráfego.','Instrumentar sem prompts, segredos ou labels ilimitados.','signoz',null],
++ ['symbols','Mapa de símbolos / LSP','planned','RECUPERAÇÃO','Declarações e referências reduzem leitura redundante de código.','Tree-sitter não é prova semântica de toda relação dinâmica.','Benchmark por linguagem e dependências, antes de adoção.','serena',null],
++ ['lightrag','LightRAG / documentos','planned','RECUPERAÇÃO','Recuperar dados de documentos conectados sem uma resposta generativa intermediária.','Não instalado; não substitui código e memórias aprovadas como autoridade.','Demonstrar ganho em tarefas documentais incluindo ingestão.','lightrag',null],
++ ['onnx','Laya ONNX alternativo','planned','DECISÃO','Avaliar receptron/laya atrás do mesmo contrato de decisão.','Paridade de tokenizer, opções e truncamento não foi homologada.','Fixar pesos e medir CPU versus Python/MPS no mesmo trabalho.','onnx',null],
++ ['supertokens','SuperTokens','reference','TÉCNICA','Separar verificação de token de autorização vigente e revogação.','A plataforma não é uma dependência instalada do BBrainX.','Adapter somente no perfil de equipe que precisar de identidade remota.','supertokens',null],
++ ['infisical','Infisical','reference','TÉCNICA','Identidades de máquina, referências a segredos, rotação e entrega controlada.','Não confundir cache de segredo com memória de contexto.','Broker isolado e política explícita de destino.','infisical',null],
++ ['medusa','Medusa v2','reference','TÉCNICA','Reservas, idempotência e compensações inspiram o ledger de orçamento.','Compensação não é rollback universal de efeitos externos.','Provar reserva e reconciliação no executor real.','medusa',null],
++ ['signoz','SigNoz / OpenTelemetry','reference','TÉCNICA','Buffers limitados, exportação e sampling com população identificada.','O dashboard não é a fonte de verdade da tarefa.','Instrumentação antes de uma plataforma analítica obrigatória.','signoz',null],
++ ['unkey','Unkey','reference','TÉCNICA','Admissão, hidratação e contenção de contadores como referência.','Convergência eventual não fornece teto financeiro global estrito.','Direitos escrow apenas no perfil distribuído.','unkey',null],
++ ['unsafe','Rust / ring do anexo','excluded','CONTRAPROVA','O laboratório encontrou perda de escritas em 18 de 20 interleavings do modelo finito.','Não é taxa de falha em produção. Não incorporar a implementação fornecida.','Escolher algoritmo correto, com contrato e testes de memória.','base',null]
++];
++export const components = rows.map(([id,title,status,layer,why,limit,gate,source,code])=>({id,title,status,layer,why,limit,gate,source,code:code?base(code):null}));
++const E=(a,b,kind='flow')=>({id:a+'--'+b,source:a,target:b,kind});
++export const views = [
++ {id:'target',label:'Arquitetura alvo',title:'Uma autoridade. Contexto verificável.',note:'Mistura declarada de base, candidato, laboratório e proposta. Não representa tudo instalado.',ids:['harness','mcp','authz','admission','daemon','index','search','context','sqlite','release','laya','cache','read','budget','secrets','otel'],columns:4,links:[E('harness','mcp'),E('mcp','daemon'),E('daemon','authz'),E('authz','admission'),E('admission','context'),E('index','search'),E('search','context'),E('sqlite','context'),E('laya','cache'),E('cache','context'),E('context','read'),E('read','release'),E('budget','release'),E('secrets','release'),E('release','otel')]},
++ {id:'runtime',label:'Runtime atual',title:'O que está na base 0.4.0.',note:'Laya é opt-in e não interfere no ranking do contexto. Escopo: revisão auditada.',ids:['harness','mcp','engine','context','index','search','memory','checkpoint','sqlite','laya','doctor','ui'],columns:4,links:[E('harness','mcp'),E('mcp','engine'),E('engine','context'),E('index','search'),E('search','context'),E('memory','context'),E('checkpoint','context'),E('sqlite','index'),E('sqlite','memory'),E('sqlite','checkpoint'),E('doctor','laya'),E('context','ui')]},
++ {id:'laya',label:'Laya + cache',title:'Decisão curta. Reuso com identidade.',note:'O cache candidato é exato, por processo e desligado por padrão. Não compartilha KV entre modelos.',ids:['daemon','identity','worker','laya','cache','read','release','onnx'],columns:4,links:[E('daemon','worker'),E('identity','cache'),E('worker','laya'),E('laya','cache'),E('cache','read'),E('read','release'),E('onnx','worker')]},
++ {id:'governance',label:'Protocolo X99',title:'Permissão, capacidade e commit.',note:'Os mecanismos em roxo têm verificações de laboratório, não integração de produto.',ids:['identity','authz','admission','budget','sqlite','read','release','secrets','otel','daemon','memory','checkpoint'],columns:4,links:[E('identity','authz'),E('authz','admission'),E('admission','budget'),E('budget','release'),E('sqlite','read'),E('read','release'),E('secrets','release'),E('release','otel'),E('daemon','sqlite'),E('memory','read'),E('checkpoint','read')]},
++ {id:'ecosystem',label:'Novas incorporações',title:'Extrair técnicas. Não empilhar serviços.',note:'As cinco plataformas são referências; seus mecanismos abaixo têm status próprio.',ids:['supertokens','infisical','medusa','signoz','unkey','authz','secrets','budget','otel','admission','symbols','lightrag','onnx','cache','unsafe'],columns:5,links:[E('supertokens','authz','reference'),E('infisical','secrets','reference'),E('medusa','budget','reference'),E('signoz','otel','reference'),E('unkey','admission','reference')]}
++];
++export function visibleComponents(viewId, status='all', query='') {
++ const view=views.find(v=>v.id===viewId)||views[0];
++ const normalized = value=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
++ const q=normalized(query.trim());
++ return view.ids.map(id=>components.find(c=>c.id===id)).filter(c=>(status==='all'||c.status===status)&&(!q||normalized(c.title+' '+c.layer+' '+c.why).includes(q)));
++}
++export function graphFor(viewId,status='all',query='') {
++ const view=views.find(v=>v.id===viewId)||views[0], list=visibleComponents(view.id,status,query), ids=new Set(list.map(c=>c.id));
++ const nodes=list.map((c,i)=>({id:c.id,type:'atlas',position:{x:(i%view.columns)*292,y:Math.floor(i/view.columns)*200},data:c}));
++ const links=view.links.filter(e=>ids.has(e.source)&&ids.has(e.target)).map(e=>({...e,documentedOnly:e.kind==='reference'||[e.source,e.target].some(id=>!['shipped','optional'].includes(components.find(c=>c.id===id).status))}));
++ return {view,nodes,edges:links};
++}
++export const evidence = [
++ {label:'Base publicada',value:'96',unit:'testes por plataforma',note:'CI da revisão 912aa253, anterior a este atlas. Não são 288 testes distintos.',url:sources.ci.url},
++ {label:'Patch X99 anterior',value:'43',unit:'testes locais aprovados',note:'38 novos + 5 existentes. 6 testes de compilador não executados. Patch fora da base.',url:null},
++ {label:'Protocolo isolado',value:'35',unit:'verificações de laboratório',note:'Python/SQLite/processos em Linux. Sem Laya, runtime ou validação nativa macOS.',url:null}
++];
++export const comparators = [
++ {name:'Serena',area:'Código e símbolos',advantage:'Ferramentas semânticas e referências por LSP; integração MCP documentada.',gap:'BBrainX ainda usa busca lexical e não tem LSP no núcleo.',source:'serena'},
++ {name:'Mem0',area:'Memória de agentes',advantage:'Pipeline de memória e avaliação publicada; separar plataforma gerenciada de OSS.',gap:'BBrainX precisa de avaliação externa de memória/continuidade; top-k de arquivos não é a mesma métrica.',source:'mem0'},
++ {name:'Letta',area:'Agentes com estado',advantage:'Runtime stateful e memória persistente; projeto atual direciona ao Letta Code.',gap:'BBrainX é uma camada de contexto, não um substituto completo desse harness.',source:'letta'},
++ {name:'Graphiti',area:'Conhecimento temporal',advantage:'Construção incremental de grafo temporal e recuperação híbrida.',gap:'BBrainX mantém memória aprovada e lexical; não implementa esse grafo.',source:'graphiti'}
++];
++export const gates = [
++ 'Suíte integral e MCP sobre o patch X99, sem somar evidências antigas.',
++ 'Handoff real por versão de Codex, Claude Code, Gemini CLI e demais clientes.',
++ 'Calibração Laya em holdout: qualidade e cobertura, não apenas latência.',
++ 'Daemon e cache compartilhados com revogação, limites e retomada.',
++ 'Benchmark pareado por tarefa aceita, incluindo releituras e custo.',
++ 'Revisão externa de segurança, instalação e documentação de falhas.'
++];
+diff --git a/web/atlas/entry.jsx b/web/atlas/entry.jsx
+new file mode 100644
+index 0000000..46437a3
+--- /dev/null
++++ b/web/atlas/entry.jsx
+@@ -0,0 +1,4 @@
++import React from 'react';
++import {createRoot} from 'react-dom/client';
++import {ArchitectureAtlas} from './Atlas.jsx';
++createRoot(document.getElementById('atlas-root')).render(<ArchitectureAtlas/>);
+diff --git a/web/atlas/export.js b/web/atlas/export.js
+new file mode 100644
+index 0000000..79499c7
+--- /dev/null
++++ b/web/atlas/export.js
+@@ -0,0 +1,19 @@
++import {graphFor,revision,inspectedAt,stages} from './data.js';
++const escape=value=>String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
++export function exportDocument(view,status='all',query=''){
++ const graph=graphFor(view,status,query);
++ return {schemaVersion:1,atlasVersion:'1.0',inspectedRevision:revision,inspectedAt,classification:'documentary-architecture-not-runtime-telemetry',view:graph.view.id,title:graph.view.title,note:graph.view.note,filters:{status,query},nodes:graph.nodes,edges:graph.edges,legend:stages};
++}
++function lines(text,width=32){const words=text.split(/\s+/),out=[];let line='';for(const w of words){if((line+' '+w).trim().length>width&&line){out.push(line);line=w;}else line=(line+' '+w).trim();}if(line)out.push(line);return out;}
++/** Exportação vetorial do mesmo dataset. Não captura DOM nem executa URLs. */
++export function exportSvg(doc){
++ const width=Math.max(640,...doc.nodes.map(n=>n.position.x+316)),height=Math.max(300,...doc.nodes.map(n=>n.position.y+330));
++ const nodeById=new Map(doc.nodes.map(n=>[n.id,n]));
++ const connectors=doc.edges.map(e=>{const a=nodeById.get(e.source),b=nodeById.get(e.target);if(!a||!b)return '';const x1=a.position.x+160,y1=a.position.y+270,x2=b.position.x+160,y2=b.position.y+118;return `<path d="M${x1} ${y1} C${x1} ${y1+40} ${x2} ${y2-40} ${x2} ${y2}" fill="none" stroke="#627c8b" stroke-width="1.5" ${e.documentedOnly?'stroke-dasharray="6 6"':''} marker-end="url(#arrow)"/>`;}).join('');
++ const boxes=doc.nodes.map(n=>{const s=doc.legend[n.data.status],x=n.position.x+32,y=n.position.y+118;return `<g transform="translate(${x},${y})"><rect width="256" height="152" rx="14" fill="#101d28" stroke="${s.color}" stroke-opacity=".65"/><text x="16" y="25" font-size="10" fill="#a5b7c6">${escape(n.data.layer)}</text>${lines(n.data.title,25).slice(0,2).map((line,i)=>`<text x="16" y="${53+i*23}" font-size="17" font-weight="600" fill="#f0f5fa">${escape(line)}</text>`).join('')}<text x="16" y="128" font-size="12" fill="${s.color}">${escape(s.label)}</text></g>`;}).join('');
++ return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height+86}" viewBox="0 0 ${width} ${height+86}" role="img"><title>${escape(doc.title)}</title><desc>Atlas documental BBrainX. Status explícitos; não representa execução.</desc><defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0L8 4L0 8" fill="none" stroke="#627c8b"/></marker></defs><rect width="100%" height="100%" fill="#091118"/><g font-family="system-ui,sans-serif"><text x="32" y="42" fill="#9cebc3" font-size="14">BBRAINX / GODMODCODE · ATLAS X99</text><text x="32" y="79" fill="#f0f5fa" font-size="25">${escape(doc.title)}</text>${connectors}${boxes}<text x="32" y="${height+34}" fill="#a5b7c6" font-size="12">Base ${escape(doc.inspectedRevision.slice(0,8))} · ${escape(doc.inspectedAt)} · Linhas tracejadas = relações documentais/propostas</text><text x="32" y="${height+58}" fill="#a5b7c6" font-size="12">${escape(doc.nodes.length)} componentes nesta exportação. Maturidade é indicada em cada nó.</text></g></svg>`;
++}
++export function saveDownload(content,type,filename){
++ const url=URL.createObjectURL(new Blob([content],{type})),link=document.createElement('a');
++ link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
++}

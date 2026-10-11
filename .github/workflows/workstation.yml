@@ -1,0 +1,41 @@
+name: Verify MEDIUM and Replay
+on:
+  push:
+    branches: [feat/medium-workstation-replay]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: workstation-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  mechanisms:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Execute mechanisms and labeled replay measurements
+        run: node scripts/workstation-evidence.mjs
+      - name: Prove selected tests detect the original defect and injected regressions
+        run: node scripts/workstation-mutations.mjs
+      - name: Confirm mutation cleanup and production build
+        run: |
+          git diff --exit-code
+          npm run build
+      - name: Package only tracked source and generated verification evidence
+        run: |
+          git archive --format=zip --prefix=BBrainX/ -o artifacts/workstation/BBrainX-source.zip HEAD
+          git diff a9636e9402e3fa673ae05b3489202da1048aef5e HEAD -- . ':!package-lock.json' > artifacts/workstation/BBrainX-medium-replay.patch
+          sha256sum artifacts/workstation/BBrainX-source.zip > artifacts/workstation/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-MEDIUM-Replay-Evidence
+          path: artifacts/workstation/
+          retention-days: 30

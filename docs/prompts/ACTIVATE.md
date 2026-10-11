@@ -59,7 +59,7 @@ Aplique o que foi impresso:
 | Harness | Onde gravar |
 |---|---|
 | Claude Code | Rode, na pasta do projeto, o comando `claude mcp add …` impresso. Para versionar com a equipe, junte o JSON a `.mcp.json` |
-| Codex CLI | Rode o comando `codex mcp add …` impresso, ou cole o bloco `[mcp_servers.bbrainx]` em `~/.codex/config.toml`. Se o bloco já existir, substitua só ele |
+| Codex CLI | Rode o comando `codex mcp add …` impresso, ou cole o bloco `[mcp_servers.bbrainx-<projeto>]` em `~/.codex/config.toml` (a saída inteira é TOML válido). Se o bloco do mesmo projeto já existir, substitua só ele |
 | Cursor | Chave `mcpServers.bbrainx` em `.cursor/mcp.json` do projeto |
 | VS Code | Chave `servers.bbrainx` em `.vscode/mcp.json` |
 | Gemini CLI | Chave `mcpServers.bbrainx` em `.gemini/settings.json` do projeto ou em `~/.gemini/settings.json` |

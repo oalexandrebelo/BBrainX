@@ -1,0 +1,36 @@
+name: Verify Parallel Workspace Lanes
+on:
+  push:
+    branches: [feat/parallel-workspace-lanes]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: lanes-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  lanes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Real worktrees, MCP clients, shared memory and service listeners
+        run: node scripts/lanes-evidence.mjs
+      - name: Selected regressions must be detected
+        run: node scripts/lanes-negative.mjs
+      - run: npm run build
+      - name: Package code and bounded evidence
+        run: node scripts/lanes-package.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-Parallel-Lanes
+          path: artifacts/lanes/
+          retention-days: 30

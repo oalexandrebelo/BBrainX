@@ -1,0 +1,43 @@
+name: Verify Token Observatory
+on:
+  push:
+    branches: [feat/usage-observatory]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: observatory-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  usage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts --no-fund
+      - name: Verify accounting and real SQLite/HTTP integration
+        run: node scripts/observatory-evidence.mjs
+      - name: Compare optimized compiler with frozen original
+        run: node scripts/observatory-parity.mjs
+      - name: Confirm selected tests reject injected regressions
+        run: node scripts/observatory-mutations.mjs
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - name: Inspect local infographic with real browser and metadata
+        run: npx playwright test --config playwright.usage.config.mjs
+      - name: Package tracked source, offline viewer, reports and documentation
+        run: node scripts/observatory-package.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: BBrainX-Token-Observatory
+          path: |
+            artifacts/observatory/
+            test-results/
+          retention-days: 30
