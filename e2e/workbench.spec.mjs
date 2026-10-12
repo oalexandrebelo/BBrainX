@@ -13,7 +13,7 @@ test('architecture explorer, real context, checkpoint and mobile layout',async({
  await page.getByRole('button',{name:'Percorrer fluxo'}).click();await expect(page.locator('.inspector h2')).toHaveText('Seu harness');
  fs.mkdirSync('artifacts',{recursive:true});await page.screenshot({path:'artifacts/bbrainx-architecture-desktop.png',fullPage:true});
  await page.getByRole('button',{name:'Mapa do estudo',exact:true}).click();
- await expect(page.locator('.tool-node')).toHaveCount(37);await expect(page.locator('.situation-node')).toHaveCount(5);
+ await expect(page.locator('.tool-node')).toHaveCount(36);await expect(page.locator('.tool-node',{hasText:'AB-BBX'})).toHaveCount(1);await expect(page.locator('.situation-node')).toHaveCount(5);
  await expect(page.locator('.inspector h2')).toHaveText('Busca em dois estágios, pt → en');
  await page.locator('.tool-node',{hasText:'Laya 0.3.26'}).click();
  await expect(page.locator('.inspector h2')).toHaveText('Laya 0.3.26');await expect(page.locator('.inspector')).toContainText('Apache-2.0');await expect(page.locator('.inspector code.activate')).toHaveText('node bin/bbrainx.mjs laya install');
