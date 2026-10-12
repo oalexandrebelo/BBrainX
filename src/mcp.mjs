@@ -12,7 +12,7 @@ export { MAX_ICON_BYTES } from './mcp-presentation.mjs';
  *  - moderna (2026-07-28): sem handshake; cada requisição traz versão e capacidades do cliente em `_meta`;
  *  - legada (2025-11-25 e anteriores): sessão aberta por `initialize`.
  * Não usa o SDK oficial em execução; o cliente oficial continua nos testes como prova de interoperabilidade.
- * A publicação das capacidades como ferramentas segue o modelo do adaptador MCP do Invokta 0.9 (MIT).
+ * A publicação das capacidades AB-BBX como ferramentas mantém os contratos MCP e as atribuições históricas.
  */
 export const MODERN_VERSIONS=Object.freeze(['2026-07-28']);
 export const LEGACY_VERSIONS=Object.freeze(['2025-11-25','2025-06-18','2025-03-26','2024-11-05']);

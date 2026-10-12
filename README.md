@@ -4,6 +4,14 @@
 
 <p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: consulte a execução e a revisão testada" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Começar</a> · <a href="docs/STUDY_MAP.md">Mapa do estudo</a> · <a href="docs/DOSSIER.md">Dossiê</a> · <a href="docs/SECURITY_MODEL.md">Segurança</a> · <a href="docs/EVALUATION.md">Avaliação</a> · <a href="README.en.md">English</a></p>
 
+## AB-BBX e aplicação no DoneFitt
+
+O BBrainX nasceu para acelerar e otimizar projetos reais e foi compartilhado para permitir continuidade entre ferramentas e agentes. **AB-BBX** é a camada própria de execução de capacidades: validação, autorização, cancelamento, prazos e contratos MCP. A entrada pública é `src/ab-bbx.mjs`; o caminho anterior conserva compatibilidade. Não há dependência de um motor externo de ações no runtime.
+
+O refinamento orientado ao DoneFitt prioriza a busca na worktree correta, reindexação contínua e checkpoints úteis. Execute `node bin/bbrainx.mjs watch --project ID` em um processo separado; use `--lane ID` para uma lane já registrada. A cada ciclo, o processo reconcilia arquivos novos, alterações, remoções e regras Git. Não instala serviço nem modifica hooks. O intervalo padrão é 30 segundos **após** o término da varredura; não é uma garantia de atraso máximo.
+
+[Operação AB-BBX, limites e critérios de produto](docs/AB_BBX.md). Busca lexical e checkpoints são ferramentas de desenvolvimento; não integram o runtime do aplicativo nem certificam seu lançamento.
+
 ## O que é
 
 O BBrainX roda na sua máquina e entrega ao agente de programação o que ele precisa para continuar uma tarefa: os trechos certos do repositório, o checkpoint da sessão anterior e as memórias que você aprovou. Fala MCP. Não usa modelo, conta, Docker nem Python no núcleo e não faz chamadas de rede de saída.
@@ -159,7 +167,7 @@ Projeto de Alexandre Belo (**AB**), desenvolvido com assistência de IA e revis�
 
 Para assumir a próxima contribuição, comece pelo [contexto de engenharia](docs/engineering/CONTINUITY.md), execute `npm run project:status` e escolha um item da [fila com critérios de aceite](docs/engineering/ROADMAP.md). O [livro de experimentos](docs/engineering/PERFORMANCE.md) distingue ganhos medidos, custos e tentativas descartadas.
 
-O código original do BBrainX é MIT. O contrato do motor segue o modelo do Invokta, cujo aviso MIT completo está em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). O perfil Laya e o Remotion mantêm seus próprios termos e não fazem parte do núcleo. Nomes, marcas, bibliotecas e referências mantêm seus direitos.
+O código original do BBrainX é MIT. O motor de capacidades AB-BBX é próprio. As atribuições históricas e os avisos completos estão em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). O perfil Laya e o Remotion mantêm seus próprios termos e não fazem parte do núcleo. Nomes, marcas, bibliotecas e referências mantêm seus direitos.
 
 <!-- verified-preview -->
 ## Interface

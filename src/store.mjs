@@ -33,7 +33,7 @@ const SCHEMA_V1_HASH = '5e4aaf7f64696418b88d9a77f457a74a3c2c82a301f2359800d83c4f
 export const V1_BACKUP = 'brain.v1-backup.sqlite';
 
 const statuses = ['in_progress','paused','blocked','review_needed'];
-const lists = {done:[40,600], decisions:[40,600], blockers:[20,600]};
+const lists = {done:[40,2000], decisions:[40,2000], blockers:[20,2000]};
 const declaredFields = new Set(['objective','nextAction','snapshot','status','done','decisions','blockers','filesTouched','evidence']);
 function relativePath(value) {
   ensure(typeof value === 'string' && value.length > 0 && value.length <= 400 && !value.includes('\0') && !path.isAbsolute(value) && !/^[A-Za-z]:/.test(value), 'INVALID_CHECKPOINT', 'filesTouched aceita só caminhos relativos à raiz do projeto.');

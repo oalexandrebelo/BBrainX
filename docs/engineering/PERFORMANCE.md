@@ -65,3 +65,9 @@ Próxima ação concreta: o corpo servido é um trecho inteiro de 60 linhas e s�
 ## Fontes e validade
 
 [SQLite isolation](https://sqlite.org/isolation.html) e [transactions](https://sqlite.org/lang_transaction.html) fundamentam leitura de estado comprometido e arbitragem do escritor; não tornam uma sequência de várias conexões uma transação única. [Node child_process](https://nodejs.org/api/child_process.html) documenta o bloqueio das chamadas síncronas; [perf_hooks](https://nodejs.org/api/perf_hooks.html) fornece o relógio usado. Consultadas em 07/10/2026. A decisão depende da imutabilidade das respostas de idempotência na API atual; retenção/pruning futuros precisam reavaliar esse contrato.
+
+## AB-BBX — frescor operacional, 12/10/2026
+
+Hipótese: índice reconciliado na worktree correta remove uma causa de baixa adoção, sem alegar melhoria do ranking. Baseline `e3977cc`: busca persistente e reindexação explícita. Candidato: processo CLI periódico, intervalo após conclusão, mesmo indexador e mesmas exclusões; custo O(bytes) por ciclo. Alternativa rejeitada nesta fatia: depender apenas de eventos do filesystem, que não garantem reconciliação após perda de eventos. Não se adicionou cache/LLM/serviço distribuído.
+
+Fixture causal: criar marcador, executar ciclo, remover arquivo/criar novo marcador, executar segundo ciclo e pesquisar; repetir escopo por lane. `node --test test/ab-bbx.test.mjs test/engine.test.mjs test/checkpoint-replay.test.mjs`: 25/25. `npm test`: 740/740; `npm run build`: passou. Ambiente Linux/Node 24.19.0. Esses resultados provam comportamento na fixture, não tempo economizado no DoneFitt. [Operação, falhas e próximas medições](../AB_BBX.md).

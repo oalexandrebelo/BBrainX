@@ -9,7 +9,7 @@ import { clientConfig, CLIENTS } from '../src/clients.mjs';
 import { VERSION } from '../src/version.mjs';
 
 // Argument errors are a short JSON line on stderr like every other failure: stdout is reserved for the MCP protocol and results.
-const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
+const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{interval:{type:'string'},project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
 const {values={},args=[]}=parsedArgs;
 const command=args[0]||'help';let store;
 const print=value=>console.log(JSON.stringify(value,null,2));
@@ -24,7 +24,8 @@ Começar (registra a pasta, indexa e mostra como ligar ao seu harness):
   node bin/bbrainx.mjs config --project nome --client ${CLIENTS.join('|')}
 
 Contexto e busca:
-  node bin/bbrainx.mjs index --project nome
+  node bin/bbrainx.mjs watch --project nome [--lane ID] [--interval 30000]
+  node bin/bbrainx.mjs index --project nome [--lane ID]
   node bin/bbrainx.mjs search --project nome --query "onde a sessão é validada" [--budget 4000]
   node bin/bbrainx.mjs context --project nome --query "validação de sessão" --budget 4000 [--task T1] [--strict]
 
@@ -108,7 +109,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
     else throw new Error('Use: laya status | install | ask | decide | remove');
   }
   else {
-    if(command==='mcp'&&values.lane){const {LaneStore}=await import('../src/lanes/store.mjs');store=new LaneStore(stateHome(),values.project,values.lane);}
+    if(['mcp','index','search','context','watch'].includes(command)&&values.lane){const {LaneStore}=await import('../src/lanes/store.mjs');store=new LaneStore(stateHome(),values.project,values.lane);}
     else {const {BrainStore}=await import('../src/store.mjs');store=new BrainStore();}
     if(command==='init'){ensure(values.root&&values.project,'ROOT_AND_PROJECT_REQUIRED');print(store.register(values.project,values.root));}
     else if(command==='up'){
@@ -127,6 +128,14 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       const fixture={ 'README.md':'# Nebula demo\nAutenticação exige sessão válida. Dados permanecem locais.\n', 'session.ts':'export function hasSession(token: string | null): boolean {\n  return Boolean(token && token.length > 0);\n}\n', 'ARCHITECTURE.md':'# Decisão aprovada para demonstração\nUsar checkpoints versionados. Nenhum agente aprova a própria hipótese.\n'};
       for(const [name,content]of Object.entries(fixture))if(!fs.existsSync(path.join(root,name)))fs.writeFileSync(path.join(root,name),content);
       store.register('demo',root);const {indexProject}=await import('../src/retrieval.mjs');print(indexProject(store,'demo'));
+    }
+    else if(command==='watch'){
+      ensure(values.project,'PROJECT_REQUIRED');
+      const {watchIndex}=await import('../src/index-watch.mjs');
+      const stop=new AbortController(), end=()=>stop.abort();
+      process.once('SIGINT',end);process.once('SIGTERM',end);
+      try{await watchIndex(store,values.project,{intervalMs:Number(values.interval||30000),signal:stop.signal,onCycle:print});}
+      finally{process.removeListener('SIGINT',end);process.removeListener('SIGTERM',end);}
     }
     else if(command==='index'){const {indexProject}=await import('../src/retrieval.mjs');print(indexProject(store,values.project));}
     else if(command==='search'){const {search}=await import('../src/retrieval.mjs'),{fitSearch}=await import('../src/context.mjs');print(fitSearch(search(store,values.project,values.query),values.budget===undefined?undefined:Number(values.budget)));}

@@ -4,6 +4,10 @@
 
 <p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: see the run and the tested revision" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Quickstart (pt-BR)</a> · <a href="docs/STUDY_MAP.md">Study map</a> · <a href="docs/DOSSIER.md">Research dossier</a> · <a href="docs/SECURITY_MODEL.md">Security</a> · <a href="docs/EVALUATION.md">Evaluation</a> · <a href="README.md">Português</a></p>
 
+## AB-BBX
+
+BBrainX was built to accelerate real project work and shared to make verified continuity portable across coding agents. AB-BBX is its own capability execution core (`src/ab-bbx.mjs`), with a compatible legacy entrypoint. Run `node bin/bbrainx.mjs watch --project ID` in a separate process to periodically reconcile an index; add `--lane ID` for a registered workspace lane. This does not install a service or alter harness configuration. [Operating contract and limitations](docs/AB_BBX.md).
+
 ## What it is
 
 BBrainX runs on your machine and gives a coding agent what it needs to continue a task: the right excerpts of the repository, the checkpoint of the previous session and the memories you approved. It speaks MCP. The core uses no model, account, Docker or Python and makes no outbound network calls.
@@ -159,7 +163,7 @@ Project by Alexandre Belo (**AB**), built with AI assistance and evidence-driven
 
 To take the next contribution, start with the [engineering context](docs/engineering/CONTINUITY.md), run `npm run project:status` and pick an item from the [queue with acceptance criteria](docs/engineering/ROADMAP.md). The [experiment ledger](docs/engineering/PERFORMANCE.md) separates measured gains, costs and discarded attempts.
 
-Original BBrainX code is MIT. The engine contract follows Invokta, whose full MIT notice is in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The Laya profile and Remotion keep their own terms and are not part of the core. Names, marks, libraries and references keep their rights.
+Original BBrainX code is MIT. AB-BBX is the project-owned capability engine. Historical attributions and full notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The Laya profile and Remotion keep their own terms and are not part of the core. Names, marks, libraries and references keep their rights.
 
 <!-- verified-preview -->
 ## Interface

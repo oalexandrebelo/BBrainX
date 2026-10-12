@@ -1,5 +1,7 @@
 # Ponto de retomada da engenharia
 
+Refinamento 12/10/2026 sobre `e3977cc`: [AB-BBX](../AB_BBX.md), entrypoint próprio, watcher CLI por projeto/lane e notas de checkpoint até 2.000 caracteres. 740 testes e build locais passaram no Node 24.19.0/Linux. Ativação no host consumidor e medição de tarefas continuam pendentes. REA executado com falha ambiental documentada.
+
 Entrega atual: **1.5.0 Developer Preview** (tag `v1.5.0-preview`); números e oportunidades em [HOMOLOGACAO_2026-10-10.md](../HOMOLOGACAO_2026-10-10.md).
 
 Entrega anterior (histórico): backend SDD `2de3540`, painel/documentação `f48cdccea3bd856ea7364d06376c56da920c02ac`, [PR #17](https://github.com/oalexandrebelo/BBrainX/pull/17), branch `feat/sdd-alignment-2026-10-08`. A [CI de f48cdcc](https://github.com/oalexandrebelo/BBrainX/actions/runs/37740626008) passou os nove jobs de validação. A PR está empilhada sobre a [PR #16](https://github.com/oalexandrebelo/BBrainX/pull/16) Laya, cuja [CI de 971390a](https://github.com/oalexandrebelo/BBrainX/actions/runs/37738784634) também passou. Conferir a ponta remota antes de integrar; commits posteriores de documentação têm CI própria.

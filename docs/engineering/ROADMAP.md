@@ -25,3 +25,7 @@ O [norte de otimização](OPTIMIZATION_NORTH.md) define como começar EV-05 e os
 Para promover um item: indicar revisão-base, hipótese, arquivos, teste que demonstrará a falha ou custo, comando reproduzível e rollback. Para concluir: apontar commit/PR/CI e resultado observado, incluindo limites. Bloqueio deve nomear dependência concreta; outro colaborador pode assumir a próxima ação sem reconstruir o chat. Não usar contagem de commits, linhas, ferramentas ou agentes como proxy de valor entregue.
 
 Os itens EV-05 e EV-07 antecedem qualquer promessa comercial de economia ou recuperação garantida. EV-12 facilita instalação, retomada e observação; não conclui esses gates nem mede vantagem de produto automaticamente. A continuidade técnica não exige escolher antecipadamente entre licenciar o produto e vendê-lo a outra empresa.
+
+## AB-BBX — refinamento orientado ao consumidor (12/10/2026)
+
+Entregue em branch: motor próprio com entrypoint compatível, reindexação periódica CLI por projeto/lane e notas de checkpoint ampliadas sob teto existente. Evidência e limites: [AB_BBX.md](../AB_BBX.md). Pendente: ativar watcher no host consumidor, medir tarefas equivalentes e concluir análise REA em host compatível. Não substitui os gates EV-05/06/07 de produto.

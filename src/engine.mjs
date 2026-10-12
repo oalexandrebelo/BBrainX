@@ -1,4 +1,4 @@
-import { createEngine, defineCapability } from './capability.mjs';
+import { createEngine, defineCapability } from './ab-bbx.mjs';
 import { z } from 'zod';
 import { indexProject, search } from './retrieval.mjs';
 import { compileContext, fitSearch } from './context.mjs';
@@ -15,7 +15,7 @@ const notes=(max,each)=>z.array(z.string().min(1).max(each)).max(max).optional()
 const checkpointContent=z.object({
   objective:z.string().min(1).max(4000),nextAction:z.string().min(1).max(4000),
   status:z.enum(['in_progress','paused','blocked','review_needed']),snapshot:z.string().length(64).optional(),
-  done:notes(40,600),decisions:notes(40,600),blockers:notes(20,600),filesTouched:z.array(z.string().min(1).max(400)).max(300).optional(),
+  done:notes(40,2000),decisions:notes(40,2000),blockers:notes(20,2000),filesTouched:z.array(z.string().min(1).max(400)).max(300).optional(),
   evidence:z.array(z.object({command:z.string().min(1).max(600),result:z.string().min(1).max(600)}).strict()).max(40).optional()
 }).strict();
 /** A allowlist é fornecida pelo host, nunca por argumentos de uma ferramenta. */

@@ -59,9 +59,9 @@ Pan e colaboradores estudam compressão extrativa por classificação de tokens,
 
 Esperamos que checkpoints reduzam reconstrução e que um índice persistente reduza reprocessamento. Essas são hipóteses a medir, não resultados de papers. O script sintético mede comportamento local; a avaliação com tarefas reais, agentes autenticados e aceitação humana permanece uma etapa distinta. [EVALUATION.md](EVALUATION.md)
 
-## 4. Por que o Invokta é o modelo do motor de ações
+## 4. AB-BBX: motor próprio de ações
 
-A documentação do Invokta separa contrato e execução das dependências de CLI, MCP e aplicação. Até a 0.3 o BBrainX usava os pacotes dele; desde a 0.4 o motor de capacidades e o servidor MCP são código próprio, que segue o mesmo contrato (`defineCapability`, `createEngine`, esquemas pelo protocolo Standard Schema) e acrescenta o que faltava: prazo distinto de cancelamento, as duas eras do protocolo MCP e limite de chamadas. O motor valida fronteiras; o domínio controla persistência, permissões locais, idempotência e significado das ações. [T1][T2]
+AB-BBX (`src/ab-bbx.mjs`) separa contratos de execução dos adaptadores CLI e MCP. Validação de entrada, autorização, deadline, execução e validação de saída passam pelo mesmo motor. Persistência, permissões locais, idempotência e significado das ações continuam no domínio. O entrypoint anterior reexporta as mesmas identidades para preservar compatibilidade. Atribuições e evolução histórica estão em THIRD_PARTY_NOTICES.md e nas notas de versão.
 
 Um framework de ações não é banco de memória. Um callback de eventos não é outbox transacional. Um timeout não desfaz um efeito externo. Por isso, as ações do BBrainX são estreitas: indexar fontes autorizadas, pesquisar, compilar contexto, ler/gravar checkpoint e propor memória. Não há comando arbitrário de execução.
 
@@ -191,7 +191,7 @@ A análise de viabilidade das integrações externas, com o contrato do Decision
 
 A 0.3 achava a definição de um nome, mas errava a pergunta em linguagem natural: em 79 perguntas cegas sobre dois repositórios de terceiros, o arquivo certo só aparecia entre os 10 primeiros em 54 % das vezes. A 0.4 leva esse número a 84 % com três mudanças determinísticas na busca: tirar palavras vazias, casar por radical e usar um glossário de programação português → inglês. Nenhuma usa modelo.
 
-O motor de capacidades e o servidor MCP passaram a ser código próprio, com o Invokta como modelo. O servidor atende a revisão corrente do protocolo, que não tem handshake, e as anteriores no mesmo processo. Uma queda real foi encontrada e corrigida no caminho: chamada e cancelamento no mesmo bloco de leitura derrubavam o processo.
+O motor de capacidades AB-BBX e o servidor MCP são código próprio. O servidor atende a revisão corrente do protocolo, que não tem handshake, e as anteriores no mesmo processo. Uma queda real foi encontrada e corrigida no caminho: chamada e cancelamento no mesmo bloco de leitura derrubavam o processo.
 
 O Laya foi instalado e medido neste Mac. Sem ajuste fino ele acerta menos que o caminho lexical, então virou um perfil instalável que serve para perguntar e medir, sem alterar o pacote. A busca vetorial também foi medida antes de ser construída, e o resultado não fechou.
 
