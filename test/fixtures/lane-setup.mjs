@@ -1,3 +1,4 @@
+import {cleanup} from './cleanup.mjs';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import {execFileSync} from 'node:child_process';
 import {BrainStore} from '../../src/store.mjs';import {LaneRegistry} from '../../src/lanes/registry.mjs';
 export const git=(cwd,...args)=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','-c','user.name=Test','-c','user.email=test@example.invalid','-C',cwd,...args],{encoding:'utf8',timeout:10000,stdio:['ignore','pipe','pipe']});
@@ -11,6 +12,8 @@ export function laneFixture(t,{register=true}={}){
   fs.writeFileSync(path.join(beta,'feature.ts'),'export const workspaceMarker = "BETA_MARKER";\n');
   const authority=new BrainStore(home),registry=new LaneRegistry(home);authority.register('product',primary);
   if(register){registry.register(authority,'product','alpha',alpha);registry.register(authority,'product','beta',beta);}
-  t.after(()=>{registry.close();authority.close();fs.rmSync(root,{recursive:true,force:true});});
+  const defer=cleanup(t);
+  defer(()=>fs.rmSync(root,{recursive:true,force:true}));
+  defer(()=>authority.close());defer(()=>registry.close());
   return {root,primary,alpha,beta,home,authority,registry};
 }

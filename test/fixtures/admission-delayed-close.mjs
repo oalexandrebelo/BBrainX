@@ -2,7 +2,9 @@
 // Nenhum modelo é executado. O filho termina sozinho; não há sinal por PID recuperado.
 import { spawn } from 'node:child_process';
 import readline from 'node:readline';
-spawn(process.execPath, ['-e', 'setTimeout(() => {}, 1200)'], { stdio: ['ignore', process.stdout, 'ignore'] });
+import { once } from 'node:events';
+const child=spawn(process.execPath, ['-e', "process.send('ready');process.disconnect();setTimeout(() => {}, 1200)"], { stdio: ['ignore', 1, 'ignore', 'ipc'] });
+await once(child,'message');
 const send = m => process.stdout.write(JSON.stringify(m) + '\n');
 send({ op: 'ready', ok: true, laya: 'transport-failure-only', torch: 'none', device: 'none', loadMs: 0 });
 for await (const line of readline.createInterface({ input: process.stdin })) {

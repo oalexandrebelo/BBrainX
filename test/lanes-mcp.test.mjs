@@ -152,9 +152,10 @@ test('a harness burst of parallel tool calls over real MCP stdio completes, none
     assert.deepEqual(mixed.map(r=>r.ok),[true,true,true]);
   }finally{await c?.close();}
 });
-test('same workspace changes are observed on next bootstrap without altering another lane',async t=>{
+test('changed workspace refuses bootstrap until its own lane is refreshed',async t=>{
   const f=laneFixture(t);let a,b;try{[a,b]=await Promise.all([connect(f.home,'alpha'),connect(f.home,'beta')]);await Promise.all([call(a,'context_index',{}),call(b,'context_index',{})]);
     fs.appendFileSync(path.join(f.alpha,'feature.ts'),'\nexport const workspaceMarkerNew = "ONLY_ALPHA_V2";');
+    const stale=await call(a,'context_bootstrap',{query:'workspaceMarker',budget:2000});assert.equal(stale.error,'INDEX_STALE');await call(a,'context_index',{});
     const after=await call(a,'context_bootstrap',{query:'workspaceMarker',budget:2000});assert(after.data.text.includes('ONLY_ALPHA_V2'));const untouched=await call(b,'context_bootstrap',{query:'workspaceMarker',budget:2000});assert(!untouched.data.text.includes('ONLY_ALPHA_V2'));assert(untouched.data.text.includes('BETA_MARKER'));
   }finally{await a?.close();await b?.close();}
 });

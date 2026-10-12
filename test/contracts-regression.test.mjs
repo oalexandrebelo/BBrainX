@@ -95,7 +95,7 @@ test('principal is snapshotted before asynchronous input validation',async()=>{
   await started.promise;principal.id='allowed';finish.release();await assert.rejects(pending,{code:'FORBIDDEN'});
 });
 test('authorization receives the deadline signal but cannot mutate execution identity',async()=>{
-  const engine=make({access:({principal,context})=>{assert(context.signal instanceof AbortSignal);principal.id='mutated';return true;},run:({context})=>({value:context.principal.id})});
+  const engine=make({timeoutMs:2000,access:({principal,context})=>{assert(context.signal instanceof AbortSignal);principal.id='mutated';return true;},run:({context})=>({value:context.principal.id})});
   assert.deepEqual(await engine.invoke('op',{text:'x'},{principal:{id:'host'}}),{value:'host'});
 });
 test('catalog descriptors cannot be changed through a prior caller',()=>{

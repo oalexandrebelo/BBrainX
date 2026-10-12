@@ -38,6 +38,7 @@ test('real engine observation records bounded metadata, domain refusals and life
  await observer.engine.invoke('session.get',{project:'alpha',task:'super-secret-value'},{principal:{id:'test'}});
  await assert.rejects(observer.engine.invoke('session.get',{project:'beta',task:'x'},{principal:{id:'test'}}),{code:'FORBIDDEN'});
  let report=controlOverview(brain,'alpha');assert.equal(report.activity[0].calls,2);assert.equal(report.activity[0].failures,1);assert.equal(report.activity[0].lastError,'FORBIDDEN');assert.ok(!JSON.stringify(report.activity).includes('super-secret-value'));
+ const counters=report.activity[0].capabilities;assert.equal(counters['session.get'].calls,2);assert.equal(counters['session.get'].failures,1);assert.ok(counters['session.get'].totalMs>=counters['session.get'].maxMs);
  assert.deepEqual(controlOverview(brain,'beta').activity,[]);observer.close();assert.equal(controlOverview(brain,'alpha').activity[0].status,'closed');
 });
 test('MCP handshake advertises original brand and marks the connection only when observed',async t=>{
@@ -117,4 +118,16 @@ test('terminal test history is archived recoverably at the active window limit a
  assert.equal(JSON.parse(fs.readFileSync(archive)).id,'run-0');assert.equal(controlOverview(brain,'alpha').runs.length,50);assert.equal(saveTestRun(brain,'alpha',oldest).archived,true);
  assert.throws(()=>saveTestRun(brain,'alpha',{...oldest,status:'failed'}),{code:'CONTROL_RUN_ARCHIVED'});
  saveTestRun(brain,'alpha',{id:'running',project:'alpha',status:'running',startedAt:new Date().toISOString()});assert.throws(()=>archiveTestRun(brain,'alpha','running'),{code:'TEST_RUN_NOT_TERMINAL'});
+});
+
+test('unknown capability names cannot expand metric keys or persist attacker-controlled text',async t=>{
+ const {brain}=fixture(t),observer=observeEngine(makeEngine(brain,['alpha']),brain,{project:'alpha'});
+ try{
+  for(const capability of ['private-unknown-name','__proto__','constructor']){
+   await assert.rejects(observer.engine.invoke(capability,{project:'alpha'},{principal:{id:'host'}}));
+  }
+  const row=controlOverview(brain,'alpha').activity[0];
+  assert.deepEqual(Object.keys(row.capabilities),['unknown']);assert.equal(row.capabilities.unknown.calls,3);assert.equal(row.capabilities.unknown.failures,3);
+  assert(!JSON.stringify(row).includes('private-unknown-name'));
+ }finally{observer.close();}
 });

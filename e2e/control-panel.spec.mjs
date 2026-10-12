@@ -44,3 +44,11 @@ test('resposta atrasada do projeto anterior não substitui o projeto selecionado
  await page.waitForTimeout(150);
  await expect(page.locator('.control-project-meta')).toContainText('demo-second');
 });
+
+
+test('painel apresenta contadores produzidos por uma busca real, sem conteúdo da consulta',async({page})=>{
+ await openControl(page);
+ await page.getByLabel('Projeto',{exact:true}).selectOption('demo-second');
+ await expect(page.locator('.control-capabilities')).toHaveText('Busca: 1 · Contexto: 0 · Checkpoints: 0');
+ await expect(page.locator('.control-list')).not.toContainText('Fixture local de texto');
+});

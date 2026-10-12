@@ -1,4 +1,5 @@
 // Cliente real do ledger. IPC controla interleavings; não simula inferência ou desempenho neural.
+import { setTimeout as delay } from 'node:timers/promises';
 import { SharedAdmission } from '../../src/shared-admission.mjs';
 import { DatabaseSync } from 'node:sqlite';
 import { createHash } from 'node:crypto';
@@ -9,7 +10,7 @@ const send = body => process.send(body);
 try {
   ledger = new SharedAdmission(home, { busyTimeoutMs: 5000 });
   send({ event: 'ready', workerName });
-  process.on('message', message => {
+  process.on('message', async message => {
     try {
       if (message.command === 'acquire') {
         reservation = ledger.acquire({ resource: 'neural', bytes: message.bytes ?? 20, scopeDigest: h(workerName), requestDigest: h('request:' + workerName) });
@@ -25,6 +26,8 @@ try {
       } else if (message.command === 'cycle') {
         let accepted = 0, refused = 0, maximum = 0;
         for (let i = 0; i < message.count; i++) {
+          // Cooperative producers: preserve 800 real operations without one process monopolizing FULL fsync writes.
+          await delay(1 + Number(workerName.split('-').at(-1)) % 5);
           const result = ledger.acquire({ resource: 'neural', bytes: 1, scopeDigest: h(workerName), requestDigest: h(workerName + ':' + i) });
           if (!result.ok) { refused++; continue; }
           accepted++; maximum = Math.max(maximum, ledger.inspect().resources[0].heldSlots);

@@ -75,15 +75,20 @@ test('close fences new calls immediately rather than only after stopping the pro
   await closing; assert.equal(ledger.inspect().resources[0].heldSlots, 0);
 });
 
-test('parent exit with inherited stdout still open preserves unknown until actual close is observed', async t => {
+test('reservation release follows observed close when a descendant inherits stdout', async t => {
   const { ledger, broker } = setup(t), a = broker('b', 'normal', {
     command: [process.execPath, fileURLToPath(new URL('./fixtures/admission-delayed-close.mjs', import.meta.url))],
     shutdownMs: 100, graceMs: 50
   }), b = broker('c');
   assert((await a.decide(['one'], questions)).ok);
-  assert.equal((await a.stop()).released, false);
-  assert.equal(ledger.inspect().reservations[0].state, 'unknown');
-  assert.equal((await b.decide(['two'], questions)).reason, 'SHARED_SLOT_LIMIT');
+  const stopped=await a.stop(), observed=a.stats().transport.processClosedObserved;
+  assert.equal(stopped.released, observed, 'capacity follows close evidence, never an exit code alone');
+  // Windows can close its parent pipe before the descendant exits. POSIX retains the inherited descriptor.
+  if(process.platform!=='win32')assert.equal(observed,false);
+  if(!observed){
+    assert.equal(ledger.inspect().reservations[0].state, 'unknown');
+    assert.equal((await b.decide(['two'], questions)).reason, 'SHARED_SLOT_LIMIT');
+  }else assert.equal(ledger.inspect().resources[0].heldSlots,0);
   // Aguarde o processo real fechar; timeout do teste é guarda, não prova de término.
   const deadline = performance.now() + 5000;
   while (!a.stats().transport.processClosedObserved && performance.now() < deadline) await new Promise(r => setTimeout(r, 10));

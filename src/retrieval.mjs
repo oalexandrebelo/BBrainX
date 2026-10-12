@@ -93,20 +93,9 @@ function replaceFile(store,project,file,content){
 }
 function megabytes(bytes){return (bytes/1048576).toFixed(1)+' MiB';}
 
-// Escrita do índice em lotes curtos: o lock de escrita do banco é segurado só durante os INSERTs de um lote, nunca durante leitura de arquivos.
-const INDEX_BATCH_FILES=250, INDEX_BATCH_BYTES=4*1048576;
-/**
- * Reconcilia o índice com a worktree. Um arquivo por vez: a memória não cresce com o repositório.
- * Arquivo inalterado (mesmo hash) mantém seus trechos. Nada é executado; nada sai da máquina.
- * Duas fases: (1) varredura sem lock de escrita (lê e confere cada arquivo, aplica os tetos; só guarda caminho e hash), de modo que
- * recusas não alteram nada; (2) gravação dos arquivos que mudaram em lotes curtos. Cada lote publica o snapshot calculado sobre o
- * manifesto realmente indexado, então todo estado confirmado tem snapshot coerente com seus arquivos; a remoção dos que sumiram e o
- * snapshot final saem numa última transação. Falha no meio deixa um índice coerente que a próxima chamada completa.
- */
-export function indexProject(store, project, override) {
-  const limits=resolveLimits(override), {root}=store.project(project);
+/** Read-only scan with the same eligibility, limits and secret policy as indexing. */
+function scanProject(root,limits){
   const names=[...new Set(candidates(root,limits).filter(included).map(x=>x.replaceAll('\\','/')))].sort();
-  const previous=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
   const entries=[], skipped=[], skippedByReason={};let totalBytes=0;
   for(const relative of names){
     let file;
@@ -122,6 +111,52 @@ export function indexProject(store, project, override) {
     ensure(totalBytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' (em '+relative+'). Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxBytes+'.');
     entries.push({path:relative,hash:file.hash});
   }
+  return {entries,skipped,skippedByReason,totalBytes};
+}
+
+/** A scan is an observation interval, never an atomic filesystem snapshot. */
+export function inspectIndex(store,project,override){
+  const started=performance.now(), meta=store.project(project), limits=resolveLimits(override);
+  const {entries,skippedByReason,totalBytes}=scanProject(meta.root,limits);
+  const current=new Map(entries.map(x=>[x.path,x.hash]));
+  const indexed=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
+  let added=0,changed=0,removed=0;const paths=[];
+  const record=(file,kind)=>{if(paths.length<25)paths.push({path:file,kind});};
+  for(const [file,digest] of current){
+    if(!indexed.has(file)){added++;record(file,'added');}
+    else if(indexed.get(file)!==digest){changed++;record(file,'changed');}
+  }
+  for(const file of indexed.keys())if(!current.has(file)){removed++;record(file,'removed');}
+  const observedSnapshot=snapshotOf(entries);
+  return {project,root:meta.root,lane:store.binding?.id??null,
+    status:!meta.snapshot?'missing':meta.snapshot===observedSnapshot&&added+changed+removed===0?'current':'stale',
+    indexedSnapshot:meta.snapshot,observedSnapshot,files:entries.length,bytes:totalBytes,
+    changes:{added,changed,removed,paths,truncated:added+changed+removed>paths.length},
+    skippedByReason,observedAt:new Date().toISOString(),durationMs:Math.round(performance.now()-started),
+    consistency:'content-hash-scan-not-atomic'};
+}
+export function requireFreshIndex(store,project){
+  requireIndex(store,project);
+  const report=inspectIndex(store,project);
+  ensure(report.status==='current','INDEX_STALE','Index differs from the registered worktree. Call context_index and retry; CLI: bbrainx index --project '+project+'.');
+  return {status:report.status,observedAt:report.observedAt,consistency:report.consistency,
+    root:report.root,lane:report.lane,snapshot:report.observedSnapshot};
+}
+
+// Escrita do índice em lotes curtos: o lock de escrita do banco é segurado só durante os INSERTs de um lote, nunca durante leitura de arquivos.
+const INDEX_BATCH_FILES=250, INDEX_BATCH_BYTES=4*1048576;
+/**
+ * Reconcilia o índice com a worktree. Um arquivo por vez: a memória não cresce com o repositório.
+ * Arquivo inalterado (mesmo hash) mantém seus trechos. Nada é executado; nada sai da máquina.
+ * Duas fases: (1) varredura sem lock de escrita (lê e confere cada arquivo, aplica os tetos; só guarda caminho e hash), de modo que
+ * recusas não alteram nada; (2) gravação dos arquivos que mudaram em lotes curtos. Cada lote publica o snapshot calculado sobre o
+ * manifesto realmente indexado, então todo estado confirmado tem snapshot coerente com seus arquivos; a remoção dos que sumiram e o
+ * snapshot final saem numa última transação. Falha no meio deixa um índice coerente que a próxima chamada completa.
+ */
+export function indexProject(store, project, override) {
+  const limits=resolveLimits(override), {root}=store.project(project);
+  const {entries,skipped,skippedByReason,totalBytes}=scanProject(root,limits);
+  const previous=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
   const present=new Set(entries.map(x=>x.path)), stale=entries.filter(x=>previous.get(x.path)!==x.hash);
   const publish=()=>{const snapshot=snapshotOf(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project));store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);return snapshot;};
   let changed=0;

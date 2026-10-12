@@ -71,3 +71,8 @@ Próxima ação concreta: o corpo servido é um trecho inteiro de 60 linhas e s�
 Hipótese: índice reconciliado na worktree correta remove uma causa de baixa adoção, sem alegar melhoria do ranking. Baseline `e3977cc`: busca persistente e reindexação explícita. Candidato: processo CLI periódico, intervalo após conclusão, mesmo indexador e mesmas exclusões; custo O(bytes) por ciclo. Alternativa rejeitada nesta fatia: depender apenas de eventos do filesystem, que não garantem reconciliação após perda de eventos. Não se adicionou cache/LLM/serviço distribuído.
 
 Fixture causal: criar marcador, executar ciclo, remover arquivo/criar novo marcador, executar segundo ciclo e pesquisar; repetir escopo por lane. `node --test test/ab-bbx.test.mjs test/engine.test.mjs test/checkpoint-replay.test.mjs`: 25/25. `npm test`: 740/740; `npm run build`: passou. Ambiente Linux/Node 24.19.0. Esses resultados provam comportamento na fixture, não tempo economizado no DoneFitt. [Operação, falhas e próximas medições](../AB_BBX.md).
+
+
+## Custo de frescor — candidata 2.0, 12/10/2026
+
+`node scripts/measure-index-freshness.mjs` alterna 12 pares de busca lexical e busca com varredura integral sobre corpus sintético fixado. Amostras, hash de fonte/manifesto e ambiente em artifacts/engineering/index-freshness.json; execução também na CI. [Resultados e limitações](../BBRAINX_2_0.md#contrato-de-frescor-e-seu-custo). A verificação adiciona I/O e hashing; não é anunciada como speedup. Medição nos Macs físicos, energia e tarefas aceitas continuam pendentes. Próxima otimização deve preservar detecção de novo arquivo, ignore e conteúdo alterado com mesmo tamanho/mtime.

@@ -4,7 +4,9 @@
 
 <p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: see the run and the tested revision" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Quickstart (pt-BR)</a> · <a href="docs/STUDY_MAP.md">Study map</a> · <a href="docs/DOSSIER.md">Research dossier</a> · <a href="docs/SECURITY_MODEL.md">Security</a> · <a href="docs/EVALUATION.md">Evaluation</a> · <a href="README.md">Português</a></p>
 
-## AB-BBX
+## BBrainX 2.0 · AB-BBX
+
+Version 2.0 targets general project work, prioritizing Mac mini and MacBook Pro M5. Public search/context verify worktree hashes and refuse stale indices with `INDEX_STALE`; run `context_index` and retry. `index-status --project ID` provides a read-only diagnosis. The local panel reports search/context/checkpoint counts per session without storing queries. [Release contract and repository review](docs/BBRAINX_2_0.md).
 
 BBrainX was built to accelerate real project work and shared to make verified continuity portable across coding agents. AB-BBX is its own capability execution core (`src/ab-bbx.mjs`), with a compatible legacy entrypoint. Run `node bin/bbrainx.mjs watch --project ID` in a separate process to periodically reconcile an index; add `--lane ID` for a registered workspace lane. This does not install a service or alter harness configuration. [Operating contract and limitations](docs/AB_BBX.md).
 
@@ -19,11 +21,11 @@ BBrainX runs on your machine and gives a coding agent what it needs to continue 
 | VS Code | **Partly verified.** The generated `.vscode/mcp.json` was exercised by an MCP SDK client the way VS Code launches it. Starting it from the VS Code UI is manual |
 | Cursor, Gemini CLI | **Not verified.** Only prints the configuration fragments (`config --client cursor` and `--client gemini`) |
 
-**1.5.0 is a developer preview.** The automated suite has **735 tests** and passed 735/735 on Node 24.21.0 and Node 22.22.2 (macOS arm64) at the published revision. What was not measured is stated as not measured. Most of the documentation is in Brazilian Portuguese. Numbers and next steps: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md) (pt-BR).
+This branch proposes **2.0.0** in the single [PR #22](https://github.com/oalexandrebelo/BBrainX/pull/22). It does not claim installation on the maintainer’s devices. Windows is an observed, nonblocking backlog target. Historical 1.5 evidence remains in [the dated report](docs/HOMOLOGACAO_2026-10-10.md).
 
 ## Start in three commands
 
-Requirements: **Node 24 LTS and Git** (Node 22.20 or newer also works). This phase focuses on macOS (arm64). Linux and Windows are in the CI matrix; the last published report (`docs/validation/ci-report.json`) is from revision 912aa25, with 96 tests per platform, and does not cover 1.5.0.
+Requirements: **Node 24 LTS and Git** (Node 22.20 or newer also works). This phase focuses on macOS (arm64). macOS and Linux are required CI targets. Windows results remain visible but do not block the Mac release. Verify the PR head rather than treating historical reports as current certification.
 
 ```sh
 git clone https://github.com/oalexandrebelo/BBrainX.git && cd BBrainX

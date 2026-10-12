@@ -26,6 +26,18 @@ Para promover um item: indicar revisão-base, hipótese, arquivos, teste que dem
 
 Os itens EV-05 e EV-07 antecedem qualquer promessa comercial de economia ou recuperação garantida. EV-12 facilita instalação, retomada e observação; não conclui esses gates nem mede vantagem de produto automaticamente. A continuidade técnica não exige escolher antecipadamente entre licenciar o produto e vendê-lo a outra empresa.
 
-## AB-BBX — refinamento orientado ao consumidor (12/10/2026)
+## AB-BBX — fechamento 2.0 (12/10/2026)
 
-Entregue em branch: motor próprio com entrypoint compatível, reindexação periódica CLI por projeto/lane e notas de checkpoint ampliadas sob teto existente. Evidência e limites: [AB_BBX.md](../AB_BBX.md). Pendente: ativar watcher no host consumidor, medir tarefas equivalentes e concluir análise REA em host compatível. Não substitui os gates EV-05/06/07 de produto.
+Prioridade de suporte: Mac mini e MacBook Pro M5. [Contrato e revisão dos repositórios](../BBRAINX_2_0.md), única PR #22.
+
+| Item | Estado | Próximo aceite concreto |
+|---|---|---|
+| BBX-20 — frescor e diagnóstico | Implementado na candidata | CI da ponta e recibos nos dois Macs: novo símbolo, remoção, isolamento e retomada MCP. |
+| BBX-21 — observação por capacidade | Implementado na candidata | Painel mostra chamada real; argumentos/resultados ausentes do registro; sessão antiga não vira zero inventado. |
+| BBX-22 — instalação nos Macs | Pendente de acesso aos hosts | SHA fixado, Node/estado preservados, smoke MCP nativo, watcher único e rollback observado. |
+| BBX-23 — AST/impacto | Pesquisa priorizada após EV-05/06 | Avaliar codebase-memory-mcp como sidecar opt-in, corpus congelado, isolamento, custo e saída com proveniência. |
+| BBX-24 — handoff interoperável | Backlog | Contrato versionado inspirado na inspeção Dotcontext; origem/limites/revogação, sem segunda autoridade de memória. |
+| BBX-25 — Windows | Backlog explícito, não bloqueia release Mac | Reproduzir CI Windows: encerramento SQLite, contenção e lifecycle de pipes; corrigir e só depois restaurar gate obrigatório. |
+| BBX-26 — auditoria REA completa | Bloqueio ambiental registrado | Host compatível com ownership de processos; análise completa e cobertura explícita. |
+
+EV-05/06/07 continuam requisitos de evidência para ganhos de produto, trabalho síncrono e recuperação integral. Não confundir versão 2.0 proposta com esses gates já concluídos. Roteamento Jev e personas de agency-agents não entram no runtime por mera disponibilidade.

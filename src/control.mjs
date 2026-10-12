@@ -78,7 +78,7 @@ function recorder(engine,brain,{project,harness='unknown',workspace,lane=null,cl
     const old=snapshot.items.filter(x=>x.status==='closed'||clock()-Date.parse(x.lastSeen)>LEASE_MS).sort((a,b)=>Date.parse(a.lastSeen)-Date.parse(b.lastSeen))[0];
     ensure(old&&typeof old.id==='string','CONTROL_SESSION_QUOTA');identifier(old.id);fs.unlinkSync(path.join(dir,old.id+'.json'));
   }
-  const state={id,project,harness,workspace,lane,status:'starting',startedAt:stamp(),lastSeen:stamp(),calls:0,failures:0,lastError:null,lastCapability:null};
+  const state={id,project,harness,workspace,lane,status:'starting',startedAt:stamp(),lastSeen:stamp(),calls:0,failures:0,lastError:null,lastCapability:null,capabilities:{}};
   let closed=false,writeError=null;
   const flush=()=>{if(closed)return;state.lastSeen=new Date(clock()).toISOString();try{write(dir,id,state);writeError=null;}catch(e){writeError=e.code||'CONTROL_WRITE_FAILED';}};
   write(dir,id,state);
@@ -86,9 +86,11 @@ function recorder(engine,brain,{project,harness='unknown',workspace,lane=null,cl
   const heartbeat=setInterval(flush,15000);heartbeat.unref();
   return {engine:{...engine,async invoke(capability,args,options){
     state.status='connected';state.calls++;state.lastCapability=capabilityIds.has(capability)?capability:'unknown';
-    try{const result=await engine.invoke(capability,args,options);if(result?.ok===false){state.failures++;state.lastError=/^[A-Z0-9_]{1,80}$/.test(result.error)?result.error:'DOMAIN_REFUSAL';}return result;}
-    catch(e){state.failures++;state.lastError=observationError(e,'EXECUTION_FAILED');throw e;}
-    finally{flush();}
+    const started=performance.now(), key=state.lastCapability;
+    const counter=state.capabilities[key]??={calls:0,failures:0,totalMs:0,maxMs:0};counter.calls++;
+    try{const result=await engine.invoke(capability,args,options);if(result?.ok===false){counter.failures++;state.failures++;state.lastError=/^[A-Z0-9_]{1,80}$/.test(result.error)?result.error:'DOMAIN_REFUSAL';}return result;}
+    catch(e){counter.failures++;state.failures++;state.lastError=observationError(e,'EXECUTION_FAILED');throw e;}
+    finally{const elapsed=Math.max(0,Math.round(performance.now()-started));counter.totalMs+=elapsed;counter.maxMs=Math.max(counter.maxMs,elapsed);flush();}
   }},connected(){if(state.status!=='connected'){state.status='connected';flush();}},get recordingError(){return writeError;},close(){if(closed)return;state.status='closed';flush();closed=true;clearInterval(heartbeat);}};
 }
 

@@ -4,13 +4,13 @@
 
 <p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: consulte a execução e a revisão testada" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Começar</a> · <a href="docs/STUDY_MAP.md">Mapa do estudo</a> · <a href="docs/DOSSIER.md">Dossiê</a> · <a href="docs/SECURITY_MODEL.md">Segurança</a> · <a href="docs/EVALUATION.md">Avaliação</a> · <a href="README.en.md">English</a></p>
 
-## AB-BBX e aplicação no DoneFitt
+## BBrainX 2.0 · AB-BBX
 
 O BBrainX nasceu para acelerar e otimizar projetos reais e foi compartilhado para permitir continuidade entre ferramentas e agentes. **AB-BBX** é a camada própria de execução de capacidades: validação, autorização, cancelamento, prazos e contratos MCP. A entrada pública é `src/ab-bbx.mjs`; o caminho anterior conserva compatibilidade. Não há dependência de um motor externo de ações no runtime.
 
-O refinamento orientado ao DoneFitt prioriza a busca na worktree correta, reindexação contínua e checkpoints úteis. Execute `node bin/bbrainx.mjs watch --project ID` em um processo separado; use `--lane ID` para uma lane já registrada. A cada ciclo, o processo reconcilia arquivos novos, alterações, remoções e regras Git. Não instala serviço nem modifica hooks. O intervalo padrão é 30 segundos **após** o término da varredura; não é uma garantia de atraso máximo.
+A versão 2.0 atende projetos distintos, com prioridade para Mac mini e MacBook Pro M5. Busca e contexto verificam o corpus antes de responder: `INDEX_STALE` pede reindexação explícita, incluindo arquivos novos que a busca antiga não encontraria. `index-status --project ID` diagnostica sem alterar o índice. O painel mostra buscas, contextos e checkpoints por sessão, sem registrar consultas. Execute `node bin/bbrainx.mjs watch --project ID` em um processo separado; use `--lane ID` para uma lane já registrada. A cada ciclo, o processo reconcilia arquivos novos, alterações, remoções e regras Git. Não instala serviço nem modifica hooks. O intervalo padrão é 30 segundos **após** o término da varredura; não é uma garantia de atraso máximo.
 
-[Operação AB-BBX, limites e critérios de produto](docs/AB_BBX.md). Busca lexical e checkpoints são ferramentas de desenvolvimento; não integram o runtime do aplicativo nem certificam seu lançamento.
+[Contrato da 2.0, revisão dos repositórios e aceite nos Macs](docs/BBRAINX_2_0.md) · [Operação AB-BBX](docs/AB_BBX.md). Busca lexical e checkpoints são ferramentas de desenvolvimento; não integram o runtime do aplicativo nem certificam seu lançamento.
 
 ## O que é
 
@@ -23,11 +23,11 @@ O BBrainX roda na sua máquina e entrega ao agente de programação o que ele pr
 | VS Code | **Verificado em parte.** O `.vscode/mcp.json` gerado foi exercitado por um cliente do SDK MCP, do jeito que o VS Code o inicia. O início pela interface do VS Code é manual |
 | Cursor, Gemini CLI | **Não verificado.** Só imprime os fragmentos de configuração (`config --client cursor` e `--client gemini`) |
 
-A versão **1.5.0 é uma prévia de desenvolvimento** (Developer Preview). A suíte automatizada tem **735 testes** e passou 735/735 no Node 24.21.0 e no Node 22.22.2 (macOS arm64) na revisão publicada. O que não foi medido está dito como não medido. Números e próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
+Esta branch propõe a **2.0.0** na única [PR #22](https://github.com/oalexandrebelo/BBrainX/pull/22). Versão declarada não significa atualização já instalada nos dispositivos. Windows fica no backlog por decisão do mantenedor; suas falhas continuam visíveis e não bloqueiam a entrega para Mac. Evidências históricas da 1.5.0: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
 
 ## Comece em três comandos
 
-Requisitos: **Node 24 LTS e Git** (Node 22.20 ou mais novo também atende). O foco desta fase é o macOS (arm64). Linux e Windows estão na matriz da CI; o último relatório publicado (`docs/validation/ci-report.json`) é da revisão 912aa25, com 96 testes por plataforma, e não cobre a 1.5.0.
+Requisitos: **Node 24 LTS e Git** (Node 22.20 ou mais novo também atende). O foco desta fase é o macOS (arm64). macOS e Linux continuam obrigatórios na CI. Windows é observação de backlog. Confira a revisão da PR e o [contrato de entrega](docs/BBRAINX_2_0.md); relatórios anteriores não certificam esta versão.
 
 ```sh
 git clone https://github.com/oalexandrebelo/BBrainX.git && cd BBrainX

@@ -1,4 +1,5 @@
 import test from 'node:test';
+import {cleanup} from './fixtures/cleanup.mjs';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import { fork } from 'node:child_process';
@@ -14,7 +15,7 @@ const cp = { objective: 'Work', nextAction: 'review', status: 'review_needed' };
 const laneDb = (f, lane) => path.join(f.registry.stateDirectory('product', lane), 'brain.sqlite');
 function child(t, name, args) {
   const c = fork(fixture(name), args, { stdio: ['ignore', 'ignore', 'pipe', 'ipc'] });
-  c.stderr.on('data', () => {}); t.after(() => { if (c.exitCode === null) c.kill(); });
+  c.stderr.on('data', () => {}); cleanup(t)(async () => { if (c.exitCode === null && c.signalCode === null) { const closed=once(c,'close');c.kill();await closed; } });
   const messages = []; c.on('message', m => messages.push(m));
   const next = (match, ms = 15000) => new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('child message timeout')), ms), look = () => {
@@ -23,7 +24,7 @@ function child(t, name, args) {
   });
   return { c, next };
 }
-function openLane(f, lane, t) { const s = new LaneStore(f.home, 'product', lane); s.beginOperation(); indexProject(s, 'product'); t.after(() => { try { s.close(); } catch { /* closed by the test */ } }); return s; }
+function openLane(f, lane, t) { const s = new LaneStore(f.home, 'product', lane); s.beginOperation(); indexProject(s, 'product'); cleanup(t)(() => { try { s.close(); } catch { /* closed by the test */ } }); return s; }
 const rows = (store, table) => store.db.prepare('SELECT count(*) AS n FROM ' + table).get().n;
 
 // A lane writer that has to wait for its own lane database (a big index in another process) must not hold the shared locks

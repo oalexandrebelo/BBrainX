@@ -24,6 +24,7 @@ Começar (registra a pasta, indexa e mostra como ligar ao seu harness):
   node bin/bbrainx.mjs config --project nome --client ${CLIENTS.join('|')}
 
 Contexto e busca:
+  node bin/bbrainx.mjs index-status --project nome [--lane ID]
   node bin/bbrainx.mjs watch --project nome [--lane ID] [--interval 30000]
   node bin/bbrainx.mjs index --project nome [--lane ID]
   node bin/bbrainx.mjs search --project nome --query "onde a sessão é validada" [--budget 4000]
@@ -109,7 +110,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
     else throw new Error('Use: laya status | install | ask | decide | remove');
   }
   else {
-    if(['mcp','index','search','context','watch'].includes(command)&&values.lane){const {LaneStore}=await import('../src/lanes/store.mjs');store=new LaneStore(stateHome(),values.project,values.lane);}
+    if(['mcp','index','index-status','search','context','watch'].includes(command)&&values.lane){const {LaneStore}=await import('../src/lanes/store.mjs');store=new LaneStore(stateHome(),values.project,values.lane);}
     else {const {BrainStore}=await import('../src/store.mjs');store=new BrainStore();}
     if(command==='init'){ensure(values.root&&values.project,'ROOT_AND_PROJECT_REQUIRED');print(store.register(values.project,values.root));}
     else if(command==='up'){
@@ -137,9 +138,10 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       try{await watchIndex(store,values.project,{intervalMs:Number(values.interval||30000),signal:stop.signal,onCycle:print});}
       finally{process.removeListener('SIGINT',end);process.removeListener('SIGTERM',end);}
     }
+    else if(command==='index-status'){const {inspectIndex}=await import('../src/retrieval.mjs');const result=inspectIndex(store,values.project);print(result);if(result.status!=='current')process.exitCode=2;}
     else if(command==='index'){const {indexProject}=await import('../src/retrieval.mjs');print(indexProject(store,values.project));}
-    else if(command==='search'){const {search}=await import('../src/retrieval.mjs'),{fitSearch}=await import('../src/context.mjs');print(fitSearch(search(store,values.project,values.query),values.budget===undefined?undefined:Number(values.budget)));}
-    else if(command==='context'){const {compileContext}=await import('../src/context.mjs');print(compileContext(store,{project:values.project,query:values.query,budget:Number(values.budget||4000),...(values.task?{task:values.task}:{}),onStale:values.strict?'fail':'refresh'}));}
+    else if(command==='search'){const {search,requireFreshIndex}=await import('../src/retrieval.mjs'),{fitSearch}=await import('../src/context.mjs');const freshness=requireFreshIndex(store,values.project);print({...fitSearch(search(store,values.project,values.query),values.budget===undefined?undefined:Number(values.budget)),freshness});}
+    else if(command==='context'){const {requireFreshIndex}=await import('../src/retrieval.mjs');const freshness=requireFreshIndex(store,values.project);const {compileContext}=await import('../src/context.mjs');print({...compileContext(store,{project:values.project,query:values.query,budget:Number(values.budget||4000),...(values.task?{task:values.task}:{}),onStale:values.strict?'fail':'refresh'}),freshness});}
     else if(command==='checkpoint'){ensure(values.file,'FILE_REQUIRED');const {saveCheckpoint}=await import('../src/session.mjs');print(saveCheckpoint(store,{project:values.project,task:values.task,content:JSON.parse(fs.readFileSync(values.file,'utf8')),expectedVersion:Number(values.version||0),idempotencyKey:values.key||newId()}));}
     else if(command==='memory')print(store.memories(values.project));
     else if(command==='propose')print(store.proposeMemory(values.project,values.statement,values.source,values.mode));

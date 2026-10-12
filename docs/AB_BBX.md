@@ -1,6 +1,6 @@
 # AB-BBX — execução própria e continuidade operacional
 
-Revisão de produto: 12/10/2026. Base: BBrainX `e3977cc`, versão 1.5.0 Developer Preview. Este documento descreve código entregue nesta branch; instalação em estação de trabalho e aceite do produto consumidor são provas separadas.
+Revisão de produto: 12/10/2026. Proposta BBrainX 2.0.0, PR #22. Contrato geral e decisões de adoção: [BBRAINX_2_0.md](BBRAINX_2_0.md). Este documento descreve código entregue nesta branch; instalação em estação de trabalho e aceite do produto consumidor são provas separadas.
 
 ## Identidade e limite do produto
 
@@ -12,7 +12,7 @@ Fluxo de uma chamada: resolução de capacidade → captura defensiva de argumen
 
 ## Reindexação operacional
 
-A busca lexical exige índice existente. Ela não deve ser descrita como leitura atômica da worktree. O comando abaixo mantém o índice reconciliado enquanto seu processo estiver ativo:
+A busca e o bootstrap públicos exigem índice existente e manifesto compatível com uma varredura atual. `context_index` aceita `mode: status` para diagnóstico sem escrita; a CLI oferece `index-status --project ID [--lane ID]`, com saída 0 para current e 2 para stale/missing. Após `INDEX_STALE`, execute indexação e repita. Ela não deve ser descrita como leitura atômica da worktree. O comando abaixo mantém o índice reconciliado enquanto seu processo estiver ativo:
 
 ```sh
 node bin/bbrainx.mjs watch --project meu-projeto --interval 30000
@@ -47,8 +47,8 @@ Use um único watcher por banco/worktree. Não há lease global novo para dedupl
 | Raiz redirecionada ou lane revogada | Validação existente recusa; erro sai visível e o processo termina. |
 | Banco ocupado, falha de leitura ou limite excedido | Não emitir sucesso para o ciclo falho. Corrigir causa e reiniciar; o processo não faz retry infinito silencioso. |
 | Queda no meio de indexação | Lotes já confirmados ficam coerentes com o manifesto publicado. Reiniciar reconcilia; não declarar snapshot global atômico. |
-| Arquivo editado durante consulta | Contexto estrito verifica arquivos selecionados. Isso não prova ausência de mudanças em arquivos não selecionados. |
-| Arquivo novo antes do próximo ciclo | Pode não aparecer na busca. Indexação explícita antes de uma decisão crítica continua necessária. |
+| Arquivo editado durante consulta | A verificação completa é uma observação anterior à consulta, não snapshot atômico. O compilador ainda valida fontes selecionadas. Edições concorrentes posteriores continuam possíveis. |
+| Arquivo novo antes do próximo ciclo | Busca/bootstrap públicos recusam com INDEX_STALE; context_index atualiza e a consulta pode ser repetida. |
 | Segredo fora dos padrões conhecidos | Filtros não certificam ausência de segredo arbitrário. Índices, logs e recibos locais são privados. |
 
 Não há instalação automática de LaunchAgent, serviço de sistema, hook Git ou alteração de gateway. O comando é executável e testado; ativação persistente na estação real deve produzir seu próprio recibo. Não foi acessada a estação do mantenedor nesta revisão.
@@ -59,13 +59,13 @@ Não há instalação automática de LaunchAgent, serviço de sistema, hook Git 
 
 `filesTouched` continua relativo à raiz: permitir `../` ou caminhos absolutos misturaria autoridade de workspaces. Registre a candidata na lane correta. Uma referência externa pode ser descrita concisamente em evidência; não a apresente como arquivo pertencente à raiz canônica. CAS, idempotencyKey, replay e versão permanecem intactos.
 
-## Aplicação ao DoneFitt e medição
+## Medição geral do produto
 
 A nota do mantenedor relata 146 agentes, 110 acessos ao BBrainX, 1 uso de busca e 3.182 grep. Esses números são relato operacional recebido, não telemetria reproduzida nesta rodada. Eles indicam baixa adoção de retrieval; não demonstram, isoladamente, pior ranking nem economia financeira.
 
 O protocolo de validação deve fixar fonte, árvore, worktree, versão do BBrainX e conjunto de tarefas. Compare tarefas equivalentes com índice reconciliado e baseline; registre retomadas corretas, taxa de busca útil, consultas sem resultado, leituras redundantes, duração até teste causal e qualidade aceita. Tokens reportados pelo provedor, tokens estimados de payload e tempo humano são métricas distintas. Não transforme quantidade menor de grep em meta absoluta: fallback é legítimo quando retrieval não responde.
 
-Aceite operacional: novo símbolo pesquisável depois do ciclo; exclusão removida; lane A nunca retorna marcador exclusivo de B; checkpoint >600 e <=2.000 caracteres aceito dentro de 16 KiB; erro de indexação observável; reinício converge. Aceite do aplicativo consumidor continua em seu repositório privado, com binários, banco, worker, consentimentos e jornadas reais.
+Aceite operacional: novo símbolo pesquisável depois do ciclo; exclusão removida; lane A nunca retorna marcador exclusivo de B; checkpoint >600 e <=2.000 caracteres aceito dentro de 16 KiB; erro de indexação observável; reinício converge. Aceite funcional de cada projeto consumidor continua independente do aceite da ferramenta.
 
 ## REA e revisão do upstream
 
@@ -98,12 +98,4 @@ Ordem: operar índice na raiz correta → medir tarefas reais → avaliar AST/im
 
 ## Evidência e retomada
 
-Linux, Node 24.19.0: 740/740 testes, sem falhas/skips, e build Vite concluído. O build emitiu avisos de diretivas de módulos de dependências; não foram silenciados. Cinco testes novos cobrem identidade do motor, descoberta/remoção, lane, falhas e limites de checkpoint. Os testes existentes exercitam contratos MCP, autorização, cancelamento, replay e teto total.
-
-Não executados nesta rodada: macOS, Windows, Node mínimo, aparelhos DoneFitt, instalação do watcher no host real e nova medição dos agentes. UI não foi alterada. A CI da branch deve ser consultada para validações remotas. Rollback é revert do commit: bancos e checkpoints existentes continuam no mesmo schema; consumidores que passarem a importar ab-bbx.mjs devem voltar junto. Checkpoints longos já gravados não são truncados no rollback; writers antigos mantêm seus limites de entrada.
-
-Próxima ação concreta: instalar esta revisão no host do consumidor, iniciar um watcher para a raiz/lane correta, registrar dois ciclos e uma mudança pesquisável, então repetir um conjunto fixado de tarefas. A prévia não vira produto comercial homologado pela contagem de testes.
-
-### Correção de portabilidade na CI
-
-A primeira CI da PR #22 aprovou Linux, Node mínimo e navegador, mas o novo teste comparava o alias macOS `/var` com a raiz canônica `/private/var`. A correção compara `fs.realpathSync.native(root)`, preservando a exigência de identidade real do recibo. Não foi alterada a validação de raiz do produto. Consultar a CI do commit posterior para o resultado final.
+A evidência da versão 2.0 e o backlog de Windows estão centralizados em [BBRAINX_2_0.md](BBRAINX_2_0.md). A PR única é #22. Os avisos legais e relatórios históricos continuam preservados; a interface e a apresentação atual usam AB-BBX. A próxima implantação deve fixar o commit aprovado no Mac mini e no MacBook Pro M5 e produzir recibos próprios por dispositivo. Nenhuma sessão desta revisão acessou esses hosts físicos.

@@ -5,14 +5,19 @@ const platforms={};
 for(const platform of ['ubuntu-latest','macos-latest','windows-latest']){
  const base=path.join('.ci-evidence','evidence-'+platform);
  const logPath=path.join(base,'tests-'+platform+'.log');
- if(!fs.existsSync(logPath))throw new Error('Missing actual test evidence for '+platform);
+ const backlog=platform==='windows-latest';
+ if(!fs.existsSync(logPath)){if(backlog){platforms[platform]={support:'backlog',status:'missing'};continue;}throw new Error('Missing actual test evidence for '+platform);}
  const log=fs.readFileSync(logPath,'utf8').replace(/\x1b\[[0-9;]*m/g,'');
  const count=key=>{const match=log.match(new RegExp('(?:ℹ|#)\\s*'+key+'\\s+(\\d+)'));return match?Number(match[1]):null;};
  const tests=count('tests'),passed=count('pass'),failed=count('fail');
- if(tests===null||failed!==0||passed!==tests)throw new Error('Incomplete or failing test evidence for '+platform);
+ if(tests===null||failed!==0||passed!==tests){
+  if(backlog){platforms[platform]={support:'backlog',status:'failed-or-incomplete',tests,passed,failed};copy(logPath,path.join(output,'tests-'+platform+'.log'));continue;}
+  throw new Error('Incomplete or failing test evidence for '+platform);
+ }
+ if(backlog&&(!fs.existsSync(path.join(base,'doctor-'+platform+'.json'))||!fs.existsSync(path.join(base,'benchmark.json')))){platforms[platform]={support:'backlog',status:'incomplete',tests,passed,failed};copy(logPath,path.join(output,'tests-'+platform+'.log'));continue;}
  const doctor=JSON.parse(fs.readFileSync(path.join(base,'doctor-'+platform+'.json'),'utf8'));
  const benchmark=JSON.parse(fs.readFileSync(path.join(base,'benchmark.json'),'utf8'));
- platforms[platform]={tests,passed,failed,doctor,benchmark};
+ platforms[platform]={support:backlog?'backlog':'required',status:'passed',tests,passed,failed,doctor,benchmark};
  copy(logPath,path.join(output,'tests-'+platform+'.log'));
  copy(path.join(base,'benchmark.json'),path.join(output,'benchmark-'+platform+'.json'));
 }
