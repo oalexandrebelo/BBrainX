@@ -21,7 +21,7 @@ test('watch discovers new files and removes deleted files without restart',async
   t.after(()=>{store.close();fs.rmSync(dir,{recursive:true,force:true});});
   const stop=new AbortController();let cycles=0;
   await watchIndex(store,'test',{intervalMs:1000,signal:stop.signal,onCycle:receipt=>{
-    cycles++;assert.equal(receipt.root,root);
+    cycles++;assert.equal(receipt.root,fs.realpathSync.native(root));
     if(cycles===1){
       assert.equal(search(store,'test','oldMarker').items.length,1);
       fs.unlinkSync(path.join(root,'old.ts'));fs.writeFileSync(path.join(root,'new.ts'),'export const newMarker=2;');

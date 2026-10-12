@@ -103,3 +103,7 @@ Linux, Node 24.19.0: 740/740 testes, sem falhas/skips, e build Vite concluído. 
 Não executados nesta rodada: macOS, Windows, Node mínimo, aparelhos DoneFitt, instalação do watcher no host real e nova medição dos agentes. UI não foi alterada. A CI da branch deve ser consultada para validações remotas. Rollback é revert do commit: bancos e checkpoints existentes continuam no mesmo schema; consumidores que passarem a importar ab-bbx.mjs devem voltar junto. Checkpoints longos já gravados não são truncados no rollback; writers antigos mantêm seus limites de entrada.
 
 Próxima ação concreta: instalar esta revisão no host do consumidor, iniciar um watcher para a raiz/lane correta, registrar dois ciclos e uma mudança pesquisável, então repetir um conjunto fixado de tarefas. A prévia não vira produto comercial homologado pela contagem de testes.
+
+### Correção de portabilidade na CI
+
+A primeira CI da PR #22 aprovou Linux, Node mínimo e navegador, mas o novo teste comparava o alias macOS `/var` com a raiz canônica `/private/var`. A correção compara `fs.realpathSync.native(root)`, preservando a exigência de identidade real do recibo. Não foi alterada a validação de raiz do produto. Consultar a CI do commit posterior para o resultado final.
