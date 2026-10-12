@@ -36,16 +36,18 @@ jobs:
           node -p 'JSON.stringify({node:process.version,sqlite:process.versions.sqlite,platform:process.platform,arch:process.arch})' > artifacts/panel-stage2/environment.json
       - name: Install from lockfile
         run: npm ci --ignore-scripts --no-fund
+      - name: Reproduce original fixture cleanup order (not the product suite)
+        run: python scripts/panel-cleanup-reproduction.py
       - name: Focused panel contract with explicit timeout
         shell: bash
         run: |
           set -o pipefail
-          node --test --test-timeout=30000 test/panel-*.test.mjs 2>&1 | tee artifacts/panel-stage2/focused.log
+          node --test --test-reporter=tap --test-timeout=30000 test/panel-*.test.mjs 2>&1 | tee artifacts/panel-stage2/focused.log
       - name: Runtime tests
         shell: bash
         run: |
           set -o pipefail
-          node --test --test-timeout=60000 test/*.test.mjs 2>&1 | tee artifacts/panel-stage2/tests.log
+          node --test --test-reporter=tap --test-timeout=60000 test/*.test.mjs 2>&1 | tee artifacts/panel-stage2/tests.log
       - name: Build
         shell: bash
         run: |

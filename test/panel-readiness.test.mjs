@@ -12,9 +12,15 @@ import { startServer } from '../src/server.mjs';
 import { panelTarget, probePanel } from '../src/panel/probe.mjs';
 import { inspectPanelAssets } from '../src/panel/assets.mjs';
 import { ensurePanel } from '../src/panel/lifecycle.mjs';
+import { PanelCleanup } from './fixtures/panel-cleanup.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-function area(t){const p=fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-panel-'));t.after(()=>fs.rmSync(p,{recursive:true,force:true}));return p;}
+function area(t){
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-panel-')),cleanup=new PanelCleanup();
+ cleanup.defer(()=>fs.rmSync(dir,{recursive:true,force:true}));
+ t.after(()=>cleanup.close());
+ return {dir,defer:callback=>cleanup.defer(callback)};
+}
 function assets(p){fs.mkdirSync(path.join(p,'observatory'),{recursive:true});for(const f of ['index.html','atlas.html','observatory/index.html'])fs.writeFileSync(path.join(p,f),'<html><script src="/app.js"></script><link rel="stylesheet" href="/style.css"></html>');fs.writeFileSync(path.join(p,'app.js'),'document.title="test-domain";');fs.writeFileSync(path.join(p,'style.css'),'body{margin:0}');return p;}
 async function raw(t,handler){const s=http.createServer(handler);await new Promise(r=>s.listen(0,'127.0.0.1',r));t.after(()=>{s.closeAllConnections();return new Promise(r=>s.close(r));});return {s,url:'http://127.0.0.1:'+s.address().port};}
 async function freePort(){const s=http.createServer();await new Promise(r=>s.listen(0,'127.0.0.1',r));const n=s.address().port;await new Promise(r=>s.close(r));return n;}
@@ -38,8 +44,8 @@ test('deadline covers never-ending body; response byte limit is enforced',async 
  assert.equal((await probePanel(big.url,{maxBytes:128})).state,'incompatible');
 });
 test('readiness does not expose CSRF, paths, project names or start models',async t=>{
- const dir=area(t),store=new BrainStore(path.join(dir,'state'));t.after(()=>store.close());
- const server=await startServer(store,{port:0,assetsDir:assets(path.join(dir,'dist'))});t.after(()=>server.close());
+ const {dir,defer}=area(t),store=new BrainStore(path.join(dir,'state'));defer(()=>store.close());
+ const server=await startServer(store,{port:0,assetsDir:assets(path.join(dir,'dist'))});defer(()=>server.close());
  const before=store.db.prepare('SELECT count(*) n FROM events').get().n;
  const r=await fetch(server.url+'/api/readiness');assert.equal(r.status,200);const data=await r.json();
  assert.equal(data.service,'bbrainx-panel');assert.equal(data.ready,true);assert(!JSON.stringify(data).includes(dir));assert.equal(data.csrf,undefined);assert.equal(data.projects,undefined);
@@ -48,44 +54,44 @@ test('readiness does not expose CSRF, paths, project names or start models',asyn
  assert.equal((await fetch(server.url+'/api/readiness',{headers:{Origin:'https://evil.test'}})).status,403);
 });
 test('server with missing assets returns 503 and is distinct from no listener',async t=>{
- const dir=area(t),store=new BrainStore(path.join(dir,'state'));t.after(()=>store.close());const server=await startServer(store,{port:0,assetsDir:path.join(dir,'none')});t.after(()=>server.close());
+ const {dir,defer}=area(t),store=new BrainStore(path.join(dir,'state'));defer(()=>store.close());const server=await startServer(store,{port:0,assetsDir:path.join(dir,'none')});defer(()=>server.close());
  assert.equal((await probePanel(server.url)).state,'missing-assets');assert.equal((await fetch(server.url+'/api/readiness')).status,503);
 });
 test('asset inspection detects missing direct file and remote asset reference',async t=>{
- const dir=area(t),build=assets(path.join(dir,'dist'));assert(inspectPanelAssets(build).ready);fs.unlinkSync(path.join(build,'app.js'));assert(!inspectPanelAssets(build).ready);
+ const {dir,defer}=area(t),build=assets(path.join(dir,'dist'));assert(inspectPanelAssets(build).ready);fs.unlinkSync(path.join(build,'app.js'));assert(!inspectPanelAssets(build).ready);
  fs.writeFileSync(path.join(build,'app.js'),'ok');fs.writeFileSync(path.join(build,'atlas.html'),'<script src="https://evil.test/a.js"></script>');assert(!inspectPanelAssets(build).ready);
 });
 test('concurrent ensure calls share one server and close is idempotent',async t=>{
- const dir=area(t),url='http://127.0.0.1:'+await freePort(),opts={home:path.join(dir,'state'),assetsDir:assets(path.join(dir,'dist'))};
- const many=await Promise.all(Array.from({length:8},()=>ensurePanel(url,opts)));t.after(()=>many[0].close());
+ const {dir,defer}=area(t),url='http://127.0.0.1:'+await freePort(),opts={home:path.join(dir,'state'),assetsDir:assets(path.join(dir,'dist'))};
+ const many=await Promise.all(Array.from({length:8},()=>ensurePanel(url,opts)));defer(()=>many[0].close());
  assert(many.every(x=>x===many[0]));assert(many[0].owned);assert.equal(many[0].status.state,'ready');
  const reused=await ensurePanel(url,opts);assert(!reused.owned);await reused.close();assert.equal((await probePanel(url)).state,'ready');
  await many[0].close();await many[0].close();assert.equal((await probePanel(url)).state,'unreachable');
 });
 test('start refuses incompatible occupant without killing it or creating state',async t=>{
- const dir=area(t),a=await raw(t,(_,r)=>r.end('other'));const h=await ensurePanel(a.url,{home:path.join(dir,'state'),assetsDir:assets(path.join(dir,'dist'))});
+ const {dir,defer}=area(t),a=await raw(t,(_,r)=>r.end('other'));const h=await ensurePanel(a.url,{home:path.join(dir,'state'),assetsDir:assets(path.join(dir,'dist'))});
  assert.equal(h.status.state,'incompatible');assert(!fs.existsSync(path.join(dir,'state')));assert.equal(await (await fetch(a.url)).text(),'other');
 });
 test('missing build does not initialize state or download dependencies',async t=>{
- const dir=area(t),h=await ensurePanel('http://127.0.0.1:'+await freePort(),{home:path.join(dir,'state'),assetsDir:path.join(dir,'none')});
+ const {dir,defer}=area(t),h=await ensurePanel('http://127.0.0.1:'+await freePort(),{home:path.join(dir,'state'),assetsDir:path.join(dir,'none')});
  assert.equal(h.status.state,'missing-assets');assert(!fs.existsSync(path.join(dir,'state')));
 });
 test('panel status runs in source copy without node_modules',t=>{
- const dir=area(t);for(const f of ['scripts/panel.mjs','src/panel/probe.mjs','src/panel/assets.mjs','src/panel/lifecycle.mjs','src/state-home.mjs','src/main-module.mjs']){fs.mkdirSync(path.dirname(path.join(dir,f)),{recursive:true});fs.copyFileSync(path.join(root,f),path.join(dir,f));}
+ const {dir,defer}=area(t);for(const f of ['scripts/panel.mjs','src/panel/probe.mjs','src/panel/assets.mjs','src/panel/lifecycle.mjs','src/state-home.mjs','src/main-module.mjs']){fs.mkdirSync(path.dirname(path.join(dir,f)),{recursive:true});fs.copyFileSync(path.join(root,f),path.join(dir,f));}
  const report=JSON.parse(execFileSync(process.execPath,[path.join(dir,'scripts/panel.mjs'),'status','--port','1'],{encoding:'utf8',timeout:5000}));assert.equal(report.state,'unreachable');assert(!fs.existsSync(path.join(dir,'node_modules')));
 });
 test('real command respects selected port and reports missing build without side effects',t=>{
- const dir=area(t),entry=path.join(root,'scripts/panel.mjs');
+ const {dir,defer}=area(t),entry=path.join(root,'scripts/panel.mjs');
  const r=JSON.parse(execFileSync(process.execPath,[entry,'status','--url','http://localhost:1'],{env:{...process.env,BBRAINX_HOME:dir},encoding:'utf8',timeout:5000}));assert.equal(r.port,1);assert.equal(r.state,'unreachable');assert(!fs.existsSync(path.join(dir,'brain.sqlite')));
 });
 test('same service on another state home is not reused',async t=>{
- const dir=area(t),store=new BrainStore(path.join(dir,'first'));t.after(()=>store.close());
- const server=await startServer(store,{port:0,assetsDir:assets(path.join(dir,'dist'))});t.after(()=>server.close());
+ const {dir,defer}=area(t),store=new BrainStore(path.join(dir,'first'));defer(()=>store.close());
+ const server=await startServer(store,{port:0,assetsDir:assets(path.join(dir,'dist'))});defer(()=>server.close());
  const wrong=await ensurePanel(server.url,{home:path.join(dir,'second')});assert.equal(wrong.status.state,'different-state');assert(!wrong.owned);assert(!fs.existsSync(path.join(dir,'second')));
 });
 test('two real launchers share one listener; loser never terminates owner',async t=>{
- const dir=area(t),url='http://127.0.0.1:'+await freePort(),home=path.join(dir,'state'),build=assets(path.join(dir,'dist'));
- const children=[];t.after(async()=>{for(const x of children){if(x.child.exitCode===null&&x.child.signalCode===null)x.child.kill();await x.closed;}});
+ const {dir,defer}=area(t),url='http://127.0.0.1:'+await freePort(),home=path.join(dir,'state'),build=assets(path.join(dir,'dist'));
+ const children=[];defer(async()=>{for(const x of children){if(x.child.exitCode===null&&x.child.signalCode===null)x.child.kill();await x.closed;}});
  const launch=()=>{
   const child=spawn(process.execPath,[path.join(root,'test/fixtures/panel-launch-worker.mjs'),url,home,build],{stdio:['ignore','pipe','pipe']});
   const closed=once(child,'close');children.push({child,closed});let buf='';
@@ -99,7 +105,7 @@ test('two real launchers share one listener; loser never terminates owner',async
  assert.equal((await probePanel(url)).state,'ready');owner.child.kill();await owner.closed;assert.equal((await probePanel(url)).state,'unreachable');
 });
 test('readiness cache expires after deletion of a build asset',async t=>{
- const dir=area(t),store=new BrainStore(path.join(dir,'state'));t.after(()=>store.close());const build=assets(path.join(dir,'dist'));
- const server=await startServer(store,{port:0,assetsDir:build});t.after(()=>server.close());assert.equal((await probePanel(server.url)).state,'ready');
+ const {dir,defer}=area(t),store=new BrainStore(path.join(dir,'state'));defer(()=>store.close());const build=assets(path.join(dir,'dist'));
+ const server=await startServer(store,{port:0,assetsDir:build});defer(()=>server.close());assert.equal((await probePanel(server.url)).state,'ready');
  fs.unlinkSync(path.join(build,'app.js'));await new Promise(r=>setTimeout(r,1050));assert.equal((await probePanel(server.url)).state,'missing-assets');
 });

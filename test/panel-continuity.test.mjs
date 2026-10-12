@@ -7,14 +7,19 @@ import http from 'node:http';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {ensurePanel} from '../src/panel/lifecycle.mjs';
+import {PanelCleanup} from './fixtures/panel-cleanup.mjs';
 
 const root=fileURLToPath(new URL('../',import.meta.url));
-function area(t){const directory=fs.mkdtempSync(path.join(os.tmpdir(),'bb-panel-continuity-'));t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));return directory;}
+function area(t){
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'bb-panel-continuity-')),cleanup=new PanelCleanup();
+ cleanup.defer(()=>fs.rmSync(directory,{recursive:true,force:true}));t.after(()=>cleanup.close());
+ return {directory,defer:callback=>cleanup.defer(callback)};
+}
 function build(directory){fs.mkdirSync(path.join(directory,'observatory'),{recursive:true});for(const file of ['index.html','atlas.html','observatory/index.html'])fs.writeFileSync(path.join(directory,file),'<html><title>Lifecycle test</title></html>');return directory;}
 async function availablePort(){const server=http.createServer();await new Promise((resolve,reject)=>{server.once('error',reject);server.listen(0,'127.0.0.1',resolve);});const port=server.address().port;await new Promise((resolve,reject)=>server.close(e=>e?reject(e):resolve()));return port;}
 
 test('panel CLI resolves current alias before deciding whether to execute',async t=>{
-  const directory=area(t),release=path.join(directory,'release'),alias=path.join(directory,'current');
+  const {directory,defer}=area(t),release=path.join(directory,'release'),alias=path.join(directory,'current');
   for(const file of ['scripts/panel.mjs','src/panel/probe.mjs','src/panel/assets.mjs','src/panel/lifecycle.mjs','src/state-home.mjs','src/main-module.mjs']){
     const dest=path.join(release,file);fs.mkdirSync(path.dirname(dest),{recursive:true});fs.copyFileSync(path.join(root,file),dest);
   }
@@ -27,9 +32,9 @@ test('panel CLI resolves current alias before deciding whether to execute',async
 });
 
 test('concurrent close callers await the same physical shutdown completion',async t=>{
-  const directory=area(t),url='http://127.0.0.1:'+await availablePort();
+  const {directory,defer}=area(t),url='http://127.0.0.1:'+await availablePort();
   const handle=await ensurePanel(url,{home:path.join(directory,'state'),assetsDir:build(path.join(directory,'dist'))});
-  t.after(()=>handle.close());assert.equal(handle.owned,true);
+  defer(()=>handle.close());assert.equal(handle.owned,true);
   const first=handle.close(),second=handle.close();
   try{assert.strictEqual(first,second,'a second close must await the original operation, not return early');}
   finally{await Promise.all([first,second]);}
