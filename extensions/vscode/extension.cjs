@@ -1,4 +1,5 @@
 const vscode=require('vscode');
+const {createPanelController}=require('./panel-controller.cjs');
 const os=require('node:os');
 const path=require('node:path');
 const fs=require('node:fs');
@@ -17,7 +18,7 @@ function localFolders(){return (vscode.workspace.workspaceFolders||[]).filter(fo
 function canonicalRoot(folder){return fs.realpathSync(folder.uri.fsPath);}
 
 function activate(context){
-  const session=randomUUID(),children=new Set(),pending=new Set(),states=new Map(),events=new vscode.EventEmitter();let disposed=false,panelTerminal;
+  const session=randomUUID(),children=new Set(),pending=new Set(),states=new Map(),events=new vscode.EventEmitter();let disposed=false;
   const harness=/antigravity/i.test(vscode.env.appName)?'antigravity':'vscode';
   const status=vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left,10);status.name='BBrainX';status.command='bbrainx.workspaces.focus';
   function refresh(){
@@ -67,26 +68,32 @@ function activate(context){
     }catch(error){states.set(key,'Configuração pendente');const detail=error.message==='CLI_NOT_FOUND'?'Configure bbrainx.executable nos ajustes de usuário.':'Confira o CLI e o estado do projeto no painel.';await vscode.window.showErrorMessage('BBrainX: operação não concluída. '+detail);}
     finally{refresh();}
   }
-  async function openPanel(){
-    let url;try{url=new URL(setting('panelUrl'));if(url.protocol!=='http:'||!['127.0.0.1','localhost','[::1]'].includes(url.hostname)||url.username||url.password)throw new Error();}
-    catch{await vscode.window.showErrorMessage('BBrainX: panelUrl deve apontar para HTTP local, sem credenciais.');return;}
-    if(vscode.env.remoteName){await vscode.window.showWarningMessage('BBrainX: painel local em host remoto requer encaminhamento explícito.');return;}
-    await vscode.env.openExternal(vscode.Uri.parse(url.href));
-  }
-  async function startPanel(){
+  const panelControl=createPanelController({
+    probe:url=>run(['panel','status','--url',url],{timeout:4000}),
+    alive:terminal=>terminal.exitStatus===undefined,
+    start:url=>{const command=launch();const terminal=vscode.window.createTerminal({name:'BBrainX painel',shellPath:command.file,shellArgs:[...command.prefix,'panel','start','--url',url]});terminal.show();return terminal;}
+  });
+  async function panelAction(open){
     if(!vscode.workspace.isTrusted){await vscode.window.showWarningMessage('BBrainX: a execução requer confiança do workspace no editor.');return;}
-    if(panelTerminal){panelTerminal.show();return;}
-    try{const command=launch();panelTerminal=vscode.window.createTerminal({name:'BBrainX painel',shellPath:command.file,shellArgs:[...command.prefix,'serve']});panelTerminal.show();}
-    catch{await vscode.window.showErrorMessage('BBrainX: configure o executável nos ajustes de usuário.');}
+    if(vscode.env.remoteName){await vscode.window.showWarningMessage('BBrainX: painel em host remoto requer encaminhamento explícito.');return;}
+    try{
+      const result=await panelControl.ensure(setting('panelUrl'));
+      if(result.state==='ready'){
+        if(result.normalized)await vscode.window.showInformationMessage('BBrainX: endereço normalizado para o listener IPv4 local: '+result.url);
+        if(open)await vscode.env.openExternal(vscode.Uri.parse(result.url));
+        else await vscode.window.showInformationMessage('BBrainX: painel pronto em '+result.url);
+      }else await vscode.window.showWarningMessage('BBrainX: '+result.state+'. '+(result.hint||'Confira o terminal do painel; não foi iniciada outra instância.'));
+    }catch{await vscode.window.showErrorMessage('BBrainX: confira o CLI atualizado e a URL HTTP local nos ajustes de usuário. Instalação e build são explícitos.');}
   }
+  const openPanel=()=>panelAction(true),startPanel=()=>panelAction(false);
   const timer=setInterval(()=>{void seen();},30000);timer.unref?.();
   context.subscriptions.push(status,events,vscode.window.registerTreeDataProvider('bbrainx.workspaces',provider),
     vscode.commands.registerCommand('bbrainx.detect',uri=>integrate(false,uri)),vscode.commands.registerCommand('bbrainx.connect',uri=>integrate(true,uri)),
     vscode.commands.registerCommand('bbrainx.openPanel',openPanel),vscode.commands.registerCommand('bbrainx.startPanel',startPanel),
     vscode.workspace.onDidChangeWorkspaceFolders(()=>{refresh();void seen();}),vscode.workspace.onDidGrantWorkspaceTrust(()=>{refresh();void seen();}),
     vscode.workspace.onDidChangeConfiguration(event=>{if(event.affectsConfiguration('bbrainx')){refresh();void seen();}}),
-    vscode.window.onDidCloseTerminal(terminal=>{if(terminal===panelTerminal)panelTerminal=undefined;}),
-    {dispose(){disposed=true;clearInterval(timer);for(const child of children)child.kill();panelTerminal?.dispose();}}
+    vscode.window.onDidCloseTerminal(terminal=>panelControl.closed(terminal)),
+    {dispose(){disposed=true;clearInterval(timer);for(const child of children)child.kill();panelControl.dispose();}}
   );refresh();void seen();
 }
 module.exports={activate};

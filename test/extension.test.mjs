@@ -44,5 +44,5 @@ with zipfile.ZipFile(sys.argv[1]) as archive:
     print(json.dumps({'files': files, 'identity': identity}))
 `;
   const inspected=JSON.parse(execFileSync(process.platform==='win32'?'python':'python3',['-c',script,output],{timeout:10000,encoding:'utf8'}));
-  assert.deepEqual(inspected.files,['[Content_Types].xml','extension.vsixmanifest','extension/LICENSE','extension/README.md','extension/extension.cjs','extension/media/icon.png','extension/media/icon.svg','extension/package.json']);
+  assert.deepEqual(inspected.files,['[Content_Types].xml','extension.vsixmanifest','extension/LICENSE','extension/README.md','extension/extension.cjs','extension/media/icon.png','extension/media/icon.svg','extension/package.json','extension/panel-controller.cjs']);
 });

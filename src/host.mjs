@@ -8,12 +8,8 @@ import { infrastructurePlan } from './infrastructure.mjs';
 import { assertLocalState, syncedStateReason, readMounts, processMounts } from './state-location.mjs';
 export { assertLocalState, syncedStateReason, readMounts };
 
-export function stateHome(env = process.env, platform = process.platform) {
-  if (env.BBRAINX_HOME) return path.resolve(env.BBRAINX_HOME);
-  if (platform === 'darwin') return path.join(os.homedir(), 'Library', 'Application Support', 'BBrainX');
-  if (platform === 'win32') return path.join(env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'BBrainX');
-  return path.join(env.XDG_DATA_HOME || path.join(os.homedir(), '.local', 'share'), 'bbrainx');
-}
+import { stateHome } from './state-home.mjs';
+export { stateHome };
 const CONTROL = /[\u0000-\u001f\u007f]/;
 const nativeRealpath = target => fs.realpathSync.native(target);
 const sameFile = (realpath, a, b) => { try { return realpath(a) === realpath(b); } catch { return false; } };
