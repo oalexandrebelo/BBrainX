@@ -342,7 +342,9 @@ function autoCommit(record){
   const dirty=git(record.worktree,'status','--porcelain','--untracked-files=all').split('\n').filter(Boolean).length;
   if(dirty===0)return null;
   git(record.worktree,'add','-A');
-  git(record.worktree,'commit','-q','-m','bbx recruit '+record.id+': '+record.title);
+  // Identidade do usuário quando configurada; sem ela (CI, máquina nova) o commit sai em nome do recruta, nunca falha em silêncio.
+  let identity=[];try{if(!git(record.worktree,'config','user.email'))identity=['-c','user.name=bbx recruit','-c','user.email=bbrainx@localhost'];}catch{identity=['-c','user.name=bbx recruit','-c','user.email=bbrainx@localhost'];}
+  git(record.worktree,...identity,'commit','-q','-m','bbx recruit '+record.id+': '+record.title);
   return git(record.worktree,'rev-parse','HEAD');
 }
 /** Processo separado (`recruit run`): lança a CLI, guarda o log, mede, confirma o commit e grava o estado final. Nunca retorna sucesso sem o close observado. */

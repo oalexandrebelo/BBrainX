@@ -107,7 +107,7 @@ test('claude and codex recruits run in their own worktrees with a lane-scoped BB
     const observed=JSON.parse(fs.readFileSync(path.join(item.worktree,'recruit-observed.json'),'utf8'));
     assert.equal(fs.realpathSync.native(observed.cwd),item.worktree,'the CLI ran inside the worktree');
     assert.equal(fs.readFileSync(path.join(item.worktree,'app.ts'),'utf8'),'export function verifySession(){ return true; }\n','the base commit is checked out');
-    assert.equal(item.commitsAhead,1,'the supervisor committed the recruit output');assert.equal(item.dirtyFiles,0);
+    assert.equal(item.commitError,null,'auto-commit: '+item.commitError);assert.equal(item.commitsAhead,1,'the supervisor committed the recruit output');assert.equal(item.dirtyFiles,0);
     assert.match(git(item.worktree,'log','-1','--format=%s'),/^bbx recruit r\d+-[0-9a-f]{6}: rename$/);
     assert.match(fs.readFileSync(item.log,'utf8'),/lane index: 1 files/);
     if(item.harness==='claude'){
