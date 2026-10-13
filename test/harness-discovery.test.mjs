@@ -24,7 +24,7 @@ function fixture(t){
   return {home,executable,broken,options};
 }
 
-test('broken PATH executables are skipped before choosing a native Codex app in user Applications',t=>{
+test('broken PATH executables are skipped before choosing a native Codex app in user Applications',{skip:process.platform==='win32'?'macOS app layout uses extensionless binaries; exercised on POSIX hosts':false},t=>{
   const f=fixture(t);const broken=f.broken('bin/codex');
   const binary=f.executable('Applications/Codex.app/Contents/Resources/codex-cli/bin/codex');
   const options={...f.options,applicationsRoots:[path.join(f.home,'Applications')],env:{PATH:path.dirname(broken)}};
@@ -33,27 +33,29 @@ test('broken PATH executables are skipped before choosing a native Codex app in 
 });
 
 test('PATH fallback considers later entries and explicit invalid overrides fail instead of falling back',t=>{
-  const f=fixture(t);const broken=f.broken('broken/claude'),binary=f.executable('working/claude');
-  const env={PATH:[path.dirname(broken),path.dirname(binary)].join(':')};
-  assert.deepEqual(locateHarness('claude',{...f.options,env}),{binary,source:'PATH'});
+  const f=fixture(t),name=process.platform==='win32'?'claude.exe':'claude',options={...f.options,platform:process.platform};
+  const broken=f.broken('broken/'+name),binary=f.executable('working/'+name);
+  const env={PATH:[path.dirname(broken),path.dirname(binary)].join(path.delimiter)};
+  assert.deepEqual(locateHarness('claude',{...options,env}),{binary,source:'PATH'});
   for(const override of [broken,f.home,path.join(f.home,'missing'),'relative/claude']){
-    assert.throws(()=>locateHarness('claude',{...f.options,env:{...env,BBRAINX_CLAUDE:override}}),{code:'RECRUIT_HARNESS_OVERRIDE_INVALID'});
+    assert.throws(()=>locateHarness('claude',{...options,env:{...env,BBRAINX_CLAUDE:override}}),{code:'RECRUIT_HARNESS_OVERRIDE_INVALID'});
   }
-  assert.deepEqual(locateHarness('claude',{...f.options,env:{...env,BBRAINX_CLAUDE:binary}}),{binary,source:'env'});
+  assert.deepEqual(locateHarness('claude',{...options,env:{...env,BBRAINX_CLAUDE:binary}}),{binary,source:'env'});
 });
 
 test('Claude extension discovery sorts numeric versions and falls back from unusable newest binaries',t=>{
-  const f=fixture(t);
-  f.executable('.vscode/extensions/anthropic.claude-code-2.9.0-darwin-arm64/resources/native-binary/claude');
-  const binary=f.executable('.vscode/extensions/anthropic.claude-code-2.10.0-darwin-arm64/resources/native-binary/claude');
-  f.broken('.vscode/extensions/anthropic.claude-code-2.11.0-darwin-arm64/resources/native-binary/claude');
-  assert.deepEqual(locateHarness('claude',f.options),{binary,source:'known-install'});
-  const insiders=f.executable('.vscode-insiders/extensions/anthropic.claude-code-2.12.0-darwin-arm64/resources/native-binary/claude');
+  const f=fixture(t),name=process.platform==='win32'?'claude.exe':'claude',options={...f.options,platform:process.platform};
+  const extension=(editor,version)=>editor+'/extensions/anthropic.claude-code-'+version+'-'+process.platform+'-'+process.arch+'/resources/native-binary/'+name;
+  f.executable(extension('.vscode','2.9.0'));
+  const binary=f.executable(extension('.vscode','2.10.0'));
+  f.broken(extension('.vscode','2.11.0'));
+  assert.deepEqual(locateHarness('claude',options),{binary,source:'known-install'});
+  const insiders=f.executable(extension('.vscode-insiders','2.12.0'));
   fs.rmSync(path.join(f.home,'.vscode'),{recursive:true});
-  assert.deepEqual(locateHarness('claude',f.options),{binary:insiders,source:'known-install'});
+  assert.deepEqual(locateHarness('claude',options),{binary:insiders,source:'known-install'});
 });
 
-test('Claude desktop runtime uses numeric version order and isolated missing installations return null',t=>{
+test('Claude desktop runtime uses numeric version order and isolated missing installations return null',{skip:process.platform==='win32'?'macOS app layout uses extensionless binaries; exercised on POSIX hosts':false},t=>{
   const f=fixture(t);assert.equal(locateHarness('codex',f.options),null);
   f.executable('Library/Application Support/Claude/claude-code/2.9.0/claude.app/Contents/MacOS/claude');
   const binary=f.executable('Library/Application Support/Claude/claude-code/2.10.0/claude.app/Contents/MacOS/claude');

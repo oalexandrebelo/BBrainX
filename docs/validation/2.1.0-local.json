@@ -6,13 +6,14 @@
   "node": "24.18.0",
   "checks": [
     {
-      "command": "npm test",
+      "command": "node --test --test-concurrency=4 test/*.test.mjs",
       "tests": 772,
       "passed": 772,
       "failed": 0,
       "cancelled": 0,
       "skipped": 0,
-      "exitCode": 0
+      "exitCode": 0,
+      "durationMs": 27988.528583
     },
     {
       "command": "npm run build",
@@ -149,7 +150,7 @@
     "test/four-rounds-followup.test.mjs": "384d23a9451d01a714386830f9ce72bd7a1c5a41a937d864a47cca00120a160b",
     "test/four-rounds-worker.test.mjs": "5edc14334e1741fbae34b913e97fa64f8f6d642b91784f7f25f533585639e6fd",
     "test/godmode.test.mjs": "39f7be0afbe7460c0c64aedb2db08a887e53655dcc09209f16284631be8f358d",
-    "test/harness-discovery.test.mjs": "5917778c1bc4ae81b1212e69e5a941016f89d3282e20840b54ca3b17e23db4f3",
+    "test/harness-discovery.test.mjs": "13d3794a84a49ce18d17b8b49142e95ebe165004bd50f2f303beae185401f8df",
     "test/http.test.mjs": "3de3b666a28d649398ef29c6a51e54c2a34461d2ca2e2bc2b9dff205920de3c0",
     "test/index-freshness.test.mjs": "3ed491e5fd1652b04562a9655e70c1f1dfc19e55835765a0ff4bb16a63a5f9c0",
     "test/index-lock.test.mjs": "3fc5538beb7cdfe4c1135f00053528266ed72babcb763af9dee855bad291382a",
@@ -206,5 +207,9 @@
     "test/workstation.test.mjs": "e27e809a8626fce7b8f8d9f37e88fb2e2edb91f0e0a1e61fbfae9646bbcf5e3f",
     "package.json": "e9d3de8c4f7942eaf14a4690a6a34f08d08ea6747263c1e6a8701e37f2633a53",
     "package-lock.json": "baead5e739144cf413c4d0ee76ca693502b6975e8092bdb08009b5a27ccd47f0"
-  }
+  },
+  "observations": [
+    "npm test passed 772/772 before the platform-fixture adjustment. Two later default-concurrency runs passed 771/772 and failed the existing Laya crash/restart test at different deadline assertions. The focused godmode suite passed 13/13; the full final suite passed 772/772 with concurrency=4. Production deadlines and that test were not changed.",
+    "Windows discovery fixtures use native executable names and PATH delimiters. Two macOS-layout tests explicitly skip Windows. Windows recruitment fixtures and shared-admission failures remain outside this macOS preview acceptance."
+  ]
 }
