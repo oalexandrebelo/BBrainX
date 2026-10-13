@@ -1,3 +1,21 @@
+# BBrainX 2.1.0 — Developer Preview — 13/10/2026
+
+Candidato derivado da revisão `689a5a6` da 2.0.0. Publicação da branch/tag e merge em `main` são etapas distintas; esta nota não afirma que todas as instalações foram atualizadas.
+
+- Claude e Codex podem recrutar um ao outro usando a autenticação já configurada nas CLIs. O harness principal acompanha o estado e traz o resultado ao chat. Nenhum token é lido ou copiado pelo BBrainX.
+- IDs Claude sem versão menor permanecem intactos. A seleção de modelo Claude recebe `availableModels` por processo, evitando a troca Haiku → Sonnet em modo plan na configuração validada, sem mudar permissões ou settings globais.
+- Descoberta de CLI valida `--version`, pula wrappers automáticos quebrados e procura os caminhos atuais do Codex app e das extensões Claude no VS Code/Insiders. Versões de extensão têm ordenação numérica. Overrides explícitos inválidos falham em vez de selecionar outro binário.
+- `integrate` propaga `BBRAINX_CLAUDE`/`BBRAINX_CODEX` explícitos somente com recrutamento. `config` aceita `--recruit` opt-in e o cliente `claude-desktop`, que imprime JSON com nome por projeto, sem binding ao cwd do app e sem escrita global.
+- O teste de falha do runner espera o marcador do processo filho antes de injetar o erro, removendo a dependência da ordem de atualizações.
+
+Conexões, ativação e exibição do ícone BBX pelos clientes: [guia de harnesses, contas e OmniRoute opcional](integrations/HARNESS_CONNECTIONS.md). Contrato e evidência: [RECRUIT.md](RECRUIT.md). Contas, trust e permissões continuam sob controle dos clientes; a integração tem escopo de projeto.
+
+**Evidência histórica que motivou a correção:** na 2.0 instalada com patches locais no MacBook, 760 testes e build passaram. Recrutamento real via SDK MCP: Luna 6 high respondeu `OK`; Haiku 5.5 low respondeu `OK`, com `modelUsage` confirmando o modelo. Um ensaio anterior solicitado como Haiku executou Sonnet e permanece registrado como divergência. Catálogo de 19 IDs base validado no parser, sem inferência individual de todos eles.
+
+**Validação da 2.1:** a suíte final passou **772/772** com `node --test --test-concurrency=4 test/*.test.mjs`, sem falhas, cancelamentos ou testes ignorados, no Node 24.18.0/macOS arm64. `npm test` havia passado 772/772; duas repetições posteriores sob concorrência automática falharam no teste de prazo/reinício do Laya (771/772). Esse teste passou isoladamente (13/13 no arquivo); seus prazos e a produção não foram alterados. `npm run build` passou (aviso preexistente de `use client` em @xyflow/react). A revisão independente encontrou a adoção de configurações legadas com overrides novos; ela foi corrigida e coberta por regressão. [Hashes dos arquivos testados e limites](validation/2.1.0-local.json). Sem mudança de UI; E2E local não repetido. Fixtures de descoberta agora usam nomes e delimitadores nativos; somente dois casos de layout macOS são ignorados no Windows. Windows continua pendente, incluindo fixtures de recrutamento e shared-admission. Conferir a CI da ponta publicada antes de merge.
+
+---
+
 # BBrainX 2.0.0 — Developer Preview — 13/10/2026
 
 | Medida | Valor |

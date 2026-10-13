@@ -54,6 +54,33 @@ async function settled(store,project,ids,timeoutMs=40000){
   }
 }
 
+test('Claude recruits restrict model selection without changing permissions',t=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bb-recruit-model-'));
+  t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));
+  const record={id:'r1',project:'p',lane:'r1',harness:'claude',effort:'high',worktree:dir,branch:'bbx/r1',base:{commit:'a'.repeat(40)},log:path.join(dir,'r1.log'),budgetUsd:null,tools:null};
+  fs.writeFileSync(path.join(dir,'r1.task.md'),'Review only');
+  for(const mode of ['review','implement'])for(const model of ['haiku','claude-haiku-5-5']){
+    const args=harnessCommand({...record,mode,model},{node:'/n/node',entry:'/e/bbrainx.mjs',home:'/h',binary:'/b/claude'});
+    assert(args.includes('--settings'),'requested model must restrict native model selection');
+    assert.deepEqual(JSON.parse(args[args.indexOf('--settings')+1]),{availableModels:[model]});
+    assert.equal(args[args.indexOf('--model')+1],model);
+    assert.equal(args[args.indexOf('--permission-mode')+1],mode==='review'?'plan':'acceptEdits');
+    assert.equal(args.includes('--allowedTools'),mode==='implement');
+  }
+});
+
+
+test('major-only Claude models preserve native IDs through repeated normalization',()=>{
+  for(const family of ['opus','sonnet','fable']){
+    const id='claude-'+family+'-5';
+    for(const input of [id,family+' 5']){
+      assert.equal(normalizeModel('claude',input),id,input);
+      assert.equal(normalizeModel('claude',normalizeModel('claude',input)),id,input);
+      assert.equal(parseRecruitSpec('1 claude '+input+' high')[0].model,id,input);
+    }
+  }
+});
+
 test('spec text, aliases and efforts normalize to the ids the CLIs accept',()=>{
   assert.deepEqual(parseRecruitSpec('recrute um agent CODEX ASTRA 6 high e 2 Opus 5.5 XHIGH'),[{harness:'codex',model:'gpt-6-astra',effort:'high',count:1},{harness:'claude',model:'claude-opus-5-5',effort:'xhigh',count:2}]);
   assert.deepEqual(parseRecruitSpec('1 codex gpt-6-astra high, 1 claude sonnet'),[{harness:'codex',model:'gpt-6-astra',effort:'high',count:1},{harness:'claude',model:'sonnet',effort:'medium',count:1}]);

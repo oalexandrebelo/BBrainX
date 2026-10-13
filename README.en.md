@@ -4,28 +4,33 @@
 
 <p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: see the run and the tested revision" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Quickstart (pt-BR)</a> · <a href="docs/STUDY_MAP.md">Study map</a> · <a href="docs/DOSSIER.md">Research dossier</a> · <a href="docs/SECURITY_MODEL.md">Security</a> · <a href="docs/EVALUATION.md">Evaluation</a> · <a href="README.md">Português</a></p>
 
-## BBrainX 2.0 · AB-BBX
+## BBrainX 2.1 · Claude and Codex working together
 
-Version 2.0 targets general project work, prioritizing Mac mini and MacBook Pro M5. Public search/context verify worktree hashes and refuse stale indices with `INDEX_STALE`; run `context_index` and retry. `index-status --project ID` provides a read-only diagnosis. The local panel reports search/context/checkpoint counts per session without storing queries. [Release contract and repository review](docs/BBRAINX_2_0.md).
+Version 2.1 retains the 2.0 AB-BBX foundation and targets general project work, prioritizing Mac mini and MacBook Pro M5. Public search/context verify worktree hashes and refuse stale indices with `INDEX_STALE`; run `context_index` and retry. `index-status --project ID` provides a read-only diagnosis. The local panel reports search/context/checkpoint counts per session without storing queries. [Release contract and repository review](docs/BBRAINX_2_0.md).
 
 BBrainX was built to accelerate real project work and shared to make verified continuity portable across coding agents. AB-BBX is its own capability execution core (`src/ab-bbx.mjs`), with a compatible legacy entrypoint. Run `node bin/bbrainx.mjs watch --project ID` in a separate process to periodically reconcile an index; add `--lane ID` for a registered workspace lane. This does not install a service or alter harness configuration. [Operating contract and limitations](docs/AB_BBX.md).
 
 ### Recruit agents (BYO: your CLIs, your logins)
 
-In a session connected to BBrainX, tell your harness **"recruit 1 codex astra 6 high and 2 opus 5.5 xhigh to fix X"**. BBrainX launches the Claude Code and Codex CLIs already installed and logged in on this machine, one per recruit, each in its own git worktree, branch and BBrainX lane; your checkout is never modified. No new subscription, no token read. `integrate --apply` grants it to the server with `--recruit` (nine tools); without the flag, six. `bbrainx recruit doctor` shows the CLIs, their login and Codex usage windows. Measured on 2026-10-13 with both real CLIs: two recruits, two commits, clean checkout. [docs/RECRUIT.md](docs/RECRUIT.md) (pt-BR).
+In Claude, ask **"use BBrainX to recruit 1 codex luna 6 high in review mode to answer OK; wait and bring the result here"**. In Codex, ask **"use BBrainX to recruit 1 claude opus 5.5 xhigh to review X; wait and bring the result here"**. The parent harness calls `agents_recruit`, polls `agents_status`, and presents the result in the chat. Normal Claude desktop chats can also recruit through their enabled local connector.
+
+BBrainX runs the CLIs already installed and logged in on this machine, each recruit in its own worktree, branch and lane. Authentication remains with Claude Code or Codex: BBrainX does not read tokens, change logins or migrate accounts. Available models and reasoning efforts depend on the selected CLI and account; use explicit versions for reproducible requests. `integrate --apply` includes `--recruit` by default; `--no-recruit` keeps the six context tools. The `config` generators require explicit `--recruit` to expose all nine tools.
+
+Version 2.1 preserves major-only Claude IDs, restricts model selection per Claude process, and skips automatically discovered executables that fail `--version`, including broken PATH wrappers. It supports explicit binary selection and generates a Claude desktop fragment. [Connections, accounts and optional OmniRoute](docs/integrations/HARNESS_CONNECTIONS.md) · [Recruitment and limits](docs/RECRUIT.md) (pt-BR).
 
 ## What it is
 
 BBrainX runs on your machine and gives a coding agent what it needs to continue a task: the right excerpts of the repository, the checkpoint of the previous session and the memories you approved. It speaks MCP. The core uses no model, account, Docker or Python and makes no outbound network calls.
 
-| Client | State in 2.0 |
+| Client | Connection |
 |---|---|
-| Claude Code | **Verified.** `claude -p --mcp-config` called `context_search`; as a recruit (haiku) it worked in its own worktree and committed |
-| Codex | **Verified.** `codex exec` called `context_search`; as a recruit (gpt-6-astra) it called `context_bootstrap`, `context_search`, `session_checkpoint` and `session_get` on its lane |
-| VS Code | **Partly verified.** The generated `.vscode/mcp.json` was exercised by an MCP SDK client the way VS Code launches it. Starting it from the VS Code UI is manual |
-| Cursor, Gemini CLI | **Not verified.** Only prints the configuration fragments (`config --client cursor` and `--client gemini`) |
+| Claude Code, including VS Code | `integrate --clients claude --apply`; approve the project MCP in the client |
+| Codex app, CLI and extension | `integrate --clients codex --apply`; the client must trust the project and load its local configuration |
+| VS Code MCP | `integrate --clients vscode --apply`; start the server in the editor |
+| Claude desktop, normal chat | `config --client claude-desktop --project ID --recruit`; merge the local block with a backup and restart the app |
+| Cursor, Gemini CLI, Kilo, Antigravity | Existing generators; configuration alone does not certify a native connection |
 
-This branch proposes **2.0.0** in the single [PR #22](https://github.com/oalexandrebelo/BBrainX/pull/22). It does not claim installation on the maintainer’s devices. Windows is an observed, nonblocking backlog target. Historical 1.5 evidence remains in [the dated report](docs/HOMOLOGACAO_2026-10-10.md).
+This branch prepares **2.1.0 Developer Preview**, based on revision `689a5a6` from 2.0. Being in Git does not establish a merge into `main`, installation on other machines or certification of every client. Windows remains a backlog target. [Changes and evidence by version](docs/RELEASE_NOTES.md).
 
 ## Start in three commands
 
@@ -50,7 +55,7 @@ node bin/bbrainx.mjs integrate --root /path/to/your/project --apply
 
 Without `--apply`, `integrate` reports paths, hashes and pending steps. With `--apply`, it registers the root, writes the project's MCP entry with private backups and indexes the files; it preserves credentials, providers, trust and approvals. It discovers Codex, Claude Code, VS Code, Kilo and Antigravity IDE from local metadata, without running clients. Codex, Claude Code, VS Code and Kilo have automatic configuration; Antigravity IDE needs a manual step and gets no global registration of all projects. `--clients codex,claude,vscode,kilo` selects the targets, including a client that is not installed yet. Older installations can be migrated with `--adopt-existing` only when they exactly match the previous generator. Rollback: `node bin/bbrainx.mjs integrations rollback --id RECEIPT_ID`; a later edit prevents the overwrite. [Installer contract](docs/integrations/INSTALLER.md) (pt-BR).
 
-`config --project my-project --client cursor` still prints fragments for manual integration (it also accepts claude, codex, vscode and gemini). Configuration being present is not evidence of a native connection. `npm start` runs `node bin/bbrainx.mjs serve`: it serves the panel at **http://127.0.0.1:4317** (port: `serve --port N`) and **does not open the browser**. It needs the build made by `npm run setup`. On macOS, `Start-BBrainX.command` (double click) runs `npm run setup` and `npm run demo`, serves the panel and opens the browser.
+`config --project my-project --client cursor` still prints fragments for manual integration (it also accepts claude, claude-desktop, codex, vscode and gemini; add `--recruit` to enable recruitment). Configuration being present is not evidence of a native connection. `npm start` runs `node bin/bbrainx.mjs serve`: it serves the panel at **http://127.0.0.1:4317** (port: `serve --port N`) and **does not open the browser**. It needs the build made by `npm run setup`. On macOS, `Start-BBrainX.command` (double click) runs `npm run setup` and `npm run demo`, serves the panel and opens the browser.
 
 The [own BBrainX extension](extensions/vscode/README.md) offers the brand, a tree of open folders and Detect/Connect commands in VS Code, and a VSIX for evaluation in Antigravity IDE. Package it with `node scripts/package-extension.mjs` (Python 3 for packaging only), install the VSIX from the editor and set the executable in user settings. Trusted folders emit metadata heartbeats every 30 s; they expire after 90 s and do not register or index projects on their own. `node bin/bbrainx.mjs discover --root /path/to/project` separates reported open folders, registered projects and historical sessions with a validated root; it does not capture every active session of every IDE.
 
@@ -90,7 +95,7 @@ Retrieval floor (`test/godmode.test.mjs`, 36 queries over this repository, one h
 
 Source: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md) (pt-BR), base `5acad77`. Repeated on revision 77e6ddd (1.5.0) with `node scripts/measure-search-tokens.mjs`: 17,778 → 3,666 (−79.4%), located 31/36 → 31/36, with body 31/36 → 20/36. The value changes with the indexed corpus. Tokens are `o200k_base` over the payload, not provider billing. The response carries the same JSON in `content` and in `structuredContent`; that duplication is not addressed (task T1: 10,125 tokens on the wire against 4,978 of text).
 
-## Six tools, one scope
+## Six tools, one scope (nine with `--recruit`)
 
 | MCP | Responsibility |
 |---|---|
@@ -103,7 +108,7 @@ Source: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md) (pt-B
 
 The server is original code and speaks **both eras of MCP** in the same process: the current revision (2026-07-28, no handshake) and the earlier ones (with `initialize`). The official protocol client talks to it in the tests. That validates the protocol; it is **not a certification of every version of every IDE**.
 
-The server only sees the project it was started with, runs no commands and approves no memory. Retrieved text is evidence, never instructions.
+The server only sees the project it was started with and approves no memory. The six basic tools do not execute project commands; the three opt-in recruitment tools launch authorized CLIs in their own lanes. Retrieved text is evidence, never instructions.
 
 ## SDD alignment per project
 
@@ -153,7 +158,7 @@ npm run build
 npm run test:e2e    # panel in the browser
 ```
 
-In 1.5.0: 735/735 tests on Node 24.21.0 and Node 22.22.2 (macOS arm64); Playwright 24/24 (panel), 6/6 (usage) and 3/3 (control); MCP negative controls 7/7 detected (`node scripts/mcp-negative.mjs`). The CI workflow (`.github/workflows/verify.yml`) defines macOS, Linux and Windows, but **1.5.0 has no published CI report**: the one in `docs/validation/ci-report.json` is from revision 912aa25. The negative controls inject defects into an isolated checkout and require that they are detected. That does not imply mutation coverage of all tests. Next steps: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades) (pt-BR).
+Validation for 2.1 must match the delivered revision; see the [release notes](docs/RELEASE_NOTES.md). Historical evidence for 1.5.0: 735/735 tests on Node 24.21.0 and Node 22.22.2 (macOS arm64); Playwright 24/24 (panel), 6/6 (usage) and 3/3 (control); MCP negative controls 7/7 detected (`node scripts/mcp-negative.mjs`). The CI workflow (`.github/workflows/verify.yml`) defines macOS, Linux and Windows, but **1.5.0 has no published CI report**: the one in `docs/validation/ci-report.json` is from revision 912aa25. The negative controls inject defects into an isolated checkout and require that they are detected. That does not imply mutation coverage of all tests. Next steps: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades) (pt-BR).
 
 What does not exist: a continuous file watcher, language-server semantic analysis, multi-host sync, own encryption, multi-tenant authentication, screen capture and shell execution. A call deadline does not interrupt synchronous work such as indexing. Do not place the live database on iCloud or a network disk. Revoking a memory prevents future use, but does not erase historical copies or backups. See the [security model](docs/SECURITY_MODEL.md) (pt-BR).
 

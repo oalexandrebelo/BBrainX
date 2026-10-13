@@ -21,7 +21,7 @@ try{
 Começar (registra a pasta, indexa e mostra como ligar ao seu harness):
   node bin/bbrainx.mjs up --root /caminho/do/projeto [--project nome]
   node bin/bbrainx.mjs doctor
-  node bin/bbrainx.mjs config --project nome --client ${CLIENTS.join('|')}
+  node bin/bbrainx.mjs config --project nome --client ${CLIENTS.join('|')} [--recruit]
 
 Recrutar agentes (BYO: usa o Claude Code e o Codex já instalados e logados nesta máquina):
   node bin/bbrainx.mjs recruit doctor
@@ -76,7 +76,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
   else if(['integrate','integrations','discover','workspace-seen','control','test','test-history','import-context','budget'].includes(command)){const {controlCommand}=await import('../src/control-cli.mjs');print(await controlCommand(command,values,args));}
   else if(command==='config'){
     ensure(values.project,'PROJECT_REQUIRED');
-    console.log(clientConfig(values.client||'claude',{node:stableNodePath(),entry:stableEntryPath(fileURLToPath(import.meta.url)),project:values.project,home:stateHome()}));
+    console.log(clientConfig(values.client||'claude',{node:stableNodePath(),entry:stableEntryPath(fileURLToPath(import.meta.url)),project:values.project,home:stateHome(),recruit:values.recruit===true}));
   }
   else if(command==='sdd'){
     ensure(values.project,'PROJECT_REQUIRED');

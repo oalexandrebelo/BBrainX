@@ -4,30 +4,35 @@
 
 <p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: consulte a execução e a revisão testada" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Começar</a> · <a href="docs/STUDY_MAP.md">Mapa do estudo</a> · <a href="docs/DOSSIER.md">Dossiê</a> · <a href="docs/SECURITY_MODEL.md">Segurança</a> · <a href="docs/EVALUATION.md">Avaliação</a> · <a href="README.en.md">English</a></p>
 
-## BBrainX 2.0 · AB-BBX
+## BBrainX 2.1 · Claude e Codex trabalhando juntos
 
 O BBrainX nasceu para acelerar e otimizar projetos reais e foi compartilhado para permitir continuidade entre ferramentas e agentes. **AB-BBX** é a camada própria de execução de capacidades: validação, autorização, cancelamento, prazos e contratos MCP. A entrada pública é `src/ab-bbx.mjs`; o caminho anterior conserva compatibilidade. Não há dependência de um motor externo de ações no runtime.
 
-A versão 2.0 atende projetos distintos, com prioridade para Mac mini e MacBook Pro M5. Busca e contexto verificam o corpus antes de responder: `INDEX_STALE` pede reindexação explícita, incluindo arquivos novos que a busca antiga não encontraria. `index-status --project ID` diagnostica sem alterar o índice. O painel mostra buscas, contextos e checkpoints por sessão, sem registrar consultas. Execute `node bin/bbrainx.mjs watch --project ID` em um processo separado; use `--lane ID` para uma lane já registrada. A cada ciclo, o processo reconcilia arquivos novos, alterações, remoções e regras Git. Não instala serviço nem modifica hooks. O intervalo padrão é 30 segundos **após** o término da varredura; não é uma garantia de atraso máximo.
+A versão 2.1 mantém a base AB-BBX da 2.0 e atende projetos distintos, com prioridade para Mac mini e MacBook Pro M5. Busca e contexto verificam o corpus antes de responder: `INDEX_STALE` pede reindexação explícita, incluindo arquivos novos que a busca antiga não encontraria. `index-status --project ID` diagnostica sem alterar o índice. O painel mostra buscas, contextos e checkpoints por sessão, sem registrar consultas. Execute `node bin/bbrainx.mjs watch --project ID` em um processo separado; use `--lane ID` para uma lane já registrada. A cada ciclo, o processo reconcilia arquivos novos, alterações, remoções e regras Git. Não instala serviço nem modifica hooks. O intervalo padrão é 30 segundos **após** o término da varredura; não é uma garantia de atraso máximo.
 
 [Contrato da 2.0, revisão dos repositórios e aceite nos Macs](docs/BBRAINX_2_0.md) · [Operação AB-BBX](docs/AB_BBX.md). Busca lexical e checkpoints são ferramentas de desenvolvimento; não integram o runtime do aplicativo nem certificam seu lançamento.
 
 ### Recrutar agentes (BYO: suas CLIs, seus logins)
 
-Numa sessão ligada ao BBrainX, diga ao harness **"recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para corrigir X"**. O BBrainX lança o Claude Code e o Codex que já estão instalados e logados nesta máquina, um por recruta, cada um em worktree, branch e lane próprios; o checkout principal não é tocado. Nenhuma assinatura nova, nenhum token lido. `integrate --apply` concede isso ao servidor com `--recruit` (nove ferramentas); sem o flag, seis. `bbrainx recruit doctor` mostra as CLIs, o login e os limites de uso do Codex. Medido em 13/10/2026 com as duas CLIs reais: dois recrutas, dois commits, checkout limpo. [docs/RECRUIT.md](docs/RECRUIT.md).
+No Claude, peça **"pelo BBrainX, recrute 1 codex luna 6 high, em modo revisão, para responder OK; aguarde e traga a resposta aqui"**. No Codex, peça **"pelo BBrainX, recrute 1 claude opus 5.5 xhigh para revisar X; aguarde e traga o resultado aqui"**. O harness principal chama `agents_recruit`, acompanha `agents_status` e apresenta o resultado no chat. O recrutamento também pode partir do chat normal do Claude desktop com o conector local habilitado.
+
+O BBrainX executa as CLIs já instaladas e logadas nesta máquina, cada recruta em worktree, branch e lane próprias. A autenticação continua pertencendo ao Claude Code ou ao Codex: o BBrainX não lê tokens, troca logins nem migra contas. Modelos e esforços dependem da CLI e do acesso da conta; use versões explícitas para pedidos reproduzíveis. `integrate --apply` inclui `--recruit` por padrão; `--no-recruit` mantém só as seis ferramentas de contexto. Os geradores `config` exigem `--recruit` explícito para expor as nove ferramentas.
+
+A 2.1 preserva IDs Claude sem versão menor, restringe a seleção de modelo por processo Claude e ignora executáveis automáticos que falham em `--version`, incluindo wrappers quebrados no PATH. Oferece seleção explícita dos binários e fragmento para Claude desktop. [Conexões, contas e OmniRoute opcional](docs/integrations/HARNESS_CONNECTIONS.md) · [Recrutamento e limites](docs/RECRUIT.md).
 
 ## O que é
 
 O BBrainX roda na sua máquina e entrega ao agente de programação o que ele precisa para continuar uma tarefa: os trechos certos do repositório, o checkpoint da sessão anterior e as memórias que você aprovou. Fala MCP. Não usa modelo, conta, Docker nem Python no núcleo e não faz chamadas de rede de saída.
 
-| Cliente | Estado na 2.0 |
+| Cliente | Conexão |
 |---|---|
-| Claude Code | **Verificado.** `claude -p --mcp-config` chamou `context_search`; como recruta (haiku), trabalhou em worktree própria e commitou |
-| Codex | **Verificado.** `codex exec` chamou `context_search`; como recruta (gpt-6-astra), chamou `context_bootstrap`, `context_search`, `session_checkpoint` e `session_get` na lane dele |
-| VS Code | **Verificado em parte.** O `.vscode/mcp.json` gerado foi exercitado por um cliente do SDK MCP, do jeito que o VS Code o inicia. O início pela interface do VS Code é manual |
-| Cursor, Gemini CLI | **Não verificado.** Só imprime os fragmentos de configuração (`config --client cursor` e `--client gemini`) |
+| Claude Code, inclusive no VS Code | `integrate --clients claude --apply`; aprovar o MCP do projeto no cliente |
+| Codex app, CLI e extensão | `integrate --clients codex --apply`; o cliente precisa confiar no projeto e carregar a configuração local |
+| VS Code MCP | `integrate --clients vscode --apply`; iniciar o servidor no editor |
+| Claude desktop, chat normal | `config --client claude-desktop --project ID --recruit`; mesclar o bloco local com backup e reiniciar o app |
+| Cursor, Gemini CLI, Kilo, Antigravity | Geradores existentes; configuração presente não certifica conexão nativa |
 
-Esta branch propõe a **2.0.0** na única [PR #22](https://github.com/oalexandrebelo/BBrainX/pull/22). Versão declarada não significa atualização já instalada nos dispositivos. Windows fica no backlog por decisão do mantenedor; suas falhas continuam visíveis e não bloqueiam a entrega para Mac. Evidências históricas da 1.5.0: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
+Esta branch prepara a **2.1.0 Developer Preview**, derivada da revisão `689a5a6` da 2.0. A presença no Git não significa merge em `main`, instalação em outras máquinas ou aprovação de todos os clientes. Windows permanece no backlog. [Mudanças e evidência por versão](docs/RELEASE_NOTES.md).
 
 ## Comece em três comandos
 
@@ -52,7 +57,7 @@ node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto --apply
 
 Sem `--apply`, `integrate` mostra destinos, hashes e pendências. Com `--apply`, registra a raiz, aplica a entrada MCP do projeto com backups privados e indexa os arquivos; preserva credenciais, provedores, trust e aprovações. Descobre Codex, Claude Code, VS Code, Kilo e Antigravity IDE por metadados locais, sem executar clientes. Codex/Claude/VS Code/Kilo têm configuração automática; Antigravity IDE exige etapa manual e não recebe cadastro global de todos os projetos. `--clients codex,claude,vscode,kilo` permite selecionar os destinos, inclusive preparar cliente ainda não instalado. Instalações antigas só podem ser migradas com `--adopt-existing` quando coincidem exatamente com o gerador anterior. Rollback: `node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO`; uma edição posterior impede sobrescrita. [Contrato do instalador](docs/integrations/INSTALLER.md).
 
-`config --project meu-projeto --client cursor` continua imprimindo fragmentos para integração manual (também aceita claude, codex, vscode e gemini). Configuração presente não prova conexão nativa. `npm start` executa `node bin/bbrainx.mjs serve`: serve o painel em **http://127.0.0.1:4317** (porta: `serve --port N`) e **não abre o navegador**. Precisa do build feito pelo `npm run setup`. No macOS, `Start-BBrainX.command` (dois cliques) roda `npm run setup` e `npm run demo`, serve o painel e abre o navegador.
+`config --project meu-projeto --client cursor` continua imprimindo fragmentos para integração manual (também aceita claude, claude-desktop, codex, vscode e gemini; adicione `--recruit` para habilitar recrutamento). Configuração presente não prova conexão nativa. `npm start` executa `node bin/bbrainx.mjs serve`: serve o painel em **http://127.0.0.1:4317** (porta: `serve --port N`) e **não abre o navegador**. Precisa do build feito pelo `npm run setup`. No macOS, `Start-BBrainX.command` (dois cliques) roda `npm run setup` e `npm run demo`, serve o painel e abre o navegador.
 
 O [plugin próprio BBrainX](extensions/vscode/README.md) oferece marca, árvore de pastas abertas e comandos Detectar/Conectar no VS Code e um VSIX para avaliação no Antigravity IDE. Use `node scripts/package-extension.mjs` (Python 3 apenas para empacotar), instale o VSIX pelo editor e configure o executável em settings de usuário. Pastas confiáveis geram heartbeats de metadados a cada 30 s; expiram em 90 s e não registram nem indexam projetos sozinhas. `node bin/bbrainx.mjs discover --root /caminho/do/projeto` distingue pastas abertas reportadas, projetos registrados e históricos com raiz validada; não captura qualquer sessão ativa de qualquer IDE.
 
@@ -105,7 +110,7 @@ Fonte: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md), base 
 
 O servidor é próprio e fala as **duas eras do protocolo MCP** no mesmo processo: a revisão corrente (2026-07-28, sem handshake) e as anteriores (com `initialize`). O cliente oficial do protocolo conversa com ele nos testes. Isso valida o protocolo; **não é homologação de cada versão de cada IDE**.
 
-O servidor só enxerga o projeto com que foi iniciado, não executa comandos e não aprova memória. Texto recuperado é evidência, nunca instrução.
+O servidor só enxerga o projeto com que foi iniciado e não aprova memória. As seis ferramentas básicas não executam comandos do projeto; as três ferramentas opt-in de recrutamento lançam as CLIs autorizadas em lanes próprias. Texto recuperado é evidência, nunca instrução.
 
 ## Alinhamento SDD por projeto
 
@@ -155,7 +160,7 @@ npm run build
 npm run test:e2e    # painel no navegador
 ```
 
-Na 2.0.0: 758/758 testes no Node 24.21.0 (macOS arm64, Mac mini M4) e Playwright 24/24, 6/6 e 4/4; recrutamento exercitado com as duas CLIs reais ([docs/RECRUIT.md](docs/RECRUIT.md)). Na 1.5.0: 735/735 testes no Node 24.21.0 e no Node 22.22.2 (macOS arm64); Playwright 24/24 (painel), 6/6 (uso) e 3/3 (controle); controles negativos do MCP 7/7 detectados (`node scripts/mcp-negative.mjs`). O workflow de CI (`.github/workflows/verify.yml`) define macOS, Linux e Windows, mas **a 1.5.0 não tem relatório de CI publicado**: o de `docs/validation/ci-report.json` é da revisão 912aa25. Os controles negativos injetam defeitos em checkout isolado e exigem que sejam detectados. Isso não implica cobertura por mutação de todos os testes. Próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades).
+A validação desta 2.1 deve corresponder à revisão entregue; consulte as [notas de versão](docs/RELEASE_NOTES.md). Evidência histórica da 2.0.0: 758/758 testes no Node 24.21.0 (macOS arm64, Mac mini M4) e Playwright 24/24, 6/6 e 4/4; recrutamento exercitado com as duas CLIs reais ([docs/RECRUIT.md](docs/RECRUIT.md)). Na 1.5.0: 735/735 testes no Node 24.21.0 e no Node 22.22.2 (macOS arm64); Playwright 24/24 (painel), 6/6 (uso) e 3/3 (controle); controles negativos do MCP 7/7 detectados (`node scripts/mcp-negative.mjs`). O workflow de CI (`.github/workflows/verify.yml`) define macOS, Linux e Windows, mas **a 1.5.0 não tem relatório de CI publicado**: o de `docs/validation/ci-report.json` é da revisão 912aa25. Os controles negativos injetam defeitos em checkout isolado e exigem que sejam detectados. Isso não implica cobertura por mutação de todos os testes. Próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades).
 
 O que não existe: observador contínuo de arquivos, análise semântica por servidor de linguagem, sincronização entre máquinas, criptografia própria, autenticação multiusuário, captura de tela e execução de shell. O prazo de uma chamada não interrompe trabalho síncrono, como a indexação. Não use o banco ativo em iCloud ou em disco de rede. Revogar uma memória impede o uso futuro, mas não apaga cópias históricas nem backups. Veja o [modelo de segurança](docs/SECURITY_MODEL.md).
 

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "version": "2.1.0",
+  "testedRevision": "4c56cae8e1db4c76545465de858b2e9631206589",
+  "startedAt": "2026-10-13T06:07:49.529Z",
+  "finishedAt": "2026-10-13T06:08:00.571Z",
+  "route": "Configured Codex MCP server via MCP SDK -> BBrainX agents_recruit -> native Claude CLI",
+  "nativeChatToolAvailable": false,
+  "requested": {
+    "spec": "1 claude haiku 5.5 low",
+    "mode": "review",
+    "task": "Responda apenas OK."
+  },
+  "result": {
+    "status": "completed",
+    "exitCode": 0,
+    "reason": null,
+    "result": "OK",
+    "model": "claude-haiku-5-5",
+    "effort": "low",
+    "mode": "review",
+    "costUsd": 0.005485180000000001,
+    "dirtyFiles": 0,
+    "commitsAhead": 0
+  },
+  "nativeEvidence": [
+    {
+      "type": "result",
+      "subtype": "success",
+      "isError": false,
+      "result": "OK",
+      "turns": 1,
+      "modelsFromUsage": [
+        "claude-haiku-5-5"
+      ],
+      "costUsd": 0.005485180000000001
+    }
+  ],
+  "nativeLogSha256": "3f158e54ee5413975b54d1d0c40912906367955abbd79c8f5c0e4479a50a6c1d",
+  "modelConfirmed": true,
+  "checkoutUnchanged": true,
+  "cleanup": {
+    "status": "dismissed",
+    "worktreeRemoved": true,
+    "branchDeleted": true
+  },
+  "passed": true,
+  "limits": [
+    "Confirms BBrainX MCP recruitment and native modelUsage; not direct tool discovery in an already-open Codex chat.",
+    "Effort low and review mode are the requested CLI settings; model identity is confirmed separately by native modelUsage.",
+    "Does not certify all models, client interfaces, Windows or all CI checks."
+  ]
+}

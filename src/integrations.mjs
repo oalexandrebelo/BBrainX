@@ -50,6 +50,19 @@ function binary(name,env,platform){
   return null;
 }
 
+/** Explicit runtime paths only: no CLI execution, account lookup or inherited provider settings. */
+export function recruitRuntimeEnv(env=process.env){
+  const result={};
+  for(const key of ['BBRAINX_CLAUDE','BBRAINX_CODEX']){
+    const value=env[key];if(value===undefined)continue;
+    ensure(typeof value==='string'&&value.length<=4096&&path.isAbsolute(value)&&!/[\x00-\x1f\x7f]/.test(value),'INTEGRATION_HARNESS_OVERRIDE_INVALID');
+    let executable=false;
+    try{if(fs.statSync(value).isFile()){fs.accessSync(value,fs.constants.X_OK);executable=true;}}catch{/* invalid executable */}
+    ensure(executable,'INTEGRATION_HARNESS_OVERRIDE_INVALID');result[key]=value;
+  }
+  return result;
+}
+
 /** Inventory only: no process launch, config/credential read, provider lookup or network call. */
 export function discoverIntegrations({userHome=os.homedir(),platform=process.platform,env=process.env}={}){
   userHome=absolute(userHome);const extensionRoots=[path.join(userHome,'.vscode','extensions'),path.join(userHome,'.vscode-insiders','extensions')];
@@ -95,6 +108,7 @@ function legacyServer(client,current,server){
   if(!object(current))return false;
   // Configs antigas não tinham `--workspace ... --harness ...` (4 últimos) nem `--recruit`.
   const legacy=client==='kilo'?{...server,command:server.command.filter(a=>a!=='--recruit').slice(0,-4)}:{...server,args:server.args.filter(a=>a!=='--recruit').slice(0,-4)};
+  const envKey=client==='kilo'?'environment':'env';legacy[envKey]={BBRAINX_HOME:server[envKey].BBRAINX_HOME};
   if(client==='claude'&&current.type==='stdio')legacy.type='stdio';
   if(client==='codex')for(const key of ['enabled','required','startup_timeout_sec','tool_timeout_sec'])if(Object.hasOwn(current,key)){
     if(key==='enabled'&&current[key]!==true||key==='required'&&current[key]!==false)return false;
@@ -155,7 +169,7 @@ function renderConfig(client,bytes,server,canUpdate,adoptExisting){
     const eol=text.includes('\r\n')?'\r\n':'\n';
     const block=[begin,'[mcp_servers.bbrainx]','command = '+JSON.stringify(server.command),'args = '+JSON.stringify(server.args),
       ...['enabled','required','startup_timeout_sec','tool_timeout_sec'].filter(key=>Object.hasOwn(desired,key)).map(key=>key+' = '+JSON.stringify(desired[key])),
-      '','[mcp_servers.bbrainx.env]','BBRAINX_HOME = '+JSON.stringify(server.env.BBRAINX_HOME),end,''].join(eol);
+      '','[mcp_servers.bbrainx.env]',...Object.entries(server.env).map(([key,value])=>key+' = '+JSON.stringify(value)),end,''].join(eol);
     const after=remainder+(remainder&&!remainder.endsWith('\n')?eol:'')+block;
     try{parseToml(after);}catch{ensure(false,'INTEGRATION_TOML_INVALID');}return {bytes:Buffer.from(after),adoption:adopting};
   }
@@ -181,6 +195,7 @@ export function planIntegrations(options){
   ensure(options.adoptExisting===undefined||typeof options.adoptExisting==='boolean','INVALID_INTEGRATION_ADOPTION');
   const root=canonicalAnchor(options.root);ensure(root===absolute(options.root),'INTEGRATION_ROOT_NOT_CANONICAL');
   const node=absolute(options.node),entry=absolute(options.entry),state=stateAnchor(options.home),home=state.target;
+  const runtimeEnv=options.recruit===true?recruitRuntimeEnv(options.env):{};
   const discovery=discoverIntegrations(options),requested=options.clients??discovery.clients.filter(client=>client.detected).map(client=>client.id);
   ensure(Array.isArray(requested)&&requested.every(client=>INTEGRATION_CLIENTS.includes(client)),'UNKNOWN_INTEGRATION_CLIENT');
   const clients=[...new Set(requested)],files=[],drafts=[];
@@ -190,7 +205,7 @@ export function planIntegrations(options){
     let target;
     try{
       target=location(root,client);const before=readFile(root,target),args=[entry,'mcp','--project',project,...(lane?['--lane',lane]:[]),...(options.recruit===true?['--recruit']:[]),'--workspace',root,'--harness',client];
-      const env={BBRAINX_HOME:home},server=client==='kilo'?{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}:{...(client==='vscode'?{type:'stdio'}:{}),command:node,args,env};
+      const env={BBRAINX_HOME:home,...runtimeEnv},server=client==='kilo'?{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}:{...(client==='vscode'?{type:'stdio'}:{}),command:node,args,env};
       const canUpdate=before.sha!==null&&owned(home,target,before.sha),rendered=renderConfig(client,before.bytes,server,canUpdate,options.adoptExisting===true),after=rendered.bytes,afterSha256=hash(after);
       const file={client,detected,target,scope:'project',status:before.sha===afterSha256?'unchanged':before.bytes?'update':'create',beforeSha256:before.sha,afterSha256,serverName:'bbrainx'};
       if(rendered.adoption)file.adoption='exact-legacy-generator';
