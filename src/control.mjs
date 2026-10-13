@@ -9,7 +9,8 @@ import { discoverIntegrations } from './integrations.mjs';
 import { budgetOverview } from './budget.mjs';
 import { verifyRoot } from './source-root.mjs';
 
-const MAX_RECORD=65536, MAX_SESSIONS=256, MAX_RUNS=128, LEASE_MS=90000;
+const MAX_RECORD=65536, MAX_SESSIONS=256, MAX_RUNS=128, MAX_RECRUITS=128, LEASE_MS=90000;
+export const RECRUIT_LEASE_MS=90000;
 function directory(home,...parts){
   let current=safeDirectory(home);
   for(const part of ['control-v1',...parts]){
@@ -140,8 +141,27 @@ export function discoverOpenWorkspaces(home,{now=Date.now()}={}){
   const found=records(home,['editors'],256);
   return {...found,items:found.items.filter(x=>typeof x.workspace==='string'&&['vscode','antigravity'].includes(x.harness)).map(x=>({...x,status:now-Date.parse(x.lastSeen)<=LEASE_MS?'open':'stale'})),leaseMs:LEASE_MS};
 }
+/** Recrutas (agentes BYO lançados pelo BBrainX): metadados e recibos, nunca o prompt nem a saída integral. */
+export function recruitDirectory(brain,project){brain.project(project);return directory(brain.home,projectKey(project),'recruits');}
+export function recruitRecords(brain,project){brain.project(project);return records(brain.home,[projectKey(project),'recruits'],MAX_RECRUITS);}
+export function recruitLiveness(record,at=Date.now()){
+  if(record.status==='running'||record.status==='starting')return at-Date.parse(record.lastSeen)>RECRUIT_LEASE_MS?'unknown':record.status;
+  return record.status;
+}
+export function saveRecruit(brain,project,record){
+  identifier(record.id);ensure(record.project===project,'RECRUIT_PROJECT_MISMATCH');
+  const dir=recruitDirectory(brain,project),existing=records(brain.home,[projectKey(project),'recruits'],MAX_RECRUITS);
+  if(!existing.items.some(x=>x.id===record.id)&&existing.items.length>=MAX_RECRUITS){
+    // Janela cooperativa: só um registro já encerrado e sem worktree dá lugar ao novo.
+    const old=existing.items.filter(x=>x.status==='dismissed').sort((a,b)=>Date.parse(a.lastSeen)-Date.parse(b.lastSeen))[0];
+    ensure(old&&typeof old.id==='string','CONTROL_RECRUIT_QUOTA','Dismiss old recruits before starting new ones.');identifier(old.id);
+    for(const suffix of ['.json','.log'])fs.rmSync(path.join(dir,old.id+suffix),{force:true});
+  }
+  write(dir,record.id,record);return record;
+}
+
 export function controlOverview(brain,project){
-  const identity=brain.project(project),key=projectKey(project), sessions=records(brain.home,[key,'sessions'],MAX_SESSIONS),runs=records(brain.home,[key,'runs'],MAX_RUNS);
+  const identity=brain.project(project),key=projectKey(project), sessions=records(brain.home,[key,'sessions'],MAX_SESSIONS),runs=records(brain.home,[key,'runs'],MAX_RUNS),recruits=records(brain.home,[key,'recruits'],MAX_RECRUITS);
   const memories=brain.db.prepare('SELECT status,count(*) n FROM memories WHERE project=? GROUP BY status').all(project);
   const workspaces=readWorkspaceOverview(brain,project),usage=usageOverview(brain,project);
   const canonicalRoot=root=>{try{verifyRoot(root);return fs.realpathSync.native(root);}catch{return null;}};
@@ -150,6 +170,7 @@ export function controlOverview(brain,project){
     memories:Object.fromEntries(['approved','proposed','revoked'].map(k=>[k,memories.find(x=>x.status===k)?.n??0])),
     activity:sessions.items.filter(x=>x.project===project).sort((a,b)=>Date.parse(b.lastSeen)-Date.parse(a.lastSeen)).map(x=>({...x,status:x.status==='closed'?'closed':Date.now()-Date.parse(x.lastSeen)>LEASE_MS?'stale':x.status})),
     runs:runs.items.filter(x=>x.project===project).sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)).slice(0,50),
+    recruits:recruits.items.filter(x=>x.project===project).sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)).slice(0,50).map(x=>({id:x.id,harness:x.harness,model:x.model,effort:x.effort,mode:x.mode,title:x.title,status:recruitLiveness(x),startedAt:x.startedAt,endedAt:x.endedAt,lastSeen:x.lastSeen,branch:x.branch,worktree:x.worktree,commitsAhead:x.commitsAhead??null,costUsd:x.costUsd??null,usage:x.usage??null,reason:x.reason??null,sessionId:x.sessionId??null})),
     usage,budget:budgetOverview(brain,project,usage.usage),integrations:discoverIntegrations(),openWorkspaces:{...open,items:open.items.flatMap(x=>{const workspace=canonicalRoot(x.workspace);return workspace&&roots.has(workspace)?[{...x,workspace}]:[];})},
-    coverage:{activity:'Somente processos MCP BBrainX instrumentados; presença de configuração não confirma conexão.',tests:'Até 50 resultados da janela ativa de 128; terminais antigos são arquivados localmente. Código local não está em sandbox de SO.',retention:'Metadados de conexão: janela cooperativa de 256, com substituição de encerrados/stale. Arquivos de testes arquivados são preservados; não é quota global de disco.',costs:'Somente recibos importados; gastos de outras chamadas permanecem desconhecidos.',sessionLeaseMs:LEASE_MS,truncated:sessions.truncated||runs.truncated||runs.items.length>50||workspaces.truncated,invalidRecords:sessions.invalid+runs.invalid}};
+    coverage:{activity:'Somente processos MCP BBrainX instrumentados; presença de configuração não confirma conexão.',recruits:'Recrutas lançados por este BBrainX: estado pelo batimento do supervisor; custo só quando a CLI o informa (Claude Code); Codex informa tokens.',tests:'Até 50 resultados da janela ativa de 128; terminais antigos são arquivados localmente. Código local não está em sandbox de SO.',retention:'Metadados de conexão: janela cooperativa de 256, com substituição de encerrados/stale. Arquivos de testes arquivados são preservados; não é quota global de disco.',costs:'Somente recibos importados; gastos de outras chamadas permanecem desconhecidos.',sessionLeaseMs:LEASE_MS,truncated:sessions.truncated||runs.truncated||runs.items.length>50||recruits.truncated||workspaces.truncated,invalidRecords:sessions.invalid+runs.invalid+recruits.invalid}};
 }

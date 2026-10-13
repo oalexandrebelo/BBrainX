@@ -53,6 +53,10 @@ Use um único watcher por banco/worktree. Não há lease global novo para dedupl
 
 Não há instalação automática de LaunchAgent, serviço de sistema, hook Git ou alteração de gateway. O comando é executável e testado; ativação persistente na estação real deve produzir seu próprio recibo. Não foi acessada a estação do mantenedor nesta revisão.
 
+## Recrutas
+
+Uma worktree de recruta é uma lane registrada pelo `agents_recruit`/`bbrainx recruit start`; o supervisor indexa a lane antes de abrir a CLI, e o servidor do recruta é iniciado com `--lane <id>` e sem `--recruit`. Baixa (`agents_dismiss`) remove a worktree e fecha a lane. [RECRUIT.md](RECRUIT.md).
+
 ## Checkpoints úteis sem expansão de escopo
 
 `done`, `decisions` e `blockers` aceitam até 2.000 caracteres por item, com o mesmo limite de itens e teto transacional total de 16 KiB. `objective` e `nextAction` mantêm 4.000; `evidence.command/result` mantêm 600. Não há truncamento silencioso. Payload total excessivo continua recusado. Não houve migração de banco.

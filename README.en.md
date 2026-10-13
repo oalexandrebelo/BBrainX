@@ -10,14 +10,18 @@ Version 2.0 targets general project work, prioritizing Mac mini and MacBook Pro 
 
 BBrainX was built to accelerate real project work and shared to make verified continuity portable across coding agents. AB-BBX is its own capability execution core (`src/ab-bbx.mjs`), with a compatible legacy entrypoint. Run `node bin/bbrainx.mjs watch --project ID` in a separate process to periodically reconcile an index; add `--lane ID` for a registered workspace lane. This does not install a service or alter harness configuration. [Operating contract and limitations](docs/AB_BBX.md).
 
+### Recruit agents (BYO: your CLIs, your logins)
+
+In a session connected to BBrainX, tell your harness **"recruit 1 codex astra 6 high and 2 opus 5.5 xhigh to fix X"**. BBrainX launches the Claude Code and Codex CLIs already installed and logged in on this machine, one per recruit, each in its own git worktree, branch and BBrainX lane; your checkout is never modified. No new subscription, no token read. `integrate --apply` grants it to the server with `--recruit` (nine tools); without the flag, six. `bbrainx recruit doctor` shows the CLIs, their login and Codex usage windows. Measured on 2026-10-13 with both real CLIs: two recruits, two commits, clean checkout. [docs/RECRUIT.md](docs/RECRUIT.md) (pt-BR).
+
 ## What it is
 
 BBrainX runs on your machine and gives a coding agent what it needs to continue a task: the right excerpts of the repository, the checkpoint of the previous session and the memories you approved. It speaks MCP. The core uses no model, account, Docker or Python and makes no outbound network calls.
 
-| Client | State in 1.5.0 |
+| Client | State in 2.0 |
 |---|---|
-| Claude Code | **Verified.** `claude -p --mcp-config` called `context_search` |
-| Codex | **Verified.** `codex exec` called `context_search` |
+| Claude Code | **Verified.** `claude -p --mcp-config` called `context_search`; as a recruit (haiku) it worked in its own worktree and committed |
+| Codex | **Verified.** `codex exec` called `context_search`; as a recruit (gpt-6-astra) it called `context_bootstrap`, `context_search`, `session_checkpoint` and `session_get` on its lane |
 | VS Code | **Partly verified.** The generated `.vscode/mcp.json` was exercised by an MCP SDK client the way VS Code launches it. Starting it from the VS Code UI is manual |
 | Cursor, Gemini CLI | **Not verified.** Only prints the configuration fragments (`config --client cursor` and `--client gemini`) |
 

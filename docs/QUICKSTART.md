@@ -99,6 +99,10 @@ No agente:
 
 Não é necessário alterar `ANTHROPIC_BASE_URL`, a configuração da OpenAI, gateways ou a autenticação nativa do cliente. O BBrainX não chama nenhum serviço hospedado.
 
+### Recrutar agentes a partir da sessão
+
+Com `--recruit` nos args do servidor (padrão do `integrate --apply`), peça ao harness: "recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para …". Cada recruta roda na CLI já logada, em worktree e branch próprias ao lado do repositório (`<pasta>.bbx/<id>`), com um BBrainX da lane dele. Acompanhe com `bbrainx recruit status --project ID` ou na aba Painel; dê baixa com `recruit dismiss`. Detalhes, limites e o que foi medido: [RECRUIT.md](RECRUIT.md).
+
 ## 5. Checkpoint manual
 
 A saída de `index` contém `snapshot`. Use esse valor no arquivo:
@@ -211,7 +215,11 @@ Não copie a cópia por cima do `brain.sqlite` em uso: os arquivos `brain.sqlite
 | `PROJECT_NOT_REGISTERED` | Registre o ID e raiz pelo CLI no mesmo `BBRAINX_HOME`. |
 | `INTEGRATION_PRIVATE_DIRECTORY_REQUIRED` | `BBRAINX_HOME` já existe com permissão para grupo ou outros. Use uma pasta nova (o BBrainX a cria com 0700) ou aplique `chmod 700` nela. |
 | `PROJECT_ROOT_ALREADY_REGISTERED` | A pasta já tem um nome; a mensagem diz qual. Use esse nome. |
-| `STALE_INDEX` | Só ocorre com `--strict` ou quando o arquivo muda sem parar. Reindexe; não aceite código antigo como atual. |
+| `INDEX_STALE` | A worktree mudou desde a última indexação (arquivo novo, alterado, removido ou regra de ignore nova). Chame `context_index` e repita; CLI: `bbrainx index --project ID [--lane ID]`. `index-status` diagnostica sem escrever; `watch` mantém o índice num processo separado. |
+| `STALE_INDEX` | Legado: a verificação de frescor (`INDEX_STALE`) acontece antes de o pacote ser montado, então `--strict` só distingue a janela entre a varredura e a compilação. |
+| `RECRUIT_HARNESS_UNAVAILABLE` | A CLI pedida não está instalada ou não está logada. `bbrainx recruit doctor` mostra o que falta; faça login na própria CLI (`claude auth login`, `codex login`). |
+| `RECRUIT_CAPACITY` / `LANE_CAPACITY` | Já há 8 recrutas ativos ou 8 lanes ativas. Dê baixa nos concluídos (`recruit dismiss`). |
+| `CAPABILITY_NOT_FOUND` para `agents_recruit` | O servidor foi iniciado sem `--recruit`. Rode `bbrainx integrate --root . --apply` (ou acrescente `--recruit` aos args) e recarregue o MCP. |
 | `INDEX_FILE_LIMIT` / `INDEX_BYTE_LIMIT` | Registre uma raiz menor, ignore diretórios pelo Git ou aumente o teto pela variável indicada na mensagem. |
 | `SNAPSHOT_CONFLICT` | O snapshot informado não é o do índice atual. Omita o campo ou reindexe. |
 | `MANDATORY_CONTEXT_EXCEEDS_BUDGET` | Aumente o orçamento ou revise memórias; não corte restrições silenciosamente. |

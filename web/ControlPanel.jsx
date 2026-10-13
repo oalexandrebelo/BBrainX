@@ -12,6 +12,7 @@ const shellQuote=value=>"'"+String(value??'').replaceAll("'", "'\\''")+"'";
 const checkpoint=task=>task?.content||task||{};
 const runLabel={running:'Em andamento',passed:'Aprovado',failed:'Falhou',cancelled:'Cancelado',timed_out:'Tempo esgotado'};
 const activityLabel={starting:'Aguardando handshake',connected:'Conectado',closed:'Encerrado',stale:'Sem atualização'};
+const recruitLabel={starting:'iniciando',running:'em execução',unknown:'sem batimento',completed:'concluído',failed:'falhou',stopped:'interrompido',dismissed:'dispensado'};
 const coverageValue=value=>value===null||value===undefined?'Desconhecida':typeof value==='boolean'?value?'Sim':'Não':typeof value==='object'?null:String(value);
 const coverageLabels={activity:'Atividade',tests:'Testes',retention:'Histórico',costs:'Custos',sessionLeaseMs:'Validade da presença (ms)',truncated:'Leitura limitada',invalidRecords:'Registros inválidos'};
 const evidenceText=item=>typeof item==='string'?item:item.path||item.product||item.kind||'Origem não informada';
@@ -51,6 +52,7 @@ export default function ControlPanel({boot}){
  function refresh(){setReport(null);setRefreshKey(value=>value+1);}
 
  const control=report?.usage||{},usage=control.usage||{},tasks=report?.tasks||[],runs=report?.runs||[],activity=report?.activity||[],lanes=report?.workspaces?.lanes||[];
+ const recruits=report?.recruits||[],activeRecruits=recruits.filter(item=>item.status==='running'||item.status==='starting').length;
  const runningRuns=runs.filter(run=>run.status==='running').length;
  const failedRuns=runs.filter(run=>run.status==='failed').length;
  const connected=activity.filter(item=>item.status==='connected').length;
@@ -97,6 +99,10 @@ export default function ControlPanel({boot}){
      {activity.length?<ul className="control-list">{activity.map(item=><li key={item.id}><div className="control-list-top"><strong>{item.harness||'Harness desconhecido'}</strong><span className={'control-tag state-'+item.status}>{activityLabel[item.status]||item.status}</span></div><p>{item.workspace||'Workspace desconhecido'}{item.lane?` · lane ${item.lane}`:''}</p><small>{fmt(item.calls)} chamadas · {fmt(item.failures)} falhas · visto {date(item.lastSeen)}</small>{item.capabilities?<p className="control-capabilities">Busca: {fmt(item.capabilities['context.search']?.calls??0)} · Contexto: {fmt(item.capabilities['context.bootstrap']?.calls??0)} · Checkpoints: {fmt(item.capabilities['session.checkpoint']?.calls??0)}</p>:<p>Detalhe por capacidade indisponível nesta sessão.</p>}{item.lastError?<p className="control-failure">{item.lastError}</p>:null}</li>)}</ul>:<p className="control-empty" role="status">Nenhuma atividade instrumentada neste projeto.</p>}
     </section>
    </div>
+   <section className="control-card control-recruits" aria-label="Recrutas">
+    <div className="control-section-heading"><div><p className="control-eyebrow">RECRUTAS / AGENTES BYO</p><h2>Agentes recrutados</h2></div><span className="control-count">{activeRecruits} ativos · {recruits.length} no total</span></div>
+    {recruits.length?<ul className="control-list">{recruits.map(item=><li key={item.id}><div className="control-list-top"><strong>{item.harness} · {item.model} · {item.effort}</strong><span className={'control-tag state-'+item.status}>{recruitLabel[item.status]||item.status}</span></div><p>{item.title||'Sem título'}</p><small>{item.id} · {item.mode==='review'?'revisão':'implementação'} · branch {item.branch} · {item.commitsAhead===null||item.commitsAhead===undefined?'commits desconhecidos':fmt(item.commitsAhead)+' commits'} · {item.costUsd===null||item.costUsd===undefined?'custo não informado':'US$ '+item.costUsd.toFixed(2)} · visto {date(item.lastSeen)}</small>{item.reason?<p className="control-failure">{item.reason}</p>:null}</li>)}</ul>:<p className="control-empty" role="status">Nenhum agente recrutado neste projeto. Peça ao seu harness: "recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para ..." (o servidor precisa de --recruit).</p>}
+   </section>
    <section className="control-card" aria-label="Orçamento de APIs">
     <div className="control-section-heading"><div><p className="control-eyebrow">ORÇAMENTO / RECIBOS</p><h2>Limite de acompanhamento</h2></div></div>
     {report.budget?.configured?<><p>{report.budget.currency} {report.budget.amount} · {report.budget.basis==='reported'?'custo informado':'custo estimado'}</p><p className={report.budget.status==='reached'?'control-failure':'control-note'}>Observado: {fmt(report.budget.observedAmount)} · saldo sobre recibos: {fmt(report.budget.remainingObserved)} · {report.budget.status==='reached'?'Limite atingido':report.budget.status==='within-imported'?'Dentro do limite dos recibos':report.budget.status==='partial'?'Cobertura parcial':'Consumo desconhecido'}</p><p className="control-note">{report.budget.coverage}</p></>:<p className="control-empty">Sem limite configurado. Defina moeda, valor e base com <code>bbrainx budget --project {project} --amount 50 --currency USD --basis reported --version 0</code>.</p>}

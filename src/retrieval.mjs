@@ -11,7 +11,8 @@ const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|
 const secretName = /(?:^\.env(?:\.|$)|credentials|secrets?|id_rsa|id_ed25519|\.pem$|\.key$|\.p12$|package-lock\.json$|yarn\.lock$)/i;
 // Formatos inequívocos de credencial. Falso positivo só tira o arquivo do índice, com o motivo declarado.
 const secretBody = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[a-zA-Z0-9_-]{20,}|gh[pousr]_[a-zA-Z0-9]{20,}|github_pat_[a-zA-Z0-9_]{30,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[abprs]-[0-9A-Za-z-]{20,}|[sr]k_live_[0-9A-Za-z]{20,})\b/;
-const skippable = new Set(['ENOENT','SYMLINK_REJECTED','FILE_TOO_LARGE','BINARY_OR_LARGE_FILE','INVALID_UTF8','SECRET_PATTERN_REJECTED']);
+// EACCES/EPERM: um arquivo ilegível sai do manifesto com o motivo declarado, nos dois lados (índice e verificação), em vez de derrubar toda busca.
+const skippable = new Set(['ENOENT','EACCES','EPERM','SYMLINK_REJECTED','FILE_TOO_LARGE','BINARY_OR_LARGE_FILE','INVALID_UTF8','SECRET_PATTERN_REJECTED']);
 const CHUNK_LINES = 60;
 
 const defaults = {maxFiles:20000, maxBytes:256*1048576, maxFileBytes:262144};
@@ -138,7 +139,7 @@ export function inspectIndex(store,project,override){
 export function requireFreshIndex(store,project){
   requireIndex(store,project);
   const report=inspectIndex(store,project);
-  ensure(report.status==='current','INDEX_STALE','Index differs from the registered worktree. Call context_index and retry; CLI: bbrainx index --project '+project+'.');
+  ensure(report.status==='current','INDEX_STALE','Index differs from the registered worktree. Call context_index and retry; CLI: bbrainx index --project '+project+(store.binding?' --lane '+store.binding.id:'')+'.');
   return {status:report.status,observedAt:report.observedAt,consistency:report.consistency,
     root:report.root,lane:report.lane,snapshot:report.observedSnapshot};
 }

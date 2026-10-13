@@ -93,7 +93,8 @@ function owned(home,target,sha){
 // Parsers validate before edits. JSONC edits and TOML managed blocks retain unrelated bytes.
 function legacyServer(client,current,server){
   if(!object(current))return false;
-  const legacy=client==='kilo'?{...server,command:server.command.slice(0,-4)}:{...server,args:server.args.slice(0,-4)};
+  // Configs antigas não tinham `--workspace ... --harness ...` (4 últimos) nem `--recruit`.
+  const legacy=client==='kilo'?{...server,command:server.command.filter(a=>a!=='--recruit').slice(0,-4)}:{...server,args:server.args.filter(a=>a!=='--recruit').slice(0,-4)};
   if(client==='claude'&&current.type==='stdio')legacy.type='stdio';
   if(client==='codex')for(const key of ['enabled','required','startup_timeout_sec','tool_timeout_sec'])if(Object.hasOwn(current,key)){
     if(key==='enabled'&&current[key]!==true||key==='required'&&current[key]!==false)return false;
@@ -188,7 +189,7 @@ export function planIntegrations(options){
     if(client==='antigravity'){files.push({client,detected,target:null,scope:'manual',status:'manual-required',reason:'ANTIGRAVITY_IDE_WORKSPACE_NOT_VERIFIED',serverName:'bbrainx'});continue;}
     let target;
     try{
-      target=location(root,client);const before=readFile(root,target),args=[entry,'mcp','--project',project,...(lane?['--lane',lane]:[]),'--workspace',root,'--harness',client];
+      target=location(root,client);const before=readFile(root,target),args=[entry,'mcp','--project',project,...(lane?['--lane',lane]:[]),...(options.recruit===true?['--recruit']:[]),'--workspace',root,'--harness',client];
       const env={BBRAINX_HOME:home},server=client==='kilo'?{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}:{...(client==='vscode'?{type:'stdio'}:{}),command:node,args,env};
       const canUpdate=before.sha!==null&&owned(home,target,before.sha),rendered=renderConfig(client,before.bytes,server,canUpdate,options.adoptExisting===true),after=rendered.bytes,afterSha256=hash(after);
       const file={client,detected,target,scope:'project',status:before.sha===afterSha256?'unchanged':before.bytes?'update':'create',beforeSha256:before.sha,afterSha256,serverName:'bbrainx'};

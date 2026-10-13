@@ -1,3 +1,19 @@
+# BBrainX 2.0.0 — Developer Preview — 13/10/2026
+
+| Medida | Valor |
+|---|---|
+| Recrutamento BYO (Claude Code + Codex reais, tarefa real) | 2 recrutas, 2 commits em branches próprias, checkout principal limpo; Codex fez 4 chamadas ao BBrainX da lane |
+| Custo observado no recruta Claude (haiku, low, 3 turnos) | US$ 0,032 informado pela CLI |
+| Tokens do recruta Codex (gpt-6-astra, low) | 137.177 entrada (117.760 em cache) · 653 saída |
+| Verificação de frescor por busca (M4, árvores reais) | 2.588 arquivos: 0,52 s por processo CLI · 633 arquivos: 0,19 s |
+| Testes automatizados | 758/758 no Node 24.21.0 (macOS arm64) |
+| Ferramentas MCP | 6 por padrão · 9 com `--recruit` (`agents_recruit`, `agents_status`, `agents_dismiss`) |
+| Limites de uso do Codex via `app-server` | janela, percentual, reset, plano e créditos, sem ler `auth.json` |
+
+Mudanças: AB-BBX como núcleo próprio; `INDEX_STALE` quando a worktree diverge do índice; `index-status` e `watch`; checkpoint com notas de 2.000 caracteres; contadores por capacidade no painel; recrutamento de agentes nas CLIs já logadas (modelo BYO do Orca); `EACCES`/`EPERM` saem do manifesto em vez de derrubar a busca.
+
+Oportunidades: painel de contas com vários `CLAUDE_CONFIG_DIR`/`CODEX_HOME`; limites do Claude Code por statusline opt-in; acompanhamento ao vivo dos recrutas; fila acima de 8 ativos; custo da varredura em repositórios grandes (processo dedicado ou invalidação incremental); Windows (15 falhas de CI, backlog). Detalhes em [RECRUIT.md](RECRUIT.md) e [BBRAINX_2_0.md](BBRAINX_2_0.md).
+
 # BBrainX 1.5.0 — Developer Preview — 10/10/2026
 
 | Medida | Valor |

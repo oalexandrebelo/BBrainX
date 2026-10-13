@@ -1,6 +1,6 @@
 # Ponto de retomada da engenharia
 
-BBrainX **2.0.0 proposta**, única PR #22, base de trabalho `e31f92c`. Escopo geral, Mac mini e MacBook Pro M5 prioritários; Windows no backlog por decisão do mantenedor em 12/10/2026. Entrega: AB-BBX, watcher/lane, diagnóstico de frescor, recusa INDEX_STALE, checkpoint 2.000 e métricas por capacidade no painel. [Contrato, fontes fixadas, custos e aceite](../BBRAINX_2_0.md). Não instalado nos Macs físicos. Conferir SHA e checks da PR antes de promover.
+BBrainX **2.0.0 Developer Preview**: PR #22 (AB-BBX, watcher/lane, `INDEX_STALE`, checkpoint 2.000, métricas por capacidade) mais o recrutamento BYO de agentes nas CLIs já logadas (`agents_recruit`, `agents_status`, `agents_dismiss`; [RECRUIT.md](../RECRUIT.md)). Mac mini e MacBook Pro M5 prioritários; Windows no backlog por decisão do mantenedor em 12/10/2026. [Contrato, fontes fixadas, custos e aceite](../BBRAINX_2_0.md). Conferir SHA e checks da PR antes de promover.
 
 Entrega publicada anteriormente: **1.5.0 Developer Preview** (tag `v1.5.0-preview`); números e oportunidades em [HOMOLOGACAO_2026-10-10.md](../HOMOLOGACAO_2026-10-10.md).
 

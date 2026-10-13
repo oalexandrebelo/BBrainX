@@ -12,14 +12,18 @@ A versão 2.0 atende projetos distintos, com prioridade para Mac mini e MacBook 
 
 [Contrato da 2.0, revisão dos repositórios e aceite nos Macs](docs/BBRAINX_2_0.md) · [Operação AB-BBX](docs/AB_BBX.md). Busca lexical e checkpoints são ferramentas de desenvolvimento; não integram o runtime do aplicativo nem certificam seu lançamento.
 
+### Recrutar agentes (BYO: suas CLIs, seus logins)
+
+Numa sessão ligada ao BBrainX, diga ao harness **"recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para corrigir X"**. O BBrainX lança o Claude Code e o Codex que já estão instalados e logados nesta máquina, um por recruta, cada um em worktree, branch e lane próprios; o checkout principal não é tocado. Nenhuma assinatura nova, nenhum token lido. `integrate --apply` concede isso ao servidor com `--recruit` (nove ferramentas); sem o flag, seis. `bbrainx recruit doctor` mostra as CLIs, o login e os limites de uso do Codex. Medido em 13/10/2026 com as duas CLIs reais: dois recrutas, dois commits, checkout limpo. [docs/RECRUIT.md](docs/RECRUIT.md).
+
 ## O que é
 
 O BBrainX roda na sua máquina e entrega ao agente de programação o que ele precisa para continuar uma tarefa: os trechos certos do repositório, o checkpoint da sessão anterior e as memórias que você aprovou. Fala MCP. Não usa modelo, conta, Docker nem Python no núcleo e não faz chamadas de rede de saída.
 
-| Cliente | Estado na 1.5.0 |
+| Cliente | Estado na 2.0 |
 |---|---|
-| Claude Code | **Verificado.** `claude -p --mcp-config` chamou `context_search` |
-| Codex | **Verificado.** `codex exec` chamou `context_search` |
+| Claude Code | **Verificado.** `claude -p --mcp-config` chamou `context_search`; como recruta (haiku), trabalhou em worktree própria e commitou |
+| Codex | **Verificado.** `codex exec` chamou `context_search`; como recruta (gpt-6-astra), chamou `context_bootstrap`, `context_search`, `session_checkpoint` e `session_get` na lane dele |
 | VS Code | **Verificado em parte.** O `.vscode/mcp.json` gerado foi exercitado por um cliente do SDK MCP, do jeito que o VS Code o inicia. O início pela interface do VS Code é manual |
 | Cursor, Gemini CLI | **Não verificado.** Só imprime os fragmentos de configuração (`config --client cursor` e `--client gemini`) |
 
@@ -88,7 +92,7 @@ Piso de recuperação (`test/godmode.test.mjs`, 36 consultas deste repositório,
 
 Fonte: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md), base `5acad77`. Repetição na revisão 77e6ddd (1.5.0) com `node scripts/measure-search-tokens.mjs`: 17.778 → 3.666 (−79,4 %), localizado 31/36 → 31/36, com corpo 31/36 → 20/36. O valor muda com o corpus indexado. Tokens são `o200k_base` sobre o payload, não cobrança do provedor. A resposta leva o mesmo JSON em `content` e em `structuredContent`; essa duplicação não foi tratada (tarefa T1: 10.125 tokens no fio contra 4.978 do texto).
 
-## Seis ferramentas, um escopo
+## Seis ferramentas, um escopo (nove com `--recruit`)
 
 | MCP | Responsabilidade |
 |---|---|
@@ -151,7 +155,7 @@ npm run build
 npm run test:e2e    # painel no navegador
 ```
 
-Na 1.5.0: 735/735 testes no Node 24.21.0 e no Node 22.22.2 (macOS arm64); Playwright 24/24 (painel), 6/6 (uso) e 3/3 (controle); controles negativos do MCP 7/7 detectados (`node scripts/mcp-negative.mjs`). O workflow de CI (`.github/workflows/verify.yml`) define macOS, Linux e Windows, mas **a 1.5.0 não tem relatório de CI publicado**: o de `docs/validation/ci-report.json` é da revisão 912aa25. Os controles negativos injetam defeitos em checkout isolado e exigem que sejam detectados. Isso não implica cobertura por mutação de todos os testes. Próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades).
+Na 2.0.0: 758/758 testes no Node 24.21.0 (macOS arm64, Mac mini M4) e Playwright 24/24, 6/6 e 4/4; recrutamento exercitado com as duas CLIs reais ([docs/RECRUIT.md](docs/RECRUIT.md)). Na 1.5.0: 735/735 testes no Node 24.21.0 e no Node 22.22.2 (macOS arm64); Playwright 24/24 (painel), 6/6 (uso) e 3/3 (controle); controles negativos do MCP 7/7 detectados (`node scripts/mcp-negative.mjs`). O workflow de CI (`.github/workflows/verify.yml`) define macOS, Linux e Windows, mas **a 1.5.0 não tem relatório de CI publicado**: o de `docs/validation/ci-report.json` é da revisão 912aa25. Os controles negativos injetam defeitos em checkout isolado e exigem que sejam detectados. Isso não implica cobertura por mutação de todos os testes. Próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades).
 
 O que não existe: observador contínuo de arquivos, análise semântica por servidor de linguagem, sincronização entre máquinas, criptografia própria, autenticação multiusuário, captura de tela e execução de shell. O prazo de uma chamada não interrompe trabalho síncrono, como a indexação. Não use o banco ativo em iCloud ou em disco de rede. Revogar uma memória impede o uso futuro, mas não apaga cópias históricas nem backups. Veja o [modelo de segurança](docs/SECURITY_MODEL.md).
 

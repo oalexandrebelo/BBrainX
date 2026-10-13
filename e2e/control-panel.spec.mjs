@@ -13,6 +13,8 @@ test('painel local mostra identidade real do projeto e estados desconhecidos sem
  const payload=await response.json();expect(payload.project.id).toBe('demo');
  await expect(page.locator('.control-project-meta')).toContainText('demo-project');
  await expect(page.getByText('Nenhuma atividade instrumentada neste projeto.')).toBeVisible();
+ await expect(page.locator('.control-recruits')).toContainText('Nenhum agente recrutado neste projeto.');
+ expect(Array.isArray(payload.recruits)).toBe(true);expect(payload.recruits.length).toBe(0);
  await expect(page.getByText('Nenhum relatório de testes importado. Progresso e falhas são desconhecidos.')).toBeVisible();
  await expect(page.locator('.control-kpis')).toContainText('Desconhecido');
  await expect(page.locator('.control-command')).toContainText('bbrainx integrate --root');

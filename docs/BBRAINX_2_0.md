@@ -39,6 +39,10 @@ Medição reproduzível: `node scripts/measure-index-freshness.mjs`. Gera arquiv
 
 A máquina executava também validações; cache de filesystem quente e interferência de carga limitam a interpretação do p95. Isso mede o preço da garantia adicional, não aceleração do produto, desempenho do Mac, consumo de bateria ou economia de tokens. Ganho de produto exige tarefas aceitas pareadas (EV-05). A próxima otimização de runtime (EV-06) deve comparar processo dedicado/invalidação incremental com esta baseline e manter os testes de novos arquivos, ignores e mesmo mtime. Não promover cache baseado apenas no tempo para anunciar um índice como atual.
 
+## Recrutamento de agentes (BYO)
+
+Referência adotada: o Orca (`stablyai/orca`, 1.4.214) não cria conta nem chave; acha o `claude`/`codex` do usuário, aponta cada conta para uma pasta (`CLAUDE_CONFIG_DIR`/`CODEX_HOME`), dispara o login oficial da CLI, lê uso pelo `codex app-server` e lança os agentes como `claude -p --model --effort` e `codex exec -m -c model_reasoning_effort` em worktrees. A 2.0 aplica o mesmo mecanismo como capacidade AB-BBX: `agents_recruit` (spec em texto livre ou lista, tarefa, modo, base, prazo), `agents_status`, `agents_dismiss`. Concessão pelo host (`--recruit` nos args do servidor, gravado por `integrate`); servidor do recruta sem o flag; worktree e lane por recruta; supervisor desacoplado com batimento, prazo e commit do que a CLI deixou; registro sem prompt nem saída integral. Contrato, comandos, medição real e limites: [RECRUIT.md](RECRUIT.md). Não lê token, não altera trust/aprovações/provedores, não faz merge nem push.
+
 ## Observação sem conteúdo
 
 Cada sessão instrumentada mantém contadores por capacidade conhecida e um único bucket `unknown`. IDs desconhecidos não se tornam chaves arbitrárias. São gravados calls, failures, totalMs e maxMs; argumentos, consulta, corpos retornados, tokens de capacidade e mensagens livres de erro não entram nesse registro. Erros usam códigos limitados. Duração usa relógio monotônico e inclui a execução observada; não é latência de rede do harness nem tempo humano.
@@ -73,6 +77,10 @@ Ordem de investimento: frescor/observação → custo de varredura e tarefas ace
 | Memória aprovada | Política/referência promovida por humano, com versão e possibilidade de revogação. |
 | Capacidade AB-BBX | Contrato de entrada/saída/acesso/prazo; não é autorização de shell ou concessão implícita de projeto. |
 | Evidência | Resultado com origem, revisão e limites; não vira instrução por estar num arquivo recuperado. |
+
+## Notas da revisão independente de 13/10/2026
+
+Revisão do diff `e3977cc..8ed6285` em macOS (reproduções em diretórios de scratch): paridade exata entre `inspectIndex` e `indexProject` (mesma seleção, ignores, tetos e filtros de segredo; sem laço permanente de `INDEX_STALE`); lanes e contadores corretos; custo medido por busca de 33 ms (357 arquivos) a ~100 ms (2.600 arquivos sintéticos) e 0,52 s por processo CLI em 2.588 arquivos reais no M4. Corrigido nesta revisão: `EACCES`/`EPERM` entram em `skippable` (antes derrubavam toda busca com `EXECUTION_FAILED` opaco); a dica de `INDEX_STALE` inclui `--lane`. Registrado como limite: `watch` concorrente pode produzir `INDEX_STALE` transitório (o agente reindexa e repete; converge) e muda o snapshot entre `context_bootstrap` e `session_checkpoint` (omitir `snapshot`, como as instruções pedem); `BBRAINX_MAX_*` devem ser iguais no watcher e no servidor, senão cada processo "corrige" o outro; `--strict` do `context` é legado.
 
 ## Falhas, recuperação e escala
 
