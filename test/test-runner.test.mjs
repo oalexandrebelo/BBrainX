@@ -114,11 +114,15 @@ test('stops a started run when progress persistence fails and returns a failed r
     fs.writeFileSync('test-started.marker','yes');
     test('long test', async () => new Promise(resolve => setTimeout(resolve, 10000)));
   `);
-  let calls = 0;
+  let injected = false;
   const result = await runProjectTests(brain, {project:'sample', files:['long.test.mjs'], timeoutMs:5000, onUpdate:async record=>{
-    calls++;updates.push(record);
-    if(calls===2) throw new Error('progress storage unavailable');
+    updates.push(record);
+    if(!injected && record.status==='running' && fs.existsSync(path.join(root, 'test-started.marker'))){
+      injected = true;
+      throw new Error('progress storage unavailable');
+    }
   }});
+  assert.equal(injected, true);
   assert.ok(fs.existsSync(path.join(root, 'test-started.marker')));
   assert.equal(result.status, 'failed');
   assert.equal(result.errorCode, 'UPDATE_CALLBACK_FAILED');

@@ -1,6 +1,12 @@
 # Ponto de retomada da engenharia
 
-BBrainX **2.0.0 Developer Preview**: PR #22 (AB-BBX, watcher/lane, `INDEX_STALE`, checkpoint 2.000, métricas por capacidade) mais o recrutamento BYO de agentes nas CLIs já logadas (`agents_recruit`, `agents_status`, `agents_dismiss`; [RECRUIT.md](../RECRUIT.md)). Mac mini e MacBook Pro M5 prioritários; Windows no backlog por decisão do mantenedor em 12/10/2026. [Contrato, fontes fixadas, custos e aceite](../BBRAINX_2_0.md). Conferir SHA e checks da PR antes de promover.
+BBrainX **2.1.0 Developer Preview**, branch `release/2.1.0`, base `689a5a647bcc8b4d91eeb94bd341d0c95d566603` da 2.0. Esta rodada incorpora seleção fiel de IDs/modelos, descoberta de CLIs funcionais e conexões opt-in para Claude e Codex usando suas contas existentes. [Conexões](../integrations/HARNESS_CONNECTIONS.md), [recrutamento](../RECRUIT.md) e [notas de versão](../RELEASE_NOTES.md). Não inferir merge em `main`, instalação em outra máquina ou CI aprovada pelo número da versão.
+
+Evidência anterior: a 2.0 instalada com correções locais no MacBook passou 760 testes e build; SDK MCP recrutou Luna 6 high e Haiku 5.5 low, ambos com resposta `OK`, com modelo efetivo Haiku confirmado. Catálogo de 19 IDs validado no parser, sem executar todos. A primeira tentativa Haiku executou Sonnet; preservar esse diagnóstico ao comparar versões.
+
+**Retomada desta entrega:** a árvore 2.1 passou `npm test` (772/772) e `npm run build`, Node 24.18.0/macOS arm64; [hashes dos arquivos e limites](../validation/2.1.0-local.json). Fragmentos com e sem `--recruit`, migração com overrides e rollback foram verificados. Próxima ação: conferir HEAD/remoto e a CI da PR desta versão antes de integrar em `main`; validar clientes nativos após instalar a release. Preservar logins, providers, trust, permissões, escopo de projeto e rollback por backup. Sem mudança de UI; novas provas de inferência pagas exigem escopo explícito.
+
+Histórico 2.0: PR #22 (AB-BBX, watcher/lane, `INDEX_STALE`, checkpoint 2.000, métricas por capacidade) mais recrutamento BYO (`agents_recruit`, `agents_status`, `agents_dismiss`). Mac mini e MacBook Pro M5 prioritários; Windows no backlog por decisão do mantenedor em 12/10/2026. [Contrato e aceite da 2.0](../BBRAINX_2_0.md).
 
 Entrega publicada anteriormente: **1.5.0 Developer Preview** (tag `v1.5.0-preview`); números e oportunidades em [HOMOLOGACAO_2026-10-10.md](../HOMOLOGACAO_2026-10-10.md).
 
@@ -29,7 +35,7 @@ Quem for otimizar começa pelo [norte de otimização](OPTIMIZATION_NORTH.md), q
 - EV-12 começou em 08/10/2026 sobre `3bb09b0ea68763cc5dd708446ed9d8a4fab5b3bb`, branch `feat/continuous-evolution-2026-10-07`, checkout `release-audit`. Foi entregue na branch `feat/project-control-plane-2026-10-08`, commits `e36e712` e `abbdd0d`; a evidência local está nos documentos ligados acima. Antes de retomar, conferir HEAD/diff, ponta remota e evidência da revisão que efetivamente será integrada.
 - Base histórica da PR #14: `38904c38f1d27b84afaeb56fed702d233ad4e25f`, [PR #13](https://github.com/oalexandrebelo/BBrainX/pull/13), sobre a [consolidação #12](https://github.com/oalexandrebelo/BBrainX/pull/12). As PRs #6–#11 já são ancestrais de #12. Verificar se foram incorporadas antes de abrir outra branch; não reaplicar ZIPs antigos nem ramificar automaticamente da base histórica.
 - Evidência histórica da PR #13: [run 37675622182](https://github.com/oalexandrebelo/BBrainX/actions/runs/37675622182), 289 testes distintos em cada SO e no Node mínimo. Isso descreve aquela revisão, não a evolução seguinte.
-- Versão proposta nesta branch: 2.0.0; Node mínimo 22.20, Node 24 recomendado. A tag publicada anteriormente não representa automaticamente os novos commits.
+- Versão proposta nesta branch: 2.1.0; Node mínimo 22.20, Node 24 recomendado. A tag publicada anteriormente não representa automaticamente os novos commits.
 - Repositório consultado em 07/10/2026: **público**. O registro histórico de que era privado está desatualizado. Consultar o GitHub antes de qualquer decisão de publicação ou de compartilhar informação confidencial.
 - Registre o estado de trabalho com `npm run project:status`. O comando informa HEAD, branch, alterações, lockfile e se o relatório local corresponde à revisão limpa. Não consulta o remoto e não autentica o relatório: CI e revisão humana continuam necessárias para promover uma versão.
 

@@ -1,4 +1,4 @@
-# Recrutar agentes (BYO) — BBrainX 2.0
+# Recrutar agentes (BYO) — BBrainX 2.1
 
 Revisão: 13/10/2026. Código: `src/recruit.mjs`; capacidades `agents.recruit`, `agents.status`, `agents.dismiss` em `src/engine.mjs`; CLI `bbrainx recruit`; testes em `test/recruit.test.mjs`.
 
@@ -8,18 +8,18 @@ Dentro de uma sessão ligada ao BBrainX, o usuário diz ao seu harness:
 
 > recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para corrigir a validação de sessão
 
-O harness chama `agents_recruit` com essa frase em `spec` e o trabalho em `task`. O BBrainX lança, nesta máquina, as CLIs que o usuário **já tem instaladas e logadas** (Claude Code e Codex), uma por recruta, cada uma em **worktree, branch e lane próprios**. É o modelo *bring your own agent* do Orca: nenhuma assinatura nova, nenhuma chave de API, nenhum token lido ou copiado. O login pertence à CLI; o BBrainX só a executa.
+O harness chama `agents_recruit` com essa frase em `spec` e o trabalho em `task`. O BBrainX lança, nesta máquina, as CLIs que o usuário **já tem instaladas e logadas** (Claude Code e Codex), uma por recruta, cada uma em **worktree, branch e lane próprios**. É o modelo *bring your own agent* do Orca: nenhuma assinatura nova, nenhuma chave de API, nenhum token lido ou copiado. O login pertence à CLI; o BBrainX só a executa. Isso funciona nos dois sentidos: Claude pode recrutar Codex, e Codex pode recrutar Claude. O harness principal precisa chamar `agents_status` até a conclusão e trazer o resultado ao chat; o recruta não publica sozinho uma mensagem na conversa principal. Veja as [opções de conexão e contas](integrations/HARNESS_CONNECTIONS.md).
 
 | Pedido | Harness | Comando real (sem shell) |
 |---|---|---|
 | `codex astra 6 high` | Codex | `codex exec --skip-git-repo-check -C <worktree> --sandbox workspace-write -m gpt-6-astra -c model_reasoning_effort="high" -c mcp_servers.bbrainx.… --json -o <último.md> "<prompt>"` |
-| `opus 5.5 xhigh` | Claude Code | `claude -p "<prompt>" --model claude-opus-5-5 --effort xhigh --output-format json --permission-mode acceptEdits --name bbx-<id> --mcp-config '{…lane…}' --allowedTools …` |
+| `opus 5.5 xhigh` | Claude Code | `claude -p "<prompt>" --model claude-opus-5-5 --effort xhigh --output-format json --permission-mode acceptEdits --settings '{"availableModels":["claude-opus-5-5"]}' --name bbx-<id> --mcp-config '{…lane…}' --allowedTools …` |
 
-Aliases aceitos: `fable`, `opus`, `sonnet`, `haiku` (com ou sem versão, por exemplo `opus 5.5` → `claude-opus-5-5`); `astra`, `sol`, `luna`, `terra` com versão (`astra 6` → `gpt-6-astra`), `gpt-5.5`; ids completos passam se forem seguros (`^[a-z][a-z0-9.-]{1,63}$`). Esforços: Claude `low|medium|high|xhigh|max`; Codex `minimal|low|medium|high|xhigh|max|ultra`. Um id desconhecido para a conta é recusado pela própria CLI e aparece como `failed` com o log.
+Aliases aceitos: `fable`, `opus`, `sonnet`, `haiku` (com ou sem versão, por exemplo `opus 5.5` → `claude-opus-5-5`); `astra`, `sol`, `luna`, `terra` com versão (`astra 6` → `gpt-6-astra`), `gpt-5.5`; ids completos passam se forem seguros (`^[a-z][a-z0-9.-]{1,63}$`). Esforços: Claude `low|medium|high|xhigh|max`; Codex `minimal|low|medium|high|xhigh|max|ultra`. IDs Claude sem versão menor são preservados: `claude-opus-5` continua `claude-opus-5`, sem inventar `-0`. Use `luna 6`, não apenas `luna`, para selecionar `gpt-6-luna`. O conjunto de esforços aceito pelo parser não garante que cada modelo aceite todos eles. Um ID ou esforço indisponível para a conta é recusado pela própria CLI e aparece como `failed` com o log.
 
 ## Como ligar
 
-`integrate --apply` grava `--recruit` nos argumentos do servidor MCP (`.mcp.json`, `.codex/config.toml`, `.vscode/mcp.json`); `--no-recruit` omite. Sem o flag, o catálogo continua com seis ferramentas e qualquer pedido de recrutamento não tem ferramenta para chamar: a concessão vem do host (a configuração que o humano gravou), nunca de argumento de ferramenta nem de texto recuperado. O servidor de cada recruta é iniciado **sem** `--recruit`: não há recrutamento recursivo.
+`integrate --apply` inclui recrutamento por padrão e grava `--recruit` nos argumentos do servidor MCP (`.mcp.json`, `.codex/config.toml`, `.vscode/mcp.json`); `--no-recruit` omite. Sem o flag, o catálogo continua com seis ferramentas e qualquer pedido de recrutamento não tem ferramenta para chamar: a concessão vem do host (a configuração que o humano gravou), nunca de argumento de ferramenta nem de texto recuperado. O servidor de cada recruta é iniciado **sem** `--recruit`: não há recrutamento recursivo. Nos geradores `config`, o recrutamento exige `--recruit` explícito. `config --client claude-desktop --project ID --recruit` imprime o bloco para o chat normal do Claude desktop; não escreve no arquivo global.
 
 ```sh
 bbrainx recruit doctor                                   # CLIs encontradas, versão, login, limites de uso do Codex
@@ -35,7 +35,7 @@ bbrainx recruit dismiss --project ID --id R [--stop] [--delete-branch]
 2. `git worktree add --no-track -b bbx/<id> <raiz>.bbx/<id> <commit>` ao lado do repositório (nunca dentro dele: lanes recusam sobreposição). O checkout principal não é tocado.
 3. A worktree é registrada como lane `<id>` (capacidade 8 para recrutas). O supervisor indexa a lane antes de abrir a CLI.
 4. Um supervisor desacoplado (`bbrainx recruit run`) lança a CLI com o ambiente do usuário menos as variáveis de sessão aninhada (`CLAUDECODE`, `CLAUDE_CODE_*`, `CODEX_SANDBOX*`), grava stdout/stderr em `control-v1/<projeto>/recruits/<id>.log`, bate o coração a cada 15 s e aplica o prazo (`--minutes`, 5 a 240, padrão 60).
-5. O prompt diz ao recruta onde trabalhar, que o servidor `bbrainx` serve a lane dele (`context_bootstrap`, `context_search`, `session_checkpoint` com `task = <id>`), e, no modo `implement`, que rode a verificação do projeto e faça commit na branch. No modo `review` a CLI roda só leitura (`--permission-mode plan` / `--sandbox read-only`) e não há commit.
+5. O prompt diz ao recruta onde trabalhar, que o servidor `bbrainx` serve a lane dele (`context_bootstrap`, `context_search`, `session_checkpoint` com `task = <id>`), e, no modo `implement`, que rode a verificação do projeto e faça commit na branch. No modo `review` a CLI usa as políticas de revisão do harness (`--permission-mode plan` / `--sandbox read-only`) e não há commit. O Claude recebe também `--settings` com `availableModels` limitado ao modelo solicitado; na configuração validada, isso evita que o modo plan substitua Haiku por Sonnet. A restrição pertence apenas ao processo, sem editar settings globais ou reduzir permissões. Políticas gerenciadas e combinações de settings do próprio harness continuam aplicáveis.
 6. Ao fechar, o supervisor interpreta a saída (Claude: JSON final com `session_id`, `total_cost_usd`, `usage`; Codex: JSONL com `thread.started`, `agent_message`, `turn.completed.usage`), faz o commit do que a CLI deixou sem commitar (`bbx recruit <id>: <título>`; o Codex em `workspace-write` não consegue criar `index.lock`), conta os commits à frente da base e grava o registro final.
 
 Registro (`control-v1/<projeto>/recruits/<id>.json`, ≤ 64 KiB): sem prompt (só o digest; o texto fica em `<id>.task.md` com modo 0600 até a baixa) e sem saída integral (o resumo final é limitado a 4.000 caracteres). O painel (`control --project ID` e a aba Painel) lista os recrutas com estado, commits, custo e tokens.
@@ -44,11 +44,28 @@ Estados: `starting` → `running` → `completed` | `failed` (saída ≠ 0, erro
 
 ## Contas e limites de uso
 
-`recruit doctor` mostra, por CLI: binário (PATH, depois instalações conhecidas: `~/.local/bin/claude`, `ChatGPT.app`, `Codex.app`, extensão do VS Code; override por `BBRAINX_CLAUDE`/`BBRAINX_CODEX`), versão, login (`claude auth status`, `codex login status`) e, para o Codex, as janelas de limite via `codex app-server` JSON-RPC (`account/rateLimits/read`: percentual usado, janela, reset, plano, créditos). Nada abre `auth.json`, `.credentials.json` ou o Keychain: quem lê o login é o binário da CLI.
+`recruit doctor` mostra, por CLI, binário, versão e login (`claude auth status`, `codex login status`). Para Codex, consulta as janelas de limite via `codex app-server` JSON-RPC (`account/rateLimits/read`: percentual usado, janela, reset, plano, créditos). Nada abre `auth.json`, `.credentials.json` ou o Keychain: quem usa o login é o binário da CLI.
 
-Outra conta: faça login com a CLI numa pasta separada (`CLAUDE_CONFIG_DIR=/pasta claude auth login`; `CODEX_HOME=/pasta codex login`) e passe `account: "/pasta"` no recrutamento ou `--account` na CLI. Limites de uso do Claude Code não têm comando de CLI; o Orca os obtém pelo endpoint OAuth com o token do usuário ou por um script de *statusline*. O BBrainX não faz nem um nem outro: isso exigiria ler o token ou alterar `~/.claude/settings.json`, e as duas coisas ficam fora do contrato.
+A descoberta automática testa `--version` e pula candidatos quebrados no PATH antes de procurar instalações conhecidas de Claude/Codex e extensões do VS Code/Insiders. Diretórios de versões são ordenados numericamente. Um binário antigo funcional no PATH ainda tem prioridade; para escolher outro, use `BBRAINX_CLAUDE` ou `BBRAINX_CODEX` com o caminho absoluto. Um override inválido gera erro, sem trocar silenciosamente de executável. `integrate` e `config` incluem esses overrides explícitos no ambiente MCP somente quando o recrutamento está habilitado; não gravam credenciais.
 
-## Medido em 13/10/2026 (Mac mini M4, macOS 26.6, Claude Code 2.1.286, Codex 0.162)
+Outra conta já configurada: passe `account: "/pasta/absoluta"` no recrutamento ou `--account /pasta/absoluta` na CLI. A pasta deve existir e ser o `CLAUDE_CONFIG_DIR` ou `CODEX_HOME` da conta pretendida. Para contas em pastas distintas, faça chamadas separadas por harness. Criar ou trocar login continua sendo uma operação da própria CLI, externa ao BBrainX. Limites de uso do Claude Code não são consultados por token ou statusline; o BBrainX não lê credenciais nem altera `~/.claude/settings.json`.
+
+## Evidência que motivou a 2.1 — MacBook, 13/10/2026
+
+Em uma instalação 2.0 com as correções locais, um cliente SDK MCP exercitou as configurações dos dois harnesses em repositório descartável, usando os logins nativos existentes:
+
+| Direção | Pedido | Resultado observado |
+|---|---|---|
+| Claude → Codex | `gpt-6-luna`, `high`, revisão | `completed`, exit 0, resposta `OK`; a CLI recebeu esse ID, sem metadado adicional do modelo nos eventos finais |
+| Codex → Claude, após correção | `claude-haiku-5-5`, `low`, revisão | `completed`, exit 0, `OK`; `modelUsage` confirmou somente Haiku 5.5, um turno, US$ 0,00539718 informado pela CLI |
+
+A primeira tentativa Claude também respondeu `OK`, mas `modelUsage` revelou Sonnet 5.5 em vez de Haiku; ela demonstra o defeito, não fidelidade de modelo. O controle corretivo acima usou a restrição por processo. Os recrutas terminaram sem arquivos alterados ou commits e suas worktrees/branches descartáveis foram removidas.
+
+O catálogo consultado nas CLIs continha 7 IDs base Codex e 12 Anthropic; os 19 IDs passaram pelo normalizador sem alteração indevida. Isso não significa inferência executada com todos os modelos, nem disponibilidade permanente em toda conta. Naquela instalação corrigida, 760 testes e o build passaram. Esses resultados históricos não substituem os testes da revisão 2.1 entregue; consulte [RELEASE_NOTES.md](RELEASE_NOTES.md). A prova bidirecional usou SDK MCP, não pedidos originados por um modelo na interface gráfica.
+
+## Histórico 2.0 — medido em 13/10/2026 (Mac mini M4, macOS 26.6, Claude Code 2.1.286, Codex 0.162)
+
+Este registro anterior mantém os nomes de modelo solicitados; não atesta o modelo efetivo de cada execução.
 
 Tarefa real: "crie hello.txt com a palavra pong e faça commit", 1 `claude haiku low` + 1 `codex astra 6 low`, repositório de teste.
 

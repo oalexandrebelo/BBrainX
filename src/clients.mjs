@@ -8,9 +8,11 @@
  * kilo.ai/docs/automate/mcp/using-in-kilo-code (timeout em milissegundos).
  */
 import { ensure, hash } from './primitives.mjs';
+import { recruitRuntimeEnv } from './integrations.mjs';
 
-export const CLIENTS=Object.freeze(['claude','codex','cursor','vscode','gemini','antigravity','kilo']);
+export const CLIENTS=Object.freeze(['claude','codex','cursor','vscode','gemini','antigravity','kilo','claude-desktop']);
 const shell=value=>/^[A-Za-z0-9_\/.:=@+-]+$/.test(value)?value:"'"+value.replaceAll("'","'\\''")+"'";
+const shellEnv=env=>Object.entries(env).map(([key,value])=>'--env '+key+'='+shell(value)).join(' ');
 
 /**
  * Nome do servidor MCP quando o registro é GLOBAL/de usuário (Codex, Antigravity): o projeto entra no nome, então dois projetos
@@ -26,22 +28,24 @@ export function projectServerName(project){
  * Saída inteira é TOML válido: o que não é TOML (explicação e o comando `codex mcp add`) vai em comentários "#", então
  * ela pode ser anexada a ~/.codex/config.toml. Ou rode o comando comentado, que grava a mesma entrada.
  */
-function codexRegistration({node,args,home,project}){
-  const name=projectServerName(project),command='codex mcp add '+name+' --env BBRAINX_HOME='+shell(home)+' -- '+[node,...args].map(shell).join(' ');
+function codexRegistration({node,args,env,project}){
+  const name=projectServerName(project),command='codex mcp add '+name+' '+shellEnv(env)+' -- '+[node,...args].map(shell).join(' ');
   return ['# Codex CLI. O registro é GLOBAL: vale para toda sessão do Codex nesta máquina. O nome leva o projeto ('+name+'), então cada projeto tem a sua entrada.',
     '# Opção 1: rode no shell (grava em ~/.codex/config.toml):',
     '#   '+command,
     '# Opção 2: cole o bloco abaixo em ~/.codex/config.toml. Esta saída inteira é TOML válido.',
     '','[mcp_servers.'+name+']','command = '+JSON.stringify(node),'args = '+JSON.stringify(args),'',
-    '[mcp_servers.'+name+'.env]','BBRAINX_HOME = '+JSON.stringify(home)].join('\n');
+    '[mcp_servers.'+name+'.env]',...Object.entries(env).map(([key,value])=>key+' = '+JSON.stringify(value))].join('\n');
 }
 
-export function clientConfig(client,{node,entry,project,home}){
+export function clientConfig(client,{node,entry,project,home,recruit=false,env:hostEnv=process.env}){
   for(const value of [node,entry,project,home])ensure(typeof value==='string'&&value.length>0&&!/[\u0000-\u001f\u007f]/.test(value),'INVALID_CONFIG_VALUE');
-  const args=[entry,'mcp','--project',project], env={BBRAINX_HOME:home}, server={command:node,args,env};
+  ensure(typeof recruit==='boolean','INVALID_CONFIG_VALUE');
+  const args=[entry,'mcp','--project',project,...(recruit?['--recruit']:[]),...(client==='claude-desktop'?['--harness','claude-desktop']:[])], env={BBRAINX_HOME:home,...(recruit?recruitRuntimeEnv(hostEnv):{})}, server={command:node,args,env};
   const json=value=>JSON.stringify(value,null,2);
-  if(client==='claude')return '# Claude Code — rode na pasta do projeto (escopo local, só seu); para versionar com a equipe, cole o JSON em .mcp.json\nclaude mcp add bbrainx --env BBRAINX_HOME='+shell(home)+' -- '+[node,...args].map(shell).join(' ')+'\n\n'+json({mcpServers:{bbrainx:server}});
-  if(client==='codex')return codexRegistration({node,args,home,project});
+  if(client==='claude')return '# Claude Code — rode na pasta do projeto (escopo local, só seu); para versionar com a equipe, cole o JSON em .mcp.json\nclaude mcp add bbrainx '+shellEnv(env)+' -- '+[node,...args].map(shell).join(' ')+'\n\n'+json({mcpServers:{bbrainx:server}});
+  if(client==='claude-desktop')return json({mcpServers:{[projectServerName(project)]:server}});
+  if(client==='codex')return codexRegistration({node,args,env,project});
   if(client==='cursor')return '# Cursor — cole em .cursor/mcp.json (projeto) ou ~/.cursor/mcp.json\n'+json({mcpServers:{bbrainx:{type:'stdio',...server}}});
   if(client==='vscode')return '# VS Code — cole em .vscode/mcp.json\n'+json({servers:{bbrainx:{type:'stdio',...server}}});
   if(client==='gemini')return '# Gemini CLI — cole em ~/.gemini/settings.json (global; o nome leva o projeto, então cada projeto tem a sua entrada) ou em .gemini/settings.json do projeto\n'+json({mcpServers:{[projectServerName(project)]:server}});

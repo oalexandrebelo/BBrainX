@@ -5,6 +5,7 @@ import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { ensure, identifier, hash, now } from './primitives.mjs';
+import { VERSION } from './version.mjs';
 import { LaneRegistry, gitWorkspace } from './lanes/registry.mjs';
 import { LaneStore } from './lanes/store.mjs';
 import { indexProject } from './retrieval.mjs';
@@ -34,7 +35,7 @@ export function normalizeModel(harness,value){
   ensure(text.length>0&&text.length<=64,'RECRUIT_MODEL_INVALID','Model is empty or too long.');
   if(harness==='claude'){
     const m=/^(?:claude[ -]?)?(fable|opus|sonnet|haiku)(?:[ -]?(\d+)(?:[.-](\d+))?)?$/.exec(text);
-    if(m)return m[2]?'claude-'+m[1]+'-'+m[2]+'-'+(m[3]??'0'):m[1];
+    if(m)return m[2]?'claude-'+m[1]+'-'+m[2]+(m[3]===undefined?'':'-'+m[3]):m[1];
   }else{
     const byName=/^(?:gpt[ -]?)?(\d+(?:\.\d+)?)[ -]?(astra|sol|luna|terra)$/.exec(text)||/^(astra|sol|luna|terra)[ -]?(?:gpt[ -]?)?(\d+(?:\.\d+)?)$/.exec(text);
     if(byName){const [version,family]=CODEX_FAMILIES.includes(byName[1])?[byName[2],byName[1]]:[byName[1],byName[2]];return 'gpt-'+version+'-'+family;}
@@ -95,35 +96,51 @@ export function validateSpecs(specs){
 
 // ---------------------------------------------------------------------------------------------- CLIs do usuário
 const CONTROL=/[\x00-\x1f\x7f]/;
-function fromPath(name,env){
-  for(const dir of String(env.PATH||'').split(path.delimiter)){if(!dir)continue;const candidate=path.join(dir,name);try{if(fs.statSync(candidate).isFile())return candidate;}catch{/* próximo */}}
-  return null;
+function fromPath(name,env,platform){
+  return String(env.PATH||'').split(platform==='win32'?';':':').filter(Boolean).map(dir=>path.resolve(dir,name));
 }
-function newest(pattern){
-  // Expansão mínima de "*" por segmento (sem dependência): o mais recente em ordem lexicográfica vence.
+function matchingFiles(pattern){
+  // Expansão mínima de "*" por segmento; 2.10 deve vir antes de 2.9, com fallback se o binário falhar.
   const expand=(prefix,segments)=>{
-    if(segments.length===0)return fs.existsSync(prefix)&&fs.statSync(prefix).isFile()?[prefix]:[];
+    if(segments.length===0){try{return fs.statSync(prefix).isFile()?[prefix]:[];}catch{return [];}}
     const [segment,...rest]=segments;
     if(!segment.includes('*'))return expand(path.join(prefix,segment),rest);
     const [head,tail]=segment.split('*');let entries;try{entries=fs.readdirSync(prefix);}catch{return [];}
-    return entries.filter(e=>e.startsWith(head)&&e.endsWith(tail)).sort().flatMap(e=>expand(path.join(prefix,e),rest));
+    return entries.filter(e=>e.startsWith(head)&&e.endsWith(tail)).flatMap(e=>expand(path.join(prefix,e),rest));
   };
   const absolute=path.resolve(pattern),parsed=path.parse(absolute);
-  return expand(parsed.root,absolute.slice(parsed.root.length).split(path.sep).filter(Boolean)).sort().at(-1)??null;
+  return expand(parsed.root,absolute.slice(parsed.root.length).split(path.sep).filter(Boolean)).sort((a,b)=>b.localeCompare(a,'en',{numeric:true}));
 }
-/** Mesma descoberta do Orca: PATH do usuário, depois as pastas conhecidas das instalações nativas. Override por BBRAINX_CLAUDE / BBRAINX_CODEX. */
-export function locateHarness(harness,{env=process.env,home=os.homedir()}={}){
+function runnable(binary,env){
+  try{if(!fs.statSync(binary).isFile())return false;}catch{return false;}
+  return run(binary,['--version'],{env,timeout:2500}).ok;
+}
+/** CLI já instalada/logada: override explícito, PATH utilizável, instalações nativas. Não modifica nenhum deles. */
+export function locateHarness(harness,{env=process.env,home=os.homedir(),platform=process.platform,applicationsRoots=[path.join(home,'Applications'),'/Applications']}={}){
   ensure(HARNESSES.includes(harness),'RECRUIT_HARNESS_UNKNOWN');
   const override=env[harness==='claude'?'BBRAINX_CLAUDE':'BBRAINX_CODEX'];
   if(override!==undefined){
-    ensure(typeof override==='string'&&path.isAbsolute(override)&&!CONTROL.test(override)&&fs.existsSync(override),'RECRUIT_HARNESS_OVERRIDE_INVALID','BBRAINX_'+harness.toUpperCase()+' must be the absolute path of an existing executable.');
+    ensure(typeof override==='string'&&path.isAbsolute(override)&&!CONTROL.test(override)&&runnable(override,env),'RECRUIT_HARNESS_OVERRIDE_INVALID','BBRAINX_'+harness.toUpperCase()+' must be the absolute path of an executable that answers --version successfully.');
     return {binary:override,source:'env'};
   }
-  const onPath=fromPath(harness,env);if(onPath)return {binary:onPath,source:'PATH'};
+  const name=harness+(platform==='win32'?'.exe':'');
+  const checked=new Set();
+  const usable=candidate=>{if(checked.has(candidate))return false;checked.add(candidate);return runnable(candidate,env);};
+  for(const candidate of fromPath(name,env,platform))if(usable(candidate))return {binary:candidate,source:'PATH'};
+  const editors=['.vscode','.vscode-insiders'].map(dir=>path.join(home,dir,'extensions'));
   const candidates=harness==='claude'
-    ?[path.join(home,'.local','bin','claude'),newest(path.join(home,'Library','Application Support','Claude','claude-code','*','*','claude.app','Contents','MacOS','claude'))]
-    :[path.join(home,'.codex','bin','codex'),'/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex','/Applications/Codex.app/Contents/Resources/codex',newest(path.join(home,'.vscode','extensions','openai.chatgpt-*','bin','macos-aarch64','codex')),newest(path.join(home,'.vscode','extensions','openai.chatgpt-*','bin','macos-x64','codex'))];
-  for(const candidate of candidates)if(candidate&&fs.existsSync(candidate))return {binary:candidate,source:'known-install'};
+    ?[path.join(home,'.local','bin',name),
+      ...editors.flatMap(dir=>matchingFiles(path.join(dir,'anthropic.claude-code-*','resources','native-binary',name))),
+      ...(platform==='darwin'?[
+        ...matchingFiles(path.join(home,'Library','Application Support','Claude','claude-code','*','claude.app','Contents','MacOS','claude')),
+        ...matchingFiles(path.join(home,'Library','Application Support','Claude','claude-code','*','*','claude.app','Contents','MacOS','claude'))]:[])]
+    :[path.join(home,'.codex','bin',name),
+      ...(platform==='darwin'?applicationsRoots.flatMap(dir=>[
+        path.join(dir,'Codex.app','Contents','Resources','codex-cli','bin','codex'),
+        path.join(dir,'Codex.app','Contents','Resources','codex'),
+        path.join(dir,'ChatGPT.app','Contents','Resources','codex-cli','CodexCLI.app','Contents','MacOS','codex')]):[]),
+      ...editors.flatMap(dir=>(platform==='darwin'?['macos-aarch64','macos-x64']:platform==='win32'?['windows-x86_64','windows-aarch64']:['linux-x86_64','linux-aarch64']).flatMap(target=>matchingFiles(path.join(dir,'openai.chatgpt-*','bin',target,name))))];
+  for(const candidate of candidates)if(usable(candidate))return {binary:candidate,source:'known-install'};
   return null;
 }
 function run(binary,args,{env=process.env,timeout=15000,cwd}={}){
@@ -180,7 +197,7 @@ export function codexRateLimits({env=process.env,account,timeoutMs=15000}={}){
       }
     });
     child.stdin.on('error',()=>{});
-    child.stdin.write(JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{clientInfo:{name:'bbrainx',version:'2.0.0'}}})+'\n'+JSON.stringify({jsonrpc:'2.0',method:'initialized'})+'\n'+JSON.stringify({jsonrpc:'2.0',id:2,method:'account/rateLimits/read',params:{}})+'\n');
+    child.stdin.write(JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{clientInfo:{name:'bbrainx',version:VERSION}}})+'\n'+JSON.stringify({jsonrpc:'2.0',method:'initialized'})+'\n'+JSON.stringify({jsonrpc:'2.0',id:2,method:'account/rateLimits/read',params:{}})+'\n');
   });
 }
 function accountEnv(harness,env,account){
@@ -285,7 +302,7 @@ export function harnessCommand(record,{node,entry,home,binary}){
   const server={command:node,args:[entry,'mcp','--project',record.project,'--lane',record.lane,'--workspace',record.worktree,'--harness',record.harness],env:{BBRAINX_HOME:home}};
   if(record.harness==='claude'){
     const args=[binary,'-p',prompt,'--model',record.model,'--effort',record.effort,'--output-format','json','--permission-mode',record.mode==='review'?'plan':'acceptEdits','--name','bbx-'+record.id,
-      '--mcp-config',JSON.stringify({mcpServers:{bbrainx:server}})];
+      '--mcp-config',JSON.stringify({mcpServers:{bbrainx:server}}),'--settings',JSON.stringify({availableModels:[record.model]})];
     const tools=record.mode==='review'?[]:['Bash(git status:*)','Bash(git diff:*)','Bash(git log:*)','Bash(git add:*)','Bash(git commit:*)','Bash(npm test:*)','Bash(npm run:*)','Bash(node --test:*)','Bash(pnpm test:*)','Bash(pnpm run:*)','Bash(python3 -m pytest:*)','Bash(python3 -m unittest:*)','Bash(cargo test:*)','Bash(go test:*)',...(record.tools??[])];
     if(tools.length)args.push('--allowedTools',...tools);
     if(record.budgetUsd)args.push('--max-budget-usd',String(record.budgetUsd));

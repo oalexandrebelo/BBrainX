@@ -96,6 +96,71 @@ test('TOML preserves unrelated tables exactly and receipt ownership permits sour
   rollbackIntegration({home:f.home,id:first.id});assert.equal(fs.readFileSync(target,'utf8'),before);
 });
 
+test('recruitment copies only explicit executable overrides and restores every client byte for byte',t=>{
+  const f=fixture(t),marker=path.join(f.temp,'executed'),overrides={};
+  for(const name of ['CLAUDE','CODEX']){
+    const binary=path.join(f.temp,name.toLowerCase());
+    fs.writeFileSync(binary,'#!/bin/sh\ntouch "'+marker+'"\n',{mode:0o700});overrides['BBRAINX_'+name]=binary;
+  }
+  const originals=new Map([
+    [f.write('.mcp.json','{\n // keep Claude settings\n "mcpServers":{"other":{"env":{"TOKEN":"PRIVATE_CLAUDE"}}},"trust":false\n}\n'),null],
+    [f.write('.vscode/mcp.json','{\n // keep VS Code settings\n "servers":{"other":{"command":"unchanged"}}\n}\n'),null],
+    [f.write('.kilo/kilo.jsonc','{\n // keep optional provider\n "provider":{"omniroute":{"key":"PRIVATE_GATEWAY"}},"permission":{"*":"ask"}\n}\n'),null],
+    [f.write('.codex/config.toml','# keep Codex settings\nmodel = "native"\n[mcp_servers.other.env]\nTOKEN = "PRIVATE_CODEX"\n'),null]
+  ]);
+  for(const file of originals.keys())originals.set(file,fs.readFileSync(file));
+  const options={...f.options,recruit:true,env:{...f.options.env,...overrides,ANTHROPIC_API_KEY:'ENV_SECRET',OPENAI_API_KEY:'ENV_SECRET',CLAUDE_CONFIG_DIR:'/private/account',CODEX_HOME:'/private/account'}};
+  const plan=planIntegrations(options);
+  assert.equal(fs.existsSync(f.home),false);assert.equal(fs.existsSync(marker),false);
+  for(const [file,before] of originals)assert.deepEqual(fs.readFileSync(file),before);
+  const receipt=applyIntegrationPlan(plan),expectedEnv={BBRAINX_HOME:f.home,...overrides};
+  const claude=parseJsonc(fs.readFileSync(path.join(f.root,'.mcp.json'),'utf8'));
+  const vscode=parseJsonc(fs.readFileSync(path.join(f.root,'.vscode/mcp.json'),'utf8'));
+  const kilo=parseJsonc(fs.readFileSync(path.join(f.root,'.kilo/kilo.jsonc'),'utf8'));
+  const codex=parseToml(fs.readFileSync(path.join(f.root,'.codex/config.toml'),'utf8'));
+  for(const env of [claude.mcpServers.bbrainx.env,vscode.servers.bbrainx.env,kilo.mcp.bbrainx.environment,codex.mcp_servers.bbrainx.env])assert.deepEqual({...env},expectedEnv);
+  assert(claude.mcpServers.bbrainx.args.includes('--recruit'));
+  assert.equal(claude.trust,false);assert.equal(claude.mcpServers.other.env.TOKEN,'PRIVATE_CLAUDE');
+  assert.equal(kilo.provider.omniroute.key,'PRIVATE_GATEWAY');assert.deepEqual(kilo.permission,{'*':'ask'});
+  assert.equal(codex.model,'native');assert.equal(codex.mcp_servers.other.env.TOKEN,'PRIVATE_CODEX');
+  for(const [file,before] of originals){
+    const after=fs.readFileSync(file,'utf8');assert(after.includes(before.toString('utf8').split('\n')[1]||'# keep Codex settings'));assert(!after.includes('ENV_SECRET'));assert(!after.includes('/private/account'));
+  }
+  assert(!JSON.stringify({plan,receipt}).includes('PRIVATE_'));assert(!JSON.stringify({plan,receipt}).includes('ENV_SECRET'));
+  assert.equal(fs.existsSync(marker),false);assert(planIntegrations(options).files.every(file=>file.status==='unchanged'));
+  rollbackIntegration({home:f.home,id:receipt.id});for(const [file,before] of originals)assert.deepEqual(fs.readFileSync(file),before);
+});
+
+test('invalid recruit overrides fail before writing and disabled recruitment ignores them',t=>{
+  const f=fixture(t),nonExecutable=path.join(f.temp,'not-executable');fs.writeFileSync(nonExecutable,'no',{mode:0o600});
+  const invalid=['relative/claude','',path.join(f.temp,'missing'),f.temp,path.join(f.temp,'bad\npath'),...(process.platform==='win32'?[]:[nonExecutable])];
+  for(const value of invalid)for(const key of ['BBRAINX_CLAUDE','BBRAINX_CODEX']){
+    const options={...f.options,recruit:true,env:{...f.options.env,[key]:value}};
+    assert.throws(()=>planIntegrations(options),{code:'INTEGRATION_HARNESS_OVERRIDE_INVALID'});
+    assert.equal(fs.existsSync(f.home),false);assert.deepEqual(fs.readdirSync(f.root),[]);
+  }
+  const options={...f.options,recruit:false,env:{...f.options.env,BBRAINX_CLAUDE:'relative/claude',BBRAINX_CODEX:nonExecutable}};
+  const receipt=applyIntegrationPlan(planIntegrations(options));
+  const claude=parseJsonc(fs.readFileSync(path.join(f.root,'.mcp.json'),'utf8')).mcpServers.bbrainx;
+  assert.deepEqual(claude.env,{BBRAINX_HOME:f.home});assert(!claude.args.includes('--recruit'));
+  rollbackIntegration({home:f.home,id:receipt.id});
+});
+
+test('recruit overrides default to process env and owned updates keep stale-plan and rollback guards',t=>{
+  const f=fixture(t),previous={BBRAINX_CLAUDE:process.env.BBRAINX_CLAUDE,BBRAINX_CODEX:process.env.BBRAINX_CODEX};
+  t.after(()=>{for(const [key,value] of Object.entries(previous))if(value===undefined)delete process.env[key];else process.env[key]=value;});
+  process.env.BBRAINX_CLAUDE=process.execPath;delete process.env.BBRAINX_CODEX;
+  const options={...f.options,clients:['codex'],recruit:true};delete options.env;
+  const first=applyIntegrationPlan(planIntegrations(options)),target=path.join(f.root,'.codex/config.toml');
+  assert.deepEqual({...parseToml(fs.readFileSync(target,'utf8')).mcp_servers.bbrainx.env},{BBRAINX_HOME:f.home,BBRAINX_CLAUDE:process.execPath});
+  process.env.BBRAINX_CODEX=process.execPath;
+  const update=planIntegrations(options);assert.equal(update.files[0].status,'update');
+  fs.appendFileSync(target,'\n# concurrent edit\n');
+  assert.throws(()=>applyIntegrationPlan(update),{code:'INTEGRATION_CONFIG_CHANGED'});
+  assert.throws(()=>rollbackIntegration({home:f.home,id:first.id}),{code:'INTEGRATION_ROLLBACK_CHANGED'});
+  assert(fs.readFileSync(target,'utf8').endsWith('# concurrent edit\n'));
+});
+
 test('server collisions and ambiguous Kilo configs block all writes',t=>{
   const f=fixture(t),target=f.write('.mcp.json','{"mcpServers":{"bbrainx":{"command":"foreign","env":{"SECRET":"PRIVATE"}}}}');
   const plan=planIntegrations(f.options);assert.equal(plan.files.find(x=>x.client==='claude').reason,'INTEGRATION_SERVER_COLLISION');
@@ -165,6 +230,34 @@ test('explicit adoption migrates only exact legacy generator entries and restore
   assert.equal(config.model,'test');assert.equal(config.mcp_servers.other.command,'untouched');assert.equal(config.mcp_servers.bbrainx.startup_timeout_sec,12);assert.equal(config.mcp_servers.bbrainx.tool_timeout_sec,80);
   assert(planIntegrations(f.options).files.every(file=>file.status==='unchanged'));
   rollbackIntegration({home:f.home,id:result.id});for(const [target,before] of originals)assert.deepEqual(fs.readFileSync(target),before);
+});
+
+test('legacy adoption adds explicit recruit runtimes without accepting unknown env or unowned modern entries',t=>{
+  const f=fixture(t),legacyArgs=[f.options.entry,'mcp','--project',f.options.project],legacyEnv={BBRAINX_HOME:f.home};
+  const overrides={BBRAINX_CLAUDE:process.execPath,BBRAINX_CODEX:process.execPath},options={...f.options,recruit:true,adoptExisting:true,env:{...f.options.env,...overrides}};
+  const formats={
+    claude:{file:'.mcp.json',render:(args,env)=>JSON.stringify({mcpServers:{bbrainx:{command:f.options.node,args,env}},trust:false}),read:()=>parseJsonc(fs.readFileSync(path.join(f.root,'.mcp.json'),'utf8')).mcpServers.bbrainx.env},
+    vscode:{file:'.vscode/mcp.json',render:(args,env)=>JSON.stringify({servers:{bbrainx:{type:'stdio',command:f.options.node,args,env}}}),read:()=>parseJsonc(fs.readFileSync(path.join(f.root,'.vscode/mcp.json'),'utf8')).servers.bbrainx.env},
+    kilo:{file:'.kilo/kilo.json',render:(args,env)=>JSON.stringify({mcp:{bbrainx:{type:'local',command:[f.options.node,...args],environment:env,enabled:true,timeout:60000}},provider:{name:'omniroute'}}),read:()=>parseJsonc(fs.readFileSync(path.join(f.root,'.kilo/kilo.json'),'utf8')).mcp.bbrainx.environment},
+    codex:{file:'.codex/config.toml',render:(args,env)=>'# keep user settings\nmodel = "native"\n[mcp_servers.bbrainx]\ncommand = '+JSON.stringify(f.options.node)+'\nargs = '+JSON.stringify(args)+'\n[mcp_servers.bbrainx.env]\n'+Object.entries(env).map(([key,value])=>key+' = '+JSON.stringify(value)).join('\n')+'\n',read:()=>parseToml(fs.readFileSync(path.join(f.root,'.codex/config.toml'),'utf8')).mcp_servers.bbrainx.env}
+  };
+  const originals=new Map();
+  for(const format of Object.values(formats)){const file=f.write(format.file,format.render(legacyArgs,legacyEnv));originals.set(file,fs.readFileSync(file));}
+  assert(planIntegrations({...options,adoptExisting:false}).files.every(file=>file.status==='blocked'));
+  const plan=planIntegrations(options);assert(plan.files.every(file=>file.status==='update'&&file.adoption==='exact-legacy-generator'));
+  const receipt=applyIntegrationPlan(plan);
+  for(const format of Object.values(formats))assert.deepEqual({...format.read()},{...legacyEnv,...overrides});
+  assert(planIntegrations(options).files.every(file=>file.status==='unchanged'));
+  rollbackIntegration({home:f.home,id:receipt.id});for(const [file,before] of originals)assert.deepEqual(fs.readFileSync(file),before);
+  for(const [client,format] of Object.entries(formats))for(const [args,env] of [
+    [legacyArgs,{...legacyEnv,API_KEY:'UNRECOGNIZED_SECRET'}],
+    [legacyArgs,{...legacyEnv,BBRAINX_CLAUDE:process.execPath}],
+    [[...legacyArgs,'--recruit','--workspace',f.root,'--harness',client],legacyEnv]
+  ]){
+    const file=f.write(format.file,format.render(args,env)),before=fs.readFileSync(file),blocked=planIntegrations({...options,clients:[client]});
+    assert.equal(blocked.files[0].reason,'INTEGRATION_SERVER_COLLISION');assert.throws(()=>applyIntegrationPlan(blocked),{code:'INTEGRATION_PLAN_BLOCKED'});
+    assert(!JSON.stringify(blocked).includes('UNRECOGNIZED_SECRET'));assert.deepEqual(fs.readFileSync(file),before);
+  }
 });
 
 test('adoption opt-in rejects different runtime, provider secrets, approval keys and extra arguments',t=>{
