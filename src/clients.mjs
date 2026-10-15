@@ -9,7 +9,7 @@
  */
 import { ensure, hash } from './primitives.mjs';
 
-export const CLIENTS=Object.freeze(['claude','codex','cursor','vscode','gemini','antigravity','kilo']);
+export const CLIENTS=Object.freeze(['claude','codex','cursor','vscode','gemini','antigravity','kilo','cos']);
 const shell=value=>/^[A-Za-z0-9_\/.:=@+-]+$/.test(value)?value:"'"+value.replaceAll("'","'\\''")+"'";
 
 /**
@@ -49,5 +49,9 @@ export function clientConfig(client,{node,entry,project,home}){
     '# `agy mcp add` grava nesse mesmo arquivo. O cliente descobre o servidor em todas as janelas, mas ele serve só o projeto indicado em --project; o nome leva o projeto.',
     '# O arquivo de workspace .agents/mcp_config.json não foi descoberto pelo Antigravity IDE 2.5.5 (docs/MAC_MINI_HARNESSES.md).'].join('\n')+'\n'+json({mcpServers:{[projectServerName(project)]:server}});
   if(client==='kilo')return '# Kilo Code — cole em .kilo/kilo.json do projeto; timeout de 60000 ms (60 segundos)\n'+json({mcp:{bbrainx:{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}}});
+  if(client==='cos')return ['# Chat On Steroids — Plugins → + → Custom executable (sem shell: executável, argumentos e variáveis exatamente assim).',
+    '# Alternativa com formulário: Plugins → + → MCPB file com o bundle bbrainx-<versão>.mcpb da release (npm run package:mcpb).',
+    '# O processo roda com as permissões do seu usuário, fora da pasta aprovada do CoS; o modo somente leitura do CoS recusa plugins.',
+    'command: '+node,'args: '+json([...args,'--harness','cos','--recruit']),'env: '+json(env)].join('\n');
   throw Object.assign(new Error('Cliente desconhecido. Use: '+CLIENTS.join(', ')+'.'),{code:'UNKNOWN_CLIENT'});
 }

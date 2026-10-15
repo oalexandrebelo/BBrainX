@@ -19,6 +19,8 @@ Aliases aceitos: `fable`, `opus`, `sonnet`, `haiku` (com ou sem versão, por exe
 
 ## Como ligar
 
+Em hosts que não passam argumentos (bundle MCPB no Chat On Steroids ou no Claude Desktop), o ambiente faz o mesmo papel: `BBRAINX_PROJECT`, `BBRAINX_HOME` e `BBRAINX_RECRUIT=true` (`npm run package:mcpb` gera o bundle; `config --client cos` imprime a forma por executável).
+
 `integrate --apply` grava `--recruit` nos argumentos do servidor MCP (`.mcp.json`, `.codex/config.toml`, `.vscode/mcp.json`); `--no-recruit` omite. Sem o flag, o catálogo continua com seis ferramentas e qualquer pedido de recrutamento não tem ferramenta para chamar: a concessão vem do host (a configuração que o humano gravou), nunca de argumento de ferramenta nem de texto recuperado. O servidor de cada recruta é iniciado **sem** `--recruit`: não há recrutamento recursivo.
 
 ```sh

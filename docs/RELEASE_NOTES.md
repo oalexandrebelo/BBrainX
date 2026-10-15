@@ -1,3 +1,16 @@
+# BBrainX 2.0.1 — Developer Preview — 15/10/2026
+
+Hosts que instalam servidores MCP por bundle (Chat On Steroids, Claude Desktop) passam a ter o BBrainX com formulário de configuração.
+
+| Medida | Valor |
+|---|---|
+| Bundle MCPB (`npm run package:mcpb`) | manifest 0.3, servidor `node`, 4 pacotes de execução travados pelo lockfile (zod, gpt-tokenizer, jsonc-parser, smol-toml); painel fora |
+| Configuração sem argumentos | `BBRAINX_PROJECT`, `BBRAINX_HOME`, `BBRAINX_RECRUIT`, `BBRAINX_HARNESS`, `BBRAINX_LANE`, `BBRAINX_WORKSPACE` (argumento explícito vence; vazio é ausente) |
+| `config --client cos` | executável, argumentos e ambiente para o Chat On Steroids (Plugins → Custom executable) |
+| Testes | `test/mcpb.test.mjs`: o bundle lança pelo comando que o host expande e responde 9 ferramentas; `--client cos`; fallback por ambiente |
+
+Oportunidades: catálogo do Chat On Steroids apontando para o bundle da release (fork `chat-on-steroids-bbx`, `docs/bbrainx-integration.md`); escrita do checkpoint no Compact & Resume do CoS; ponte LAN para o celular.
+
 # BBrainX 2.0.0 — Developer Preview — 13/10/2026
 
 | Medida | Valor |

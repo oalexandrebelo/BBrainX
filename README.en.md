@@ -6,6 +6,8 @@
 
 ## BBrainX 2.0 · AB-BBX
 
+2.0.1 adds an MCPB bundle (`npm run package:mcpb`) for hosts that install MCP servers from a bundle, such as Chat On Steroids and Claude Desktop: the host's form sets `BBRAINX_PROJECT`, `BBRAINX_HOME` and `BBRAINX_RECRUIT`; `config --client cos` prints the executable form.
+
 Version 2.0 targets general project work, prioritizing Mac mini and MacBook Pro M5. Public search/context verify worktree hashes and refuse stale indices with `INDEX_STALE`; run `context_index` and retry. `index-status --project ID` provides a read-only diagnosis. The local panel reports search/context/checkpoint counts per session without storing queries. [Release contract and repository review](docs/BBRAINX_2_0.md).
 
 BBrainX was built to accelerate real project work and shared to make verified continuity portable across coding agents. AB-BBX is its own capability execution core (`src/ab-bbx.mjs`), with a compatible legacy entrypoint. Run `node bin/bbrainx.mjs watch --project ID` in a separate process to periodically reconcile an index; add `--lane ID` for a registered workspace lane. This does not install a service or alter harness configuration. [Operating contract and limitations](docs/AB_BBX.md).
