@@ -21,7 +21,7 @@ Aliases aceitos: `fable`, `opus`, `sonnet`, `haiku` (com ou sem versão, por exe
 
 Em hosts que não passam argumentos (bundle MCPB no Chat On Steroids ou no Claude Desktop), o ambiente faz o mesmo papel: `BBRAINX_PROJECT`, `BBRAINX_HOME` e `BBRAINX_RECRUIT=true` (`npm run package:mcpb` gera o bundle; `config --client cos` imprime a forma por executável).
 
-`integrate --apply` grava `--recruit` nos argumentos do servidor MCP (`.mcp.json`, `.codex/config.toml`, `.vscode/mcp.json`); `--no-recruit` omite. Com `--recruit`, o catálogo tem onze ferramentas. Sem o flag, são oito (incluindo `context_read` e `context_symbol`) e não há ferramenta para atender pedidos de recrutamento: a concessão vem do host (a configuração que o humano gravou), nunca de argumento de ferramenta nem de texto recuperado. O servidor de cada recruta é iniciado **sem** `--recruit`: não há recrutamento recursivo.
+`integrate --apply` grava `--recruit` nos argumentos do servidor MCP (`.mcp.json`, `.codex/config.toml`, `.vscode/mcp.json`); `--no-recruit` omite esse argumento e persiste `BBRAINX_RECRUIT=false` no ambiente da entrada. Em `mcp`, `--no-recruit` prevalece sobre `BBRAINX_RECRUIT=true` e sobre `--recruit`, independentemente da ordem. Com recrutamento habilitado, o catálogo tem onze ferramentas. Desabilitado, são oito (incluindo `context_read` e `context_symbol`): a concessão vem do host (a configuração que o humano gravou), nunca de argumento de ferramenta nem de texto recuperado. O servidor de cada recruta é iniciado **sem** `--recruit`: não há recrutamento recursivo.
 
 ```sh
 bbrainx recruit doctor                                   # CLIs encontradas, versão, login, limites de uso do Codex
@@ -45,6 +45,8 @@ As capacidades ACI também estão disponíveis na lane do recruta: leitura numer
 6. Ao fechar, o supervisor interpreta a saída (Claude: JSON final com `session_id`, `total_cost_usd`, `usage`; Codex: JSONL com `thread.started`, `agent_message`, `turn.completed.usage`), faz o commit do que a CLI deixou sem commitar (`bbx recruit <id>: <título>`; o Codex em `workspace-write` não consegue criar `index.lock`), conta os commits à frente da base e grava o registro final.
 
 Registro (`control-v1/<projeto>/recruits/<id>.json`, ≤ 64 KiB): sem prompt (só o digest; o texto fica em `<id>.task.md` com modo 0600 até a baixa) e sem saída integral (o resumo final é limitado a 4.000 caracteres). O painel (`control --project ID` e a aba Painel) lista os recrutas com estado, commits, custo e tokens.
+
+No MCP, `agents_status` limita a resposta inteira a 512 KiB UTF-8, incluindo JSON-RPC, metadados e as duas representações do resultado. Quando os relatórios não cabem, `truncated:true` e `omittedAgentIds` identificam os removidos; consulte-os com `ids:[ID]`. Os relatórios retornados ficam integrais; `count` e `active` descrevem os itens retornados. Esse teto é do MCP, sem alterar a saída da CLI `recruit status`.
 
 Estados: `starting` → `running` → `completed` | `failed` (saída ≠ 0, erro declarado pela CLI ou prazo) | `stopped` (baixa com `stop`) → `dismissed`. `unknown` = sem batimento há mais de 90 s (supervisor morreu, máquina dormiu): leia o log. A baixa remove a worktree e fecha a lane; a branch fica, salvo `deleteBranch`. Só um supervisor com batimento recente recebe `SIGTERM`; PID antigo nunca é sinalizado.
 

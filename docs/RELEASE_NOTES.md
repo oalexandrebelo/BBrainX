@@ -1,5 +1,7 @@
 # BBrainX 2.1.1 — Developer Preview — 16/10/2026
 
+Correções da revisão integrações/MCP: recusa de blocos TOML que apagariam dados alheios; opt-out de recrutamento persistido; `agents_status` limitado pelo envelope serializado com IDs omitidos recuperáveis; validação do tamanho final e preservação de permissões na instalação/rollback; dependências MCPB resolvidas a partir do importador; prazo conferido também após exceção síncrona; `arguments:null` recusado com `INVALID_PARAMS`. [Regressões e evidência local](worklog-2026-10-16-integrations-mcp-review.md).
+
 Faixas (lanes) deixam de travar o recrutamento entre projetos.
 
 | Antes | Agora |

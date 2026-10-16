@@ -13,7 +13,8 @@ const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options
 const {values={},args=[]}=parsedArgs;
 // Hosts que não passam argumentos (bundle MCPB: Chat On Steroids, Claude Desktop) configuram por ambiente; argumento explícito vence; vazio é ausente.
 for(const [key,name] of [['project','BBRAINX_PROJECT'],['harness','BBRAINX_HARNESS'],['lane','BBRAINX_LANE'],['workspace','BBRAINX_WORKSPACE']])if(values[key]===undefined&&process.env[name])values[key]=process.env[name];
-if(values.recruit===undefined&&/^(1|true|yes|on)$/i.test(process.env.BBRAINX_RECRUIT||''))values.recruit=true;
+if(args[0]==='mcp'&&values['no-recruit']===true)values.recruit=false;
+else if(values.recruit===undefined&&/^(1|true|yes|on)$/i.test(process.env.BBRAINX_RECRUIT||''))values.recruit=true;
 const command=args[0]||'help';let store;
 const print=value=>console.log(JSON.stringify(value,null,2));
 try{

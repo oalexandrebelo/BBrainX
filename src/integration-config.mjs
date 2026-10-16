@@ -8,6 +8,8 @@ function legacyServer(client,current,server){
   if(!object(current))return false;
   // Configs antigas não tinham `--workspace ... --harness ...` (4 últimos) nem `--recruit`.
   const legacy=client==='kilo'?{...server,command:server.command.filter(a=>a!=='--recruit').slice(0,-4)}:{...server,args:server.args.filter(a=>a!=='--recruit').slice(0,-4)};
+  const envKey=client==='kilo'?'environment':'env';
+  if(legacy[envKey]?.BBRAINX_RECRUIT==='false'){legacy[envKey]={...legacy[envKey]};delete legacy[envKey].BBRAINX_RECRUIT;}
   if(client==='claude'&&current.type==='stdio')legacy.type='stdio';
   if(client==='codex')for(const key of ['enabled','required','startup_timeout_sec','tool_timeout_sec'])if(Object.hasOwn(current,key)){
     if(key==='enabled'&&current[key]!==true||key==='required'&&current[key]!==false)return false;
@@ -64,6 +66,9 @@ export function renderConfig(client,bytes,server,canUpdate,adoptExisting,name='b
       remainder=text.slice(0,start)+text.slice(finish+end.length).replace(/^\r?\n/,'');
       let outside;try{outside=parseToml(remainder);}catch{ensure(false,'INTEGRATION_MANAGED_BLOCK_INVALID');}
       ensure(outside.mcp_servers?.[name]===undefined,'INTEGRATION_SERVER_COLLISION');
+      const expected={...config,mcp_servers:{...config.mcp_servers}};delete expected.mcp_servers[name];
+      if(!Object.keys(expected.mcp_servers).length&&!outside.mcp_servers)delete expected.mcp_servers;
+      ensure(hash(outside)===hash(expected),'INTEGRATION_MANAGED_BLOCK_INVALID');
     }else if(adopting){
       remainder=withoutLegacyToml(text,current);let outside;try{outside=parseToml(remainder);}catch{ensure(false,'INTEGRATION_LEGACY_TOML_AMBIGUOUS');}
       const expected={...config,mcp_servers:{...config.mcp_servers}};delete expected.mcp_servers.bbrainx;
@@ -74,7 +79,7 @@ export function renderConfig(client,bytes,server,canUpdate,adoptExisting,name='b
     const eol=text.includes('\r\n')?'\r\n':'\n';
     const block=[begin,'[mcp_servers.'+name+']','command = '+JSON.stringify(server.command),'args = '+JSON.stringify(server.args),
       ...['enabled','required','startup_timeout_sec','tool_timeout_sec'].filter(key=>Object.hasOwn(desired,key)).map(key=>key+' = '+JSON.stringify(desired[key])),
-      '','[mcp_servers.'+name+'.env]','BBRAINX_HOME = '+JSON.stringify(server.env.BBRAINX_HOME),end,''].join(eol);
+      '','[mcp_servers.'+name+'.env]',...Object.entries(server.env).map(([key,value])=>key+' = '+JSON.stringify(value)),end,''].join(eol);
     const after=remainder+(remainder&&!remainder.endsWith('\n')?eol:'')+block;
     try{parseToml(after);}catch{ensure(false,'INTEGRATION_TOML_INVALID');}return {bytes:Buffer.from(after),adoption:adopting};
   }
