@@ -84,3 +84,7 @@ Checkout principal: `git status` limpo. Suíte: `test/recruit.test.mjs` com exec
 ## Rede para recrutas do Codex (2.0.2)
 
 O sandbox `workspace-write` do Codex recusa rede: `listen` em 127.0.0.1 falha com `EPERM` e downloads (`npx`, `git fetch`) não saem. Testes que sobem servidor local falham dentro do recruta. `--network` (CLI) ou `network: true` (`agents_recruit`) liga `sandbox_workspace_write.network_access` só para aquele recruta de implementação; revisão continua só leitura e sem rede. Medido em 16/10/2026 com `codex sandbox`: sem a opção, `LISTEN_FAIL EPERM`; com ela, `LISTEN_OK`. Commit continua com o supervisor (o `index.lock` da worktree fica fora da pasta gravável) e o Electron continua proibido no sandbox (aborta e abre diálogos de crash na tela).
+
+## Faixas: vida e capacidade (2.1.1)
+
+Cada recruta tem uma faixa (lane) para o seu servidor MCP. O supervisor a fecha assim que a CLI termina; o worktree e o ramo continuam até `recruit dismiss`. A capacidade é por projeto (`BBRAINX_LANE_CAPACITY`, padrão 12, de 1 a 32), com teto de 64 faixas ativas na máquina. `bbrainx recruit gc --project ID` (ou `--all`) fecha faixas de recrutas cujo supervisor não existe mais (concluídos de versões antigas, quedas, reboot); nunca toca recruta vivo nem faixa sem registro de recruta. O recrutamento roda essa coleta no próprio projeto antes de pedir vaga.

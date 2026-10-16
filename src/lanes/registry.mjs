@@ -8,6 +8,8 @@ import { safeDirectory } from '../host.mjs';
 import { ensureWalMode } from '../sqlite-init.mjs';
 
 export const LANE_SCHEMA = 1;
+/** Proteção da máquina, não cota de projeto: soma de faixas ativas de todos os projetos. */
+export const GLOBAL_ACTIVE_LANES = 64;
 const schema = `
 CREATE TABLE lane_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
 CREATE TABLE lanes(project TEXT NOT NULL,id TEXT NOT NULL,root TEXT NOT NULL UNIQUE,common_root TEXT NOT NULL,epoch TEXT NOT NULL,status TEXT NOT NULL CHECK(status IN ('active','closed')),created TEXT NOT NULL,PRIMARY KEY(project,id));
@@ -42,7 +44,7 @@ export function gitWorkspace(root) {
 /** Host-owned local registry. Two active lanes globally by default, not two LLMs forcibly scheduled. */
 export class LaneRegistry {
   constructor(home,{maxActive=2}={}) {
-    ensure(Number.isSafeInteger(maxActive)&&maxActive>=1&&maxActive<=16,'INVALID_LANE_CAPACITY');
+    ensure(Number.isSafeInteger(maxActive)&&maxActive>=1&&maxActive<=32,'INVALID_LANE_CAPACITY');
     this.home=nativePath(safeDirectory(home));this.maxActive=maxActive;
     const file=path.join(this.home,'lanes-v1.sqlite');
     if(fs.existsSync(file))ensure(!fs.lstatSync(file).isSymbolicLink(),'UNSAFE_LANE_DB');
@@ -74,9 +76,12 @@ export class LaneRegistry {
     return this.transaction(()=>{
       const old=this.get(project,lane);
       if(old){ensure(old.root===candidate.root&&old.common_root===candidate.common,'LANE_IDENTITY_CONFLICT');ensure(old.status==='active','LANE_CLOSED');return {...old,duplicate:true};}
-      const all=this.db.prepare('SELECT root,status FROM lanes').all();
+      const all=this.db.prepare('SELECT project,root,status FROM lanes').all();
       ensure(all.length<1000,'LANE_RETENTION_LIMIT');
-      ensure(all.filter(r=>r.status==='active').length<this.maxActive,'LANE_CAPACITY');
+      // Capacidade por projeto: faixas de um projeto não ocupam a vaga de outro. O teto global só protege a máquina.
+      const mine=all.filter(r=>r.status==='active'&&r.project===project).length,everyone=all.filter(r=>r.status==='active').length;
+      ensure(mine<this.maxActive,'LANE_CAPACITY','Project "'+project+'" has '+mine+' active lanes (limit '+this.maxActive+'). Finished recruits release theirs; run `bbrainx recruit gc --project '+project+'` to reclaim lanes of dead supervisors.');
+      ensure(everyone<GLOBAL_ACTIVE_LANES,'LANE_CAPACITY','This machine has '+everyone+' active lanes across projects (limit '+GLOBAL_ACTIVE_LANES+'). Run `bbrainx recruit gc --all`.');
       ensure(all.every(r=>!inside(r.root,candidate.root)&&!inside(candidate.root,r.root)),'WORKSPACE_ALREADY_REGISTERED');
       const epoch=randomUUID();
       this.db.prepare('INSERT INTO lanes VALUES(?,?,?,?,?,?,?)').run(project,lane,candidate.root,candidate.common,epoch,'active',now());

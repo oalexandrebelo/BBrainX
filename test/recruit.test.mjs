@@ -125,7 +125,9 @@ test('claude and codex recruits run in their own worktrees with a lane-scoped BB
     }
   }
   assert.equal(git(f.root,'status','--porcelain'),'','the primary checkout was never touched');
-  const registry=new LaneRegistry(f.home);try{for(const id of ids)assert.equal(registry.get('p',id).status,'active');}finally{registry.close();}
+  // A faixa existe para o MCP do recruta: terminou, ela fecha sozinha e a vaga volta; worktree e ramo ficam.
+  const registry=new LaneRegistry(f.home);try{for(const id of ids)assert.equal(registry.get('p',id).status,'closed');}finally{registry.close();}
+  for(const item of status.items)assert.ok(fs.existsSync(item.worktree),'worktree kept for review until dismiss');
   const overview=controlOverview(f.store,'p');assert.equal(overview.recruits.length,2);assert(overview.recruits.every(r=>r.status==='completed'));
   const viaTool=await f.engine.invoke('agents.status',{project:'p',ids:[ids[0]],includeLog:true},principal);assert.equal(viaTool.data.items.length,1);assert.match(viaTool.data.items[0].logTail,/exit code 0/);
   const kept=await f.engine.invoke('agents.dismiss',{project:'p',id:ids[0]},principal);assert.equal(kept.ok,true);assert.equal(kept.data.branch,'bbx/'+ids[0]);
@@ -215,4 +217,33 @@ test('a real stdio server started with --recruit lists eleven tools and says so 
       const instructions=client.getInstructions()||'';assert.equal(/agents_recruit/.test(instructions),expected===11,'instructions mention recruitment only when granted');
     }finally{await client.close();}
   }
+});
+
+test('lane capacity is per project: one project at its limit does not block another, and a dead supervisor is collected',async t=>{
+  const f=fixture(t);
+  const other=path.join(f.base,'repo2');fs.mkdirSync(other);git(other,'init','-q','-b','main');fs.writeFileSync(path.join(other,'b.ts'),'export const b=1;\n');git(other,'add','-A');git(other,'commit','-q','-m','base');
+  f.store.register('q',other);indexProject(f.store,'q');
+  const registry=new LaneRegistry(f.home,{maxActive:1});
+  try{
+    const w1=path.join(f.base,'repo.bbx','manual-1');fs.mkdirSync(path.dirname(w1),{recursive:true});git(f.root,'worktree','add','-q','-b','manual-1',w1);
+    registry.register(f.store,'p','manual-1',w1);
+    const w2=path.join(f.base,'repo.bbx','manual-2');git(f.root,'worktree','add','-q','-b','manual-2',w2);
+    assert.throws(()=>registry.register(f.store,'p','manual-2',w2),{code:'LANE_CAPACITY'});
+    const w3=path.join(f.base,'repo2.bbx','manual-3');fs.mkdirSync(path.dirname(w3),{recursive:true});git(other,'worktree','add','-q','-b','manual-3',w3);
+    assert.equal(registry.register(f.store,'q','manual-3',w3).status,'active','project q has its own capacity');
+  }finally{registry.close();}
+  // Supervisor morto (queda/reboot): registro preso em running, sem batimento, PID inexistente.
+  const {saveRecruit}=await import('../src/control.mjs');
+  const w4=path.join(f.base,'repo.bbx','r2610160000-dead01');git(f.root,'worktree','add','-q','-b','bbx/r2610160000-dead01',w4);
+  const reg=new LaneRegistry(f.home,{maxActive:12});try{reg.register(f.store,'p','r2610160000-dead01',w4);}finally{reg.close();}
+  saveRecruit(f.store,'p',{id:'r2610160000-dead01',project:'p',lane:'r2610160000-dead01',harness:'claude',model:'haiku',effort:'low',mode:'implement',title:'dead',taskDigest:'x'.repeat(64),worktree:w4,branch:'bbx/r2610160000-dead01',base:{ref:'HEAD',commit:git(f.root,'rev-parse','HEAD')},timeoutMinutes:60,budgetUsd:null,account:null,tools:null,status:'running',startedAt:new Date(Date.now()-3600e3).toISOString(),lastSeen:new Date(Date.now()-3600e3).toISOString(),endedAt:null,pid:2147480000,childPid:null,exitCode:null,reason:null,sessionId:null,usage:null,costUsd:null,resultSummary:null,commit:null,log:path.join(f.base,'dead.log')});
+  const {collectLanes}=await import('../src/recruit.mjs');
+  const result=collectLanes(f.store,{project:'p'});
+  assert.deepEqual(result.freed.map(x=>x.id),['r2610160000-dead01']);
+  const after=new LaneRegistry(f.home);try{assert.equal(after.get('p','r2610160000-dead01').status,'closed');assert.equal(after.get('p','manual-1').status,'active','lanes without a recruit record are never touched');}finally{after.close();}
+});
+
+test('BBRAINX_LANE_CAPACITY sets the per-project limit (1..32) and refuses anything else',()=>{
+  const run=value=>spawnSync(process.execPath,['-e',"import('./src/recruit.mjs').then(m=>console.log(m.LIMITS.laneCapacity)).catch(e=>{console.log(e.code);})"],{encoding:'utf8',env:{...process.env,BBRAINX_LANE_CAPACITY:value}}).stdout.trim();
+  assert.equal(run('16'),'16');assert.equal(run(''),'12');assert.equal(run('40'),'INVALID_LANE_CAPACITY');assert.equal(run('x'),'INVALID_LANE_CAPACITY');
 });

@@ -20,7 +20,8 @@ import { recruitRecords, saveRecruit, recruitDirectory, recruitLiveness as liven
 export const HARNESSES=Object.freeze(['claude','codex']);
 export const EFFORTS=Object.freeze({claude:['low','medium','high','xhigh','max'],codex:['minimal','low','medium','high','xhigh','max','ultra']});
 export const MODES=Object.freeze(['implement','review']);
-export const LIMITS=Object.freeze({perSpec:10,perCall:10,activePerProject:12,laneCapacity:12,taskChars:8000,specChars:500,resultChars:4000,outputBytes:8*1048576,timeoutMinutes:{default:60,min:5,max:240}});
+const laneCapacity=(()=>{const raw=process.env.BBRAINX_LANE_CAPACITY;if(raw===undefined||raw==='')return 12;const n=Number(raw);ensure(Number.isInteger(n)&&n>=1&&n<=32,'INVALID_LANE_CAPACITY','BBRAINX_LANE_CAPACITY must be an integer from 1 to 32.');return n;})();
+export const LIMITS=Object.freeze({perSpec:10,perCall:10,activePerProject:laneCapacity,laneCapacity,taskChars:8000,specChars:500,resultChars:4000,outputBytes:8*1048576,timeoutMinutes:{default:60,min:5,max:240}});
 const CLAUDE_FAMILIES=['fable','opus','sonnet','haiku'], CODEX_FAMILIES=['astra','sol','luna','terra'];
 const FILLER=new Set(['agent','agente','agentes','agents','de','do','da','dos','das','com','with','em','no','na','para','modelo','model','models','o','a','os','as','the','an','x','×','em','run','rode','recrute','recruit','recrutar','usando','using','ao','mais','plus']);
 const COUNT_WORDS={um:1,uma:1,one:1,dois:2,duas:2,two:2,tres:3,'três':3,three:3,quatro:4,four:4};
@@ -242,6 +243,8 @@ export function startRecruits(store,plan,{env=process.env,entry}={}){
   const node=stableNodePath({env,errors:{invalid:'RECRUIT_NODE_INVALID',mismatch:'RECRUIT_NODE_MISMATCH'}});
   const self=entry??fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url));
   const stableEntry=stableEntryPath(self,{env,errors:{invalid:'RECRUIT_ENTRY_INVALID',mismatch:'RECRUIT_ENTRY_MISMATCH'}});
+  // Antes de pedir vaga, recolhe faixas deste projeto cujo supervisor já não existe.
+  collectLanes(store,{project:plan.project});
   const registry=new LaneRegistry(home,{maxActive:LIMITS.laneCapacity});
   const started=[],failed=[];
   try{
@@ -389,7 +392,45 @@ export async function runRecruit(brain,{project,id,env=process.env,entry}){
   fs.closeSync(log);
   save({status,endedAt:now(),exitCode:code,signal:signal??null,reason:reason??(status==='failed'?(parsed.isError?'HARNESS_ERROR':'EXIT_'+code):null),sessionId:parsed.sessionId,usage:parsed.usage,costUsd:parsed.costUsd,
     resultSummary:parsed.resultSummary?parsed.resultSummary.slice(0,LIMITS.resultChars):null,commit,commitError,commitsAhead:state.commitsAhead,dirtyFiles:state.dirtyFiles,head:state.head});
+  // A faixa existe para o MCP do recruta; sem a CLI rodando, nada a usa. Fecha já: o worktree e o ramo ficam
+  // para diff e merge, e a vaga volta para o projeto sem depender de alguém dar baixa.
+  const lane=releaseLane(brain,project,id);
+  if(lane.error)save({laneError:lane.error});else save({laneReleasedAt:now()});
   return record;
+}
+
+/** Fecha a faixa de um recruta; idempotente. Nunca lança: o resultado diz o que aconteceu. */
+export function releaseLane(brain,project,id){
+  let registry;
+  try{
+    registry=new LaneRegistry(brain.home,{maxActive:LIMITS.laneCapacity});
+    const lane=registry.get(project,id);
+    if(!lane||lane.status!=='active')return {released:false,already:true};
+    registry.retire(project,id,lane.epoch);return {released:true};
+  }catch(e){return {released:false,error:e.code||'LANE_RELEASE_FAILED'};}
+  finally{registry?.close();}
+}
+
+/**
+ * Recolhe faixas que nenhum supervisor vivo usa: recruta terminado (o supervisor de versões antigas não fechava)
+ * ou sem batimento e com o processo morto (queda, reboot). Nunca toca recruta vivo nem faixa de outra origem.
+ */
+export function collectLanes(store,{project,all=false}={}){
+  const brain=store.authority??store;
+  const projects=all?brain.projects().map(p=>p.id):[project];
+  const freed=[],kept=[];
+  for(const p of projects){
+    identifier(p);
+    for(const r of recruitRecords(brain,p).items){
+      const state=liveness(r);
+      let dead=['completed','failed','stopped','dismissed'].includes(state);
+      if(state==='unknown'){dead=true;if(Number.isInteger(r.pid)&&r.pid>0){try{process.kill(r.pid,0);dead=false;}catch(e){dead=e.code==='ESRCH';}}}
+      if(!dead){kept.push({project:p,id:r.id,status:state});continue;}
+      const result=releaseLane(brain,p,r.id);
+      if(result.released)freed.push({project:p,id:r.id,status:state});
+    }
+  }
+  return {freed,kept,note:'Only lanes of recruits whose supervisor is gone are closed; worktrees and branches are kept.'};
 }
 
 // ---------------------------------------------------------------------------------------------- estado e baixa

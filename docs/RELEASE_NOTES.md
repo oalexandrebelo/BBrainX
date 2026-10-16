@@ -1,3 +1,16 @@
+# BBrainX 2.1.1 — Developer Preview — 16/10/2026
+
+Faixas (lanes) deixam de travar o recrutamento entre projetos.
+
+| Antes | Agora |
+|---|---|
+| A faixa de um recruta só fechava na baixa manual (`recruit dismiss`); recruta concluído seguia ocupando vaga | O supervisor fecha a faixa quando a CLI termina (concluído, falhou, parado); worktree e ramo ficam para diff e merge |
+| Capacidade contada sobre **todas** as faixas da máquina; cada chamador passava um limite diferente (2, 8, 12) | Capacidade **por projeto** (padrão 12); teto da máquina 64 só como proteção |
+| Limite fixo no código | `BBRAINX_LANE_CAPACITY` de 1 a 32 |
+| Supervisor morto (queda, reboot) prendia a vaga para sempre | `bbrainx recruit gc --project ID` ou `--all` fecha faixas de recrutas sem supervisor vivo; o recrutamento roda essa coleta no próprio projeto antes de pedir vaga |
+
+Medido no Mac mini em 16/10: 9 faixas ativas, nenhuma com processo vivo (7 `ab-s00s`, 1 `bbrainx-dev`, 1 `services`), travavam o recrutamento de outro projeto.
+
 # BBrainX 2.1.0 — Developer Preview — 16/10/2026
 
 - **Integração AB-S00S opt-in:** `integrate --ab-s00s on|off` adiciona/remove a segunda entrada gerenciada em `.mcp.json`, `.codex/config.toml` e `.vscode/mcp.json`. Mesmo recibo por arquivo, backup privado, controle de hash e rollback. Sem a flag, mantém o comportamento anterior. Caminho por `--ab-s00s-bin` ou `realpath` de `~/.local/bin/ab-s00s`; `off` funciona sem o binário. Entradas alheias não são adotadas.
