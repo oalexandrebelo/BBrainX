@@ -1,5 +1,7 @@
 # BBrainX 2.1.1 — Developer Preview — 16/10/2026
 
+Correções de recuperação em revisão: diretórios sensíveis excluídos também em candidatos Git; cota de bytes conferida antes de cada commit de lote; recuperação após `ENOTDIR`; orçamento de busca aplicado ao primeiro corpo e aos ponteiros; declarações em strings/comentários ignoradas e nomes como `f`/`T` localizáveis. FTS usa rank nativo com os mesmos pesos. **Schema 3:** backup `brain.v2-backup.sqlite`, preservação de estado durável e reconstrução obrigatória do índice; acrescenta índice `(project,status,id)` de memórias. [Testes, medição e roteiro de retorno](worklog-2026-10-16-retrieval-review.md).
+
 Faixas (lanes) deixam de travar o recrutamento entre projetos.
 
 | Antes | Agora |

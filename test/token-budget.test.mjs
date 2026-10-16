@@ -44,11 +44,13 @@ test('what the budget leaves out comes back as path:lines pointers, so the hit i
   assert.deepEqual(data.more,all.slice(data.items.length).map(x=>x.path+':'+x.start_line+'-'+x.end_line),'pointers follow the ranking and name the lines');
   assert.ok(json(data.more)<=12*data.more.length,'a pointer is about ten tokens: '+json(data.more)+' for '+data.more.length);
 });
-test('budget is validated from 256 to 16000 and a hit larger than the budget is still served once',async t=>{
+test('budget is validated from 256 to 16000 and an oversized first hit is returned as a bounded pointer',async t=>{
   const {store}=workspace(t,ranked());const engine=makeEngine(store,['test']);
   for(const budget of [100,255,16001,1.5,'4000'])await assert.rejects(()=>engine.invoke('context.search',{project:'test',query:'alpha',budget},principal),{code:'INPUT_INVALID'},String(budget));
   const tiny=await engine.invoke('context.search',{project:'test',query:'alpha',limit:10,budget:256},principal);
-  assert.equal(tiny.data.items.length,1);assert.equal(tiny.data.omitted,9);assert.equal(tiny.data.truncated,true);
+  assert.equal(tiny.data.items.length,0);assert.equal(tiny.data.omitted,10);assert.equal(tiny.data.truncated,true);
+  assert.equal(tiny.data.more[0],search(store,'test','alpha',10).items[0].path+':1-53');
+  assert.ok(json(tiny.data.items)+json(tiny.data.more)<=256);
   assert.throws(()=>context.fitSearch(search(store,'test','alpha',3),100),{code:'INVALID_BUDGET'});
 });
 test('documentation takes at most half of the search budget while code is among the hits',t=>{
@@ -65,7 +67,7 @@ test('the command line search obeys --budget as the tool does',t=>{
   const {dir}=workspace(t,ranked());
   const run=(...args)=>{const result=spawnSync(process.execPath,[fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),'search','--project','test','--query','alpha',...args],{encoding:'utf8',env:{...process.env,BBRAINX_HOME:path.join(dir,'state')}});assert.equal(result.status,0,result.stderr);return JSON.parse(result.stdout);};
   const small=run('--budget','256'), standard=run(), large=run('--budget','16000');
-  assert.equal(small.items.length,1);assert.equal(small.omitted,9);assert.ok(standard.items.length>small.items.length&&standard.items.length<10);assert.equal(large.items.length,10);
+  assert.equal(small.items.length,0);assert.equal(small.omitted,10);assert.ok(json(small.items)+json(small.more)<=256);assert.ok(standard.items.length>small.items.length&&standard.items.length<10);assert.equal(large.items.length,10);
 });
 
 // ── pacote de contexto: cabeçalho curto e piso de relevância ───────────────
@@ -137,4 +139,16 @@ test('context.search through the engine returns distinct files with their also r
   const {data}=await engine.invoke('context.search',{project:'test',query:'alpha',limit:10,budget:16000},principal);
   assert.equal(new Set(data.items.map(x=>x.path)).size,data.items.length);
   assert.equal(data.items.find(x=>x.path==='src/big.ts').also.length,2);
+});
+
+test('a single oversized search hit and long pointer lists never bypass the token cap',t=>{
+  const files={'large.ts':'export function enormousHit() {\n'+filler(50)+'\n}'};
+  const deep=Array.from({length:5},(_,i)=>('segment_'+i+'_').repeat(15)).join('/');
+  files[deep+'/long.ts']='export function enormousHit() {\n'+filler(50)+'\n}';
+  const {store}=workspace(t,files);
+  for(const limit of [1,2]){
+    const result=context.fitSearch(search(store,'test','enormousHit',limit),256);
+    assert.ok(json(result.items)+(result.more?json(result.more):0)<=256);assert.equal(result.items.length,0);assert.equal(result.omitted,limit);assert.equal(result.truncated,true);
+  }
+  const short=context.fitSearch(search(store,'test','enormousHit',2),256);assert(short.more.includes('large.ts:1-52'));
 });

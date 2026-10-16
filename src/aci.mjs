@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { ensure } from './primitives.mjs';
 import { readSafe, requireFreshIndex, resolveLimits } from './retrieval.mjs';
 import { verifyRoot } from './source-root.mjs';
-import { declarationsIn } from './declarations.mjs';
+import { declarationsIn, maskDeclarations } from './declarations.mjs';
 
 export const ACI_LIMITS=Object.freeze({lines:400,defaultLines:200,bytes:65536,symbols:50,chunks:200});
 const relativePath=z.string().min(1).max(4096),line=z.number().int().min(1).max(Number.MAX_SAFE_INTEGER-ACI_LIMITS.lines);
@@ -53,11 +53,11 @@ export function symbolContext(store,{project,symbol,path:relative,limit=20}){
     .all(project,' '+symbol+' ',...(relative===undefined?[]:[relative]),ACI_LIMITS.chunks+1);
   const items=[],seen=new Set();let currentPath,file,lines;
   for(const row of rows.slice(0,ACI_LIMITS.chunks)){
-    if(currentPath!==row.path){currentPath=row.path;file=verifiedFile(store,project,row.path);lines=linesOf(file.body);}
+    if(currentPath!==row.path){currentPath=row.path;file=verifiedFile(store,project,row.path);lines=linesOf(maskDeclarations(file.body,path.extname(row.path).toLowerCase()));}
     ensure(file.hash===row.file_hash,'INDEX_STALE','Definição desatualizada. Chame context_index e repita.');
     for(let i=row.start_line-1;i<Math.min(row.end_line,lines.length);i++){
       if(lines[i].length>2000)continue; // mesmo limite por linha do analisador do índice
-      for(const declaration of declarationsIn(lines[i]))if(declaration.name===symbol){
+      for(const declaration of declarationsIn(lines[i],path.extname(row.path).toLowerCase(),true))if(declaration.name===symbol){
         const key=row.path+':'+i+':'+declaration.kind;if(seen.has(key))continue;seen.add(key);
         items.push({name:symbol,path:row.path,startLine:i+1,endLine:i+1,kind:declaration.kind,hash:file.hash});
         if(items.length>limit)break;
