@@ -250,8 +250,15 @@ export class BrainStore {
   backup(destination) {
     const target=path.resolve(destination); ensure(!fs.existsSync(target),'BACKUP_EXISTS');
     fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});
-    this.db.prepare('VACUUM INTO ?').run(target);
-    if(process.platform!=='win32')fs.chmodSync(target,0o600);
+    // VACUUM INTO cria o arquivo com o umask (0644 típico) e o chmod viria depois: a cópia nasce numa pasta 0700 própria
+    // e só é publicada (link exclusivo, nunca sobrescreve) depois de pronta e restrita. Falha não deixa cópia legível.
+    const scratch=fs.mkdtempSync(path.join(path.dirname(target),'.bbrainx-backup-')), temporary=path.join(scratch,'backup.sqlite');
+    try{
+      if(process.platform!=='win32')fs.chmodSync(scratch,0o700);
+      this.db.prepare('VACUUM INTO ?').run(temporary);
+      if(process.platform!=='win32')fs.chmodSync(temporary,0o600);
+      try{fs.linkSync(temporary,target);}catch(e){ensure(e.code!=='EEXIST','BACKUP_EXISTS');throw e;}
+    }finally{fs.rmSync(scratch,{recursive:true,force:true});}
     return {path:target,bytes:fs.statSync(target).size};
   }
 }

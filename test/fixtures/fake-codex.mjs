@@ -6,6 +6,11 @@ const args=process.argv.slice(2);
 const value=flag=>{const i=args.indexOf(flag);return i>=0?args[i+1]:undefined;};
 if(args[0]==='--version')console.log('codex-cli 9.9.9 (fixture)');
 else if(args[0]==='login'&&args[1]==='status')console.log(process.env.FAKE_LOGGED_OUT?'Not logged in':'Logged in using ChatGPT (fixture)');
+else if(args.includes('app-server')&&process.env.FAKE_CODEX_HANG){
+  // app-server travado: ignora SIGTERM, nunca responde e mantém stdin lido. O chamador precisa encerrar com SIGKILL e observar a saída.
+  if(process.env.FAKE_CODEX_PIDFILE)fs.writeFileSync(process.env.FAKE_CODEX_PIDFILE,String(process.pid));
+  process.on('SIGTERM',()=>{});process.stdin.resume();setInterval(()=>{},1000);
+}
 else if(args.includes('app-server')){
   // Como o app-server real: responde linha a linha com stdin aberto; encerra no EOF.
   let buffer='';process.stdin.setEncoding('utf8');process.stdin.on('data',chunk=>{buffer+=chunk;const lines=buffer.split('\n');buffer=lines.pop();

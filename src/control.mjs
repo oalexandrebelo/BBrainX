@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { DatabaseSync } from 'node:sqlite';
 import { ensure, hash, identifier } from './primitives.mjs';
 import { safeDirectory } from './host.mjs';
 import { usageOverview } from './usage/summary.mjs';
@@ -50,15 +51,16 @@ function write(dir,id,value){
 function records(home,parts,limit){
   const dir=readDirectory(home,...parts);if(!dir)return {items:[],truncated:false,invalid:0};
   const items=[];let seen=0,invalid=0;
-  // Bound directory enumeration as well as JSON materialization.
+  // Limita a enumeração e a leitura. Arquivos auxiliares (log, tarefa, relatório) no mesmo diretório não contam
+  // contra o limite de registros: antes, 4 arquivos por recruta escondiam registros depois de 64 recrutas.
   const stream=fs.opendirSync(dir);
   try{for(let entry; (entry=stream.readSync());){
-    if(++seen>limit*2)break;
-    if(!entry.name.endsWith('.json')||!entry.isFile())continue;
+    if(++seen>limit*8)break;
+    if(!entry.name.endsWith('.json')||entry.name.startsWith('.')||!entry.isFile())continue;
     if(items.length===limit)break;
     try{items.push(read(path.join(dir,entry.name)));}catch{invalid++;}
   }}finally{stream.closeSync();}
-  return {items,truncated:seen>limit*2||items.length===limit,invalid};
+  return {items,truncated:seen>limit*8||items.length===limit,invalid};
 }
 const projectKey=project=>hash(project).slice(0,32);
 const stamp=()=>new Date().toISOString();
@@ -144,20 +146,61 @@ export function discoverOpenWorkspaces(home,{now=Date.now()}={}){
 /** Recrutas (agentes BYO lançados pelo BBrainX): metadados e recibos, nunca o prompt nem a saída integral. */
 export function recruitDirectory(brain,project){brain.project(project);return directory(brain.home,projectKey(project),'recruits');}
 export function recruitRecords(brain,project){brain.project(project);return records(brain.home,[projectKey(project),'recruits'],MAX_RECRUITS);}
+/** Um registro pelo ID, lido direto do arquivo: não depende da enumeração limitada do diretório. */
+export function recruitRecord(brain,project,id){
+  identifier(id);const dir=readDirectory(brain.home,projectKey(project),'recruits');if(!dir)return null;
+  const file=path.join(dir,id+'.json');if(!fs.existsSync(file))return null;
+  ensure(fs.lstatSync(file).isFile()&&!fs.lstatSync(file).isSymbolicLink(),'UNSAFE_CONTROL_PATH');
+  return read(file);
+}
 export function recruitLiveness(record,at=Date.now()){
   if(record.status==='running'||record.status==='starting')return at-Date.parse(record.lastSeen)>RECRUIT_LEASE_MS?'unknown':record.status;
   return record.status;
 }
-export function saveRecruit(brain,project,record){
+/** Trava entre processos do diretório de recrutas: SQLite BEGIN EXCLUSIVE, que o sistema solta se o processo morrer. */
+function withRecruitLock(dir,fn){
+  const db=new DatabaseSync(path.join(dir,'.lock.sqlite'),{timeout:15000});
+  try{db.exec('BEGIN EXCLUSIVE');try{const result=fn();db.exec('COMMIT');return result;}catch(e){try{db.exec('ROLLBACK');}catch{/* já encerrada */}throw e;}}
+  finally{db.close();}
+}
+function recruitFile(dir,id){
+  const file=path.join(dir,id+'.json');if(!fs.existsSync(file))return null;
+  ensure(fs.lstatSync(file).isFile()&&!fs.lstatSync(file).isSymbolicLink(),'UNSAFE_CONTROL_PATH');return read(file);
+}
+function admit(brain,project,dir,id){
+  const existing=records(brain.home,[projectKey(project),'recruits'],MAX_RECRUITS);
+  if(existing.items.length<MAX_RECRUITS)return;
+  // Janela cooperativa: só um registro já encerrado e sem worktree dá lugar ao novo.
+  const old=existing.items.filter(x=>x.status==='dismissed'&&x.id!==id).sort((a,b)=>Date.parse(a.lastSeen)-Date.parse(b.lastSeen))[0];
+  ensure(old&&typeof old.id==='string','CONTROL_RECRUIT_QUOTA','Dismiss old recruits before starting new ones.');identifier(old.id);
+  for(const suffix of ['.json','.log'])fs.rmSync(path.join(dir,old.id+suffix),{force:true});
+}
+/**
+ * Grava o registro inteiro. `create` reserva o ID com exclusividade (falha se já existir): o registro nasce antes de
+ * worktree, ramo e faixa, e a coleta reconcilia uma criação interrompida. Um registro dismissed nunca é sobrescrito.
+ */
+export function saveRecruit(brain,project,record,{create=false}={}){
   identifier(record.id);ensure(record.project===project,'RECRUIT_PROJECT_MISMATCH');
-  const dir=recruitDirectory(brain,project),existing=records(brain.home,[projectKey(project),'recruits'],MAX_RECRUITS);
-  if(!existing.items.some(x=>x.id===record.id)&&existing.items.length>=MAX_RECRUITS){
-    // Janela cooperativa: só um registro já encerrado e sem worktree dá lugar ao novo.
-    const old=existing.items.filter(x=>x.status==='dismissed').sort((a,b)=>Date.parse(a.lastSeen)-Date.parse(b.lastSeen))[0];
-    ensure(old&&typeof old.id==='string','CONTROL_RECRUIT_QUOTA','Dismiss old recruits before starting new ones.');identifier(old.id);
-    for(const suffix of ['.json','.log'])fs.rmSync(path.join(dir,old.id+suffix),{force:true});
-  }
-  write(dir,record.id,record);return record;
+  const dir=recruitDirectory(brain,project);
+  return withRecruitLock(dir,()=>{
+    const current=recruitFile(dir,record.id);
+    if(create){ensure(!current,'RECRUIT_ID_TAKEN');admit(brain,project,dir,record.id);}
+    else if(!current)admit(brain,project,dir,record.id);
+    if(current?.status==='dismissed'&&record.status!=='dismissed')return current;
+    write(dir,record.id,record);return record;
+  });
+}
+/** Ler-alterar-gravar sob a trava: `mutate(atual)` devolve o novo registro, ou null para não gravar. Devolve o que ficou no disco. */
+export function updateRecruit(brain,project,id,mutate){
+  identifier(id);const dir=recruitDirectory(brain,project);
+  return withRecruitLock(dir,()=>{
+    const current=recruitFile(dir,id);ensure(current,'RECRUIT_NOT_FOUND');
+    const next=mutate(structuredClone(current));
+    if(!next)return current;
+    ensure(next.id===id&&next.project===project,'RECRUIT_PROJECT_MISMATCH');
+    if(current.status==='dismissed'&&next.status!=='dismissed')return current;
+    write(dir,id,next);return next;
+  });
 }
 
 export function controlOverview(brain,project){

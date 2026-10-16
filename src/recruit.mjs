@@ -3,13 +3,15 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawn, spawnSync, execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { StringDecoder } from 'node:string_decoder';
 import { fileURLToPath } from 'node:url';
 import { ensure, identifier, hash, now } from './primitives.mjs';
 import { LaneRegistry, gitWorkspace } from './lanes/registry.mjs';
 import { LaneStore } from './lanes/store.mjs';
 import { indexProject } from './retrieval.mjs';
 import { stableNodePath, stableEntryPath, commandVersion } from './host.mjs';
-import { recruitRecords, saveRecruit, recruitDirectory, recruitLiveness as liveness, RECRUIT_LEASE_MS } from './control.mjs';
+import { recruitRecords, recruitRecord, saveRecruit, updateRecruit, recruitDirectory, recruitLiveness as liveness, RECRUIT_LEASE_MS } from './control.mjs';
+import { redact } from './redact.mjs';
 
 /**
  * Recrutamento BYO (bring your own agent): o BBrainX lança agentes nas CLIs que o usuário já tem instaladas e logadas
@@ -21,7 +23,7 @@ export const HARNESSES=Object.freeze(['claude','codex']);
 export const EFFORTS=Object.freeze({claude:['low','medium','high','xhigh','max'],codex:['minimal','low','medium','high','xhigh','max','ultra']});
 export const MODES=Object.freeze(['implement','review']);
 const laneCapacity=(()=>{const raw=process.env.BBRAINX_LANE_CAPACITY;if(raw===undefined||raw==='')return 12;const n=Number(raw);ensure(Number.isInteger(n)&&n>=1&&n<=32,'INVALID_LANE_CAPACITY','BBRAINX_LANE_CAPACITY must be an integer from 1 to 32.');return n;})();
-export const LIMITS=Object.freeze({perSpec:10,perCall:10,activePerProject:laneCapacity,laneCapacity,taskChars:8000,specChars:500,resultChars:4000,outputBytes:8*1048576,timeoutMinutes:{default:60,min:5,max:240}});
+export const LIMITS=Object.freeze({perSpec:10,perCall:10,activePerProject:laneCapacity,laneCapacity,taskChars:8000,specChars:500,resultChars:4000,outputBytes:8*1048576,logBytes:32*1048576,timeoutMinutes:{default:60,min:5,max:240}});
 const CLAUDE_FAMILIES=['fable','opus','sonnet','haiku'], CODEX_FAMILIES=['astra','sol','luna','terra'];
 const FILLER=new Set(['agent','agente','agentes','agents','de','do','da','dos','das','com','with','em','no','na','para','modelo','model','models','o','a','os','as','the','an','x','×','em','run','rode','recrute','recruit','recrutar','usando','using','ao','mais','plus']);
 const COUNT_WORDS={um:1,uma:1,one:1,dois:2,duas:2,two:2,tres:3,'três':3,three:3,quatro:4,four:4};
@@ -158,7 +160,14 @@ export function codexRateLimits({env=process.env,account,timeoutMs=15000}={}){
   const args=['-c','approval_policy="never"','-c','features.plugins=false','-s','read-only','app-server'];
   return new Promise(resolve=>{
     let child,output='',stderr='',done=false;
-    const finish=value=>{if(done)return;done=true;clearTimeout(timer);try{child?.kill('SIGTERM');}catch{/* já encerrou */}resolve(value);};
+    // Fecha a entrada, pede o fim e espera o close (com SIGKILL depois de 2 s): o doctor nunca deixa um app-server vivo.
+    const finish=value=>{if(done)return;done=true;clearTimeout(timer);
+      if(typeof value.detail==='string')value.detail=redact(value.detail);
+      if(!child?.pid||child.exitCode!==null||child.signalCode!==null){resolve(value);return;}
+      const kill=setTimeout(()=>{try{child.kill('SIGKILL');}catch{/* já encerrou */}},2000);
+      const settle=setTimeout(()=>{child.stdout?.destroy();child.stderr?.destroy();resolve(value);},4000);
+      child.once('close',()=>{clearTimeout(kill);clearTimeout(settle);resolve(value);});
+      try{child.stdin?.end();}catch{/* já fechada */}try{child.kill('SIGTERM');}catch{/* já encerrou */}};
     const timer=setTimeout(()=>finish({available:false,reason:'TIMEOUT',detail:stderr.trim().split('\n').at(-1)?.slice(0,200)||null}),timeoutMs);
     try{child=spawn(located.binary,args,{stdio:['pipe','pipe','pipe'],env:accountEnv('codex',env,account),windowsHide:true});}
     catch(e){finish({available:false,reason:'SPAWN_FAILED',detail:String(e.message).slice(0,200)});return;}
@@ -184,10 +193,29 @@ export function codexRateLimits({env=process.env,account,timeoutMs=15000}={}){
     child.stdin.write(JSON.stringify({jsonrpc:'2.0',id:1,method:'initialize',params:{clientInfo:{name:'bbrainx',version:'2.0.0'}}})+'\n'+JSON.stringify({jsonrpc:'2.0',method:'initialized'})+'\n'+JSON.stringify({jsonrpc:'2.0',id:2,method:'account/rateLimits/read',params:{}})+'\n');
   });
 }
-function accountEnv(harness,env,account){
-  const child={...env};
-  // Um recruta é um processo novo da CLI, não uma sessão aninhada do harness que está chamando o BBrainX.
-  for(const key of Object.keys(child))if(key==='CLAUDECODE'||key.startsWith('CLAUDE_CODE_')||key.startsWith('CODEX_SANDBOX'))delete child[key];
+// ---------------------------------------------------------------------------------------------- ambiente e processos
+/** Marcadores da sessão que chamou o BBrainX: o recruta é uma CLI nova, não uma sessão aninhada. Ajustes do usuário (provedor, limites) ficam. */
+const SESSION_MARKERS=new Set(['CLAUDECODE','CLAUDE_PID','CLAUDE_EFFORT','CLAUDE_AGENT_SDK_VERSION','CLAUDE_CODE_ENTRYPOINT','CLAUDE_CODE_SESSION_ID','CLAUDE_CODE_CHILD_SESSION','CLAUDE_CODE_SESSION_ATTENDED','CLAUDE_CODE_EXECPATH','CLAUDE_CODE_MESSAGING_SOCKET','CLAUDE_CODE_MESSAGING_TOKEN','CLAUDE_CODE_SSE_PORT','CLAUDE_CODE_EMIT_STARTUP_TIMING','CLAUDE_CODE_QUESTION_PREVIEW_FORMAT','CODEX_THREAD_ID',
+  'BBRAINX_RECRUIT','BBRAINX_PROJECT','BBRAINX_LANE','BBRAINX_WORKSPACE','BBRAINX_HARNESS']);
+const SESSION_PREFIXES=['CLAUDE_CODE_IDE_','CLAUDE_CODE_ENABLE_SDK_','CODEX_SANDBOX'];
+/** Carregadores que executariam código antes do sandbox da CLI; relativos, resolveriam dentro da worktree. */
+const LOADERS=/^(?:NODE_OPTIONS|NODE_PATH|NODE_REPL_EXTERNAL_MODULE|ELECTRON_RUN_AS_NODE|DYLD_[A-Z_]+|LD_[A-Z_]+)$/;
+const PATH_VALUES=new Set(['NODE_EXTRA_CA_CERTS','BASH_ENV','ENV','SSL_CERT_FILE','SSL_CERT_DIR']);
+/** Ambiente de todo processo lançado com cwd numa worktree: sem carregadores injetáveis e sem caminho relativo, que passaria a apontar para o checkout. */
+export function launchEnv(env){
+  const out={};
+  for(const [key,value] of Object.entries(env)){
+    if(value===undefined||LOADERS.test(key))continue;
+    if(PATH_VALUES.has(key)&&!path.isAbsolute(String(value)))continue;
+    out[key]=value;
+  }
+  const pathKey=Object.keys(out).find(key=>key.toUpperCase()==='PATH');
+  if(pathKey)out[pathKey]=String(out[pathKey]).split(path.delimiter).filter(dir=>dir&&path.isAbsolute(dir)).join(path.delimiter);
+  return out;
+}
+export function accountEnv(harness,env,account){
+  const child=launchEnv(env);
+  for(const key of Object.keys(child))if(SESSION_MARKERS.has(key)||SESSION_PREFIXES.some(prefix=>key.startsWith(prefix)))delete child[key];
   if(account){
     let directory=false;try{directory=typeof account==='string'&&path.isAbsolute(account)&&!CONTROL.test(account)&&fs.statSync(account).isDirectory();}catch{directory=false;}
     ensure(directory,'RECRUIT_ACCOUNT_INVALID','account must be an existing absolute directory (a CLAUDE_CONFIG_DIR or CODEX_HOME).');
@@ -195,6 +223,76 @@ function accountEnv(harness,env,account){
   }
   return child;
 }
+const PS=['/bin/ps','/usr/bin/ps'].find(file=>{try{return fs.statSync(file).isFile();}catch{return false;}})??null;
+/** Estado (ps stat) e um campo do processo. Zumbi conta como inexistente: já saiu, só falta o pai recolher (o pai pode ser
+ * justamente quem espera, bloqueado na baixa). null: não existe; undefined: sem como verificar. */
+function psField(pid,field){
+  if(!PS)return undefined;
+  const result=spawnSync(PS,['-ww','-o','stat=','-o',field+'=','-p',String(pid)],{encoding:'utf8',timeout:5000,maxBuffer:1048576,windowsHide:true,env:{PATH:'/bin:/usr/bin',LC_ALL:'C'}});
+  if(result.error)return undefined;
+  const line=result.status===0?result.stdout.trim():'';
+  const match=/^(\S+)\s+([\s\S]+)$/.exec(line);
+  if(!match||match[1].startsWith('Z'))return null;
+  return match[2].trim();
+}
+/** Início do processo (ps lstart), a identidade que um PID reaproveitado não repete. null: não existe; undefined: sem como verificar. */
+export function processStart(pid){
+  if(!Number.isInteger(pid)||pid<=0)return null;
+  try{process.kill(pid,0);}catch(e){if(e.code==='ESRCH')return null;}
+  if(process.platform==='win32')return undefined;
+  return psField(pid,'lstart');
+}
+/** 'alive' (o mesmo processo), 'dead' (morto ou PID de outro processo) ou 'unverified' (existe e não há como provar quem é). */
+export function processState(pid,{start,marker}={}){
+  const current=processStart(pid);
+  if(current===null)return 'dead';
+  if(current===undefined)return 'unverified';
+  if(start)return current===start?'alive':'dead';
+  // Registro anterior à identidade por início: a linha de comando precisa citar o recruta.
+  if(marker){const command=psField(pid,'command');if(command===undefined)return 'unverified';return command&&command.includes(marker)?'alive':'dead';}
+  return 'unverified';
+}
+/** Membros restantes do grupo da CLI depois que o líder saiu; um PID igual ao do grupo seria outro processo que herdou o número. */
+function orphanGroup(pgid){
+  if(process.platform==='win32'||!PS||!Number.isInteger(pgid)||pgid<=0)return false;
+  try{process.kill(-pgid,0);}catch(e){if(e.code!=='EPERM')return false;}
+  const result=spawnSync(PS,['-A','-o','pid=','-o','pgid=','-o','stat='],{encoding:'utf8',timeout:5000,maxBuffer:8*1048576,windowsHide:true,env:{PATH:'/bin:/usr/bin',LC_ALL:'C'}});
+  if(result.error||result.status!==0)return true;
+  const members=result.stdout.split('\n').map(line=>line.trim().split(/\s+/)).filter(([pid,group,stat])=>Number(group)===pgid&&stat&&!stat.startsWith('Z')).map(([pid])=>Number(pid));
+  return members.length>0&&!members.includes(pgid);
+}
+function signalGroup(pgid,signal){try{process.kill(-pgid,signal);return true;}catch{return false;}}
+/** Supervisor e CLI (com os descendentes do grupo dela) de um recruta, verificados por identidade e não só pelo PID. */
+export function recruitProcesses(record){
+  const supervisor=record.pid?processState(record.pid,record.pidStart?{start:record.pidStart}:{marker:'--id '+record.id}):'dead';
+  let harness='dead';
+  if(record.childPid){
+    const leader=processState(record.childPid,record.childStart?{start:record.childStart}:{marker:record.id});
+    harness=leader!=='dead'?leader:record.childGroup===true&&orphanGroup(record.childPid)?'alive':'dead';
+  }
+  return {supervisor,harness,alive:supervisor!=='dead'||harness!=='dead',verified:supervisor!=='unverified'&&harness!=='unverified'};
+}
+function signalHarness(record,signal){
+  if(!record.childPid)return;
+  if(record.childGroup===true)signalGroup(record.childPid,signal);
+  else if(processState(record.childPid,record.childStart?{start:record.childStart}:{marker:record.id})==='alive'){try{process.kill(record.childPid,signal);}catch{/* já saiu */}}
+}
+const pause=ms=>Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,ms);
+/** Pede o fim ao supervisor (que encerra o grupo da CLI e grava o estado); sem resposta, encerra os dois. true só com a saída confirmada. */
+function stopRecruitProcesses(brain,project,id,{graceMs=30000}={}){
+  const fresh=()=>recruitRecord(brain,project,id);
+  const settled=ms=>{const until=Date.now()+ms;for(;;){const record=fresh();if(!record||!recruitProcesses(record).alive)return true;if(Date.now()>=until)return false;pause(250);}};
+  let record=fresh(),processes=recruitProcesses(record);
+  if(!processes.alive)return true;
+  if(!processes.verified)return false;
+  if(processes.supervisor==='alive'){try{process.kill(record.pid,'SIGTERM');}catch{/* já saiu */}}
+  else signalHarness(record,'SIGTERM');
+  if(settled(graceMs))return true;
+  record=fresh();signalHarness(record,'SIGKILL');
+  if(recruitProcesses(record).supervisor==='alive'){try{process.kill(record.pid,'SIGKILL');}catch{/* já saiu */}}
+  return settled(5000);
+}
+
 export async function recruitDoctor(options={}){
   const claude=harnessStatus('claude',options),codex=harnessStatus('codex',options);
   return {schemaVersion:1,observedAt:now(),harnesses:[claude,codex],codexRateLimits:codex.installed?await codexRateLimits(options):{available:false,reason:'CODEX_NOT_INSTALLED'},
@@ -202,8 +300,25 @@ export async function recruitDoctor(options={}){
 }
 
 // ---------------------------------------------------------------------------------------------- plano e início
-const gitEnv=()=>{const env={...process.env};for(const k of Object.keys(env))if(k.startsWith('GIT_'))delete env[k];return {...env,GIT_OPTIONAL_LOCKS:'0'};};
-const git=(cwd,...args)=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','-C',cwd,...args],{encoding:'utf8',env:gitEnv(),timeout:60000,maxBuffer:4*1048576,windowsHide:true,stdio:['ignore','pipe','pipe']}).trimEnd();
+const gitEnv=()=>{const env=launchEnv(process.env);for(const k of Object.keys(env))if(k.startsWith('GIT_'))delete env[k];return {...env,GIT_OPTIONAL_LOCKS:'0',GIT_TERMINAL_PROMPT:'0'};};
+const filterCache=new Map();
+/**
+ * O git do host (worktree, status, commit automático) nunca executa comando configurado no repositório: hooks, fsmonitor
+ * e filtros clean/smudge/process ficam desligados. Ler a configuração não executa nada. Conteúdo de LFS chega como ponteiro.
+ */
+function filterOverrides(cwd){
+  const cached=filterCache.get(cwd);if(cached&&Date.now()-cached.at<10000)return cached.args;
+  let listing='';
+  try{listing=execFileSync('git',['-C',cwd,'config','--null','--get-regexp','^filter\\.'],{encoding:'utf8',env:gitEnv(),timeout:15000,maxBuffer:1048576,windowsHide:true,stdio:['ignore','pipe','ignore']});}
+  catch(e){if(e.status!==1)throw e;} // 1: nenhum filtro configurado
+  const names=new Set();
+  for(const entry of listing.split('\0')){const key=entry.split('\n')[0];const cut=key.lastIndexOf('.');if(key.startsWith('filter.')&&cut>7)names.add(key.slice(7,cut));}
+  for(const name of names)ensure(!/[=\x00-\x1f]/.test(name),'RECRUIT_GIT_FILTER_UNSAFE','Filter driver "'+name.replace(/[\x00-\x1f]/g,'?')+'" cannot be neutralized.');
+  const args=[...names].flatMap(name=>['-c','filter.'+name+'.clean=','-c','filter.'+name+'.smudge=','-c','filter.'+name+'.process=','-c','filter.'+name+'.required=false']);
+  filterCache.set(cwd,{at:Date.now(),args});return args;
+}
+const git=(cwd,...args)=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','-c','core.fsmonitor=false',...filterOverrides(cwd),'-C',cwd,...args],{encoding:'utf8',env:gitEnv(),timeout:60000,maxBuffer:4*1048576,windowsHide:true,stdio:['ignore','pipe','pipe']}).trimEnd();
+const branchExists=(root,branch)=>{try{git(root,'rev-parse','--verify','--quiet','refs/heads/'+branch);return true;}catch{return false;}};
 const newRecruitId=()=>'r'+now().replace(/[-:TZ.]/g,'').slice(2,12)+'-'+randomBytes(3).toString('hex');
 export const recruitsRoot=root=>path.join(path.dirname(root),path.basename(root)+'.bbx');
 
@@ -237,42 +352,63 @@ export function planRecruits(store,{project,spec,recruits,task,title,mode='imple
     worktreeRoot:recruitsRoot(root),note:'Each recruit works in its own worktree and branch under '+recruitsRoot(root)+'; the checkout at '+root+' is never modified.'};
 }
 
-/** Cria worktree + lane + índice e lança o supervisor desacoplado de cada recruta. Falha num membro desfaz só aquele membro. */
-export function startRecruits(store,plan,{env=process.env,entry}={}){
+/**
+ * Lança o supervisor desacoplado de cada recruta. Ordem: registro (reserva exclusiva do ID), worktree e ramo, faixa, supervisor.
+ * Falha num membro desfaz só o que aquele início criou; ramo ou pasta de mesmo nome que já existiam nunca são removidos.
+ */
+export function startRecruits(store,plan,{env=process.env,entry,newId=newRecruitId}={}){
   const brain=store.authority??store,home=brain.home;
   const node=stableNodePath({env,errors:{invalid:'RECRUIT_NODE_INVALID',mismatch:'RECRUIT_NODE_MISMATCH'}});
   const self=entry??fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url));
   const stableEntry=stableEntryPath(self,{env,errors:{invalid:'RECRUIT_ENTRY_INVALID',mismatch:'RECRUIT_ENTRY_MISMATCH'}});
-  // Antes de pedir vaga, recolhe faixas deste projeto cujo supervisor já não existe.
+  // Antes de pedir vaga, recolhe faixas deste projeto que nenhum processo vivo usa.
   collectLanes(store,{project:plan.project});
   const registry=new LaneRegistry(home,{maxActive:LIMITS.laneCapacity});
   const started=[],failed=[];
   try{
     for(const member of plan.members){
-      const id=newRecruitId(),branch='bbx/'+id,worktree=path.join(plan.worktreeRoot,id);
-      let registered=false;
-      try{
-        fs.mkdirSync(plan.worktreeRoot,{recursive:true,mode:0o700});
-        git(plan.root,'worktree','add','--no-track','-b',branch,worktree,plan.base.commit);
-        registry.register(brain,plan.project,id,worktree);registered=true;
-        const dir=recruitDirectory(brain,plan.project);
-        fs.writeFileSync(path.join(dir,id+'.task.md'),plan.task,{mode:0o600});
-        const record={id,project:plan.project,lane:id,harness:member.harness,model:member.model,effort:member.effort,mode:plan.mode,title:plan.title,taskDigest:hash(plan.task),
-          worktree:fs.realpathSync.native(worktree),branch,base:plan.base,timeoutMinutes:plan.timeoutMinutes,budgetUsd:plan.budgetUsd,account:plan.account,tools:plan.tools,network:plan.network===true,
-          status:'starting',startedAt:now(),lastSeen:now(),endedAt:null,pid:null,childPid:null,exitCode:null,reason:null,sessionId:null,usage:null,costUsd:null,resultSummary:null,commit:null,log:path.join(dir,id+'.log')};
-        saveRecruit(brain,plan.project,record);
-        const log=fs.openSync(record.log,'a',0o600);
-        let child;
+      let attempts=0;
+      for(;;){
+        const id=newId(),branch='bbx/'+id,worktree=path.join(plan.worktreeRoot,id);
+        const created={record:false,worktree:false,lane:false};
+        let dir=null;
         try{
-          child=spawn(node,[stableEntry,'recruit','run','--project',plan.project,'--id',id],{cwd:record.worktree,detached:true,stdio:['ignore',log,log],env:{...env,BBRAINX_HOME:home},windowsHide:true});
-        }finally{fs.closeSync(log);}
-        ensure(child.pid,'RECRUIT_SPAWN_FAILED');child.unref();
-        started.push({id,harness:member.harness,model:member.model,effort:member.effort,worktree:record.worktree,branch,lane:id,supervisorPid:child.pid});
-      }catch(e){
-        failed.push({harness:member.harness,model:member.model,error:e.code||'RECRUIT_START_FAILED',detail:String(e.message||'').slice(0,300)});
-        try{if(registered){const r=registry.get(plan.project,id);if(r)registry.retire(plan.project,id,r.epoch);}}catch{/* registro já fechado */}
-        try{git(plan.root,'worktree','remove','--force',worktree);}catch{/* worktree não chegou a existir */}
-        try{git(plan.root,'branch','-D',branch);}catch{/* branch não chegou a existir */}
+          if(branchExists(plan.root,branch)||fs.existsSync(worktree)){ensure(++attempts<4,'RECRUIT_ID_COLLISION','Could not allocate a fresh recruit id.');continue;}
+          dir=recruitDirectory(brain,plan.project);
+          const record={id,project:plan.project,lane:id,harness:member.harness,model:member.model,effort:member.effort,mode:plan.mode,title:plan.title,taskDigest:hash(plan.task),
+            worktree,branch,base:plan.base,timeoutMinutes:plan.timeoutMinutes,budgetUsd:plan.budgetUsd,account:plan.account,tools:plan.tools,network:plan.network===true,
+            status:'starting',startedAt:now(),lastSeen:now(),endedAt:null,pid:null,pidStart:null,childPid:null,childStart:null,childGroup:null,exitCode:null,reason:null,sessionId:null,usage:null,costUsd:null,resultSummary:null,commit:null,log:path.join(dir,id+'.log')};
+          try{saveRecruit(brain,plan.project,record,{create:true});}
+          catch(e){if(e.code==='RECRUIT_ID_TAKEN'&&++attempts<4)continue;throw e;}
+          created.record=true;
+          fs.writeFileSync(path.join(dir,id+'.task.md'),plan.task,{mode:0o600});
+          fs.mkdirSync(plan.worktreeRoot,{recursive:true,mode:0o700});
+          try{git(plan.root,'worktree','add','--no-track','-b',branch,worktree,plan.base.commit);}
+          finally{created.worktree=fs.existsSync(worktree)||branchExists(plan.root,branch);} // ausentes antes da reserva: o que existir agora é deste início
+          const real=fs.realpathSync.native(worktree);
+          updateRecruit(brain,plan.project,id,current=>({...current,worktree:real}));
+          registry.register(brain,plan.project,id,real);created.lane=true;
+          const log=fs.openSync(record.log,'a',0o600);
+          let child;
+          try{child=spawn(node,[stableEntry,'recruit','run','--project',plan.project,'--id',id],{cwd:real,detached:true,stdio:['ignore',log,log],env:{...launchEnv(env),BBRAINX_HOME:home},windowsHide:true});}
+          finally{fs.closeSync(log);}
+          // Falha assíncrona do spawn (ENOENT, EAGAIN) chega como evento: registra e devolve a vaga, nunca derruba quem chamou.
+          child.on('error',e=>{
+            try{updateRecruit(brain,plan.project,id,current=>current.status==='starting'&&!current.pid?{...current,status:'failed',reason:'SPAWN_FAILED',endedAt:now(),lastSeen:now(),resultSummary:redact(String(e.message||'')).slice(0,300)}:null);}catch{/* registro indisponível */}
+            releaseLane(brain,plan.project,id);
+          });
+          ensure(child.pid,'RECRUIT_SPAWN_FAILED');child.unref();
+          started.push({id,harness:member.harness,model:member.model,effort:member.effort,worktree:real,branch,lane:id,supervisorPid:child.pid});
+        }catch(e){
+          failed.push({harness:member.harness,model:member.model,error:e.code||'RECRUIT_START_FAILED',detail:redact(String(e.message||'')).slice(0,300)});
+          if(created.lane){try{const lane=registry.get(plan.project,id);if(lane?.status==='active')registry.retire(plan.project,id,lane.epoch);}catch{/* a coleta fecha depois */}}
+          if(created.worktree){
+            try{git(plan.root,'worktree','remove','--force',worktree);}catch{/* worktree não chegou a existir */}
+            try{git(plan.root,'branch','-D',branch);}catch{/* ramo não chegou a existir */}
+          }
+          if(created.record&&dir){for(const suffix of ['.json','.task.md','.log'])fs.rmSync(path.join(dir,id+suffix),{force:true});}
+        }
+        break;
       }
     }
   }finally{registry.close();}
@@ -286,7 +422,7 @@ function tomlArray(values){return '['+values.map(tomlString).join(',')+']';}
 /** argv exato, sem shell. O servidor BBrainX do recruta serve só a lane dele; `--recruit` não é repassado (sem recrutamento recursivo). */
 export function harnessCommand(record,{node,entry,home,binary}){
   const prompt=composePrompt(record);
-  const server={command:node,args:[entry,'mcp','--project',record.project,'--lane',record.lane,'--workspace',record.worktree,'--harness',record.harness],env:{BBRAINX_HOME:home}};
+  const server={command:node,args:[entry,'mcp','--project',record.project,'--lane',record.lane,'--workspace',record.worktree,'--harness',record.harness],env:{BBRAINX_HOME:home,BBRAINX_RECRUIT:'false'}};
   if(record.harness==='claude'){
     const args=[binary,'-p',prompt,'--model',record.model,'--effort',record.effort,'--output-format','json','--permission-mode',record.mode==='review'?'plan':'acceptEdits','--name','bbx-'+record.id,
       '--mcp-config',JSON.stringify({mcpServers:{bbrainx:server}})];
@@ -296,8 +432,9 @@ export function harnessCommand(record,{node,entry,home,binary}){
     return args;
   }
   // network: o sandbox workspace-write do Codex recusa rede e `listen` (EPERM); com a opção explícita, testes com servidor local e downloads funcionam.
-  return [binary,'exec','--skip-git-repo-check','-C',record.worktree,'--sandbox',record.mode==='review'?'read-only':'workspace-write',...(record.network===true&&record.mode!=='review'?['-c','sandbox_workspace_write.network_access=true']:[]),'-m',record.model,'-c','model_reasoning_effort='+tomlString(record.effort),
-    '-c','mcp_servers.bbrainx.command='+tomlString(node),'-c','mcp_servers.bbrainx.args='+tomlArray(server.args),'-c','mcp_servers.bbrainx.env={BBRAINX_HOME='+tomlString(home)+'}',
+  // O valor vai sempre explícito: um config.toml do usuário com rede ligada não vaza para um recruta sem --network.
+  return [binary,'exec','--skip-git-repo-check','-C',record.worktree,'--sandbox',record.mode==='review'?'read-only':'workspace-write',...(record.mode!=='review'?['-c','sandbox_workspace_write.network_access='+(record.network===true)]:[]),'-m',record.model,'-c','model_reasoning_effort='+tomlString(record.effort),
+    '-c','mcp_servers.bbrainx.command='+tomlString(node),'-c','mcp_servers.bbrainx.args='+tomlArray(server.args),'-c','mcp_servers.bbrainx.env={BBRAINX_HOME='+tomlString(home)+',BBRAINX_RECRUIT="false"}',
     '--json','--color','never','-o',record.log.replace(/\.log$/,'.last.md'),prompt];
 }
 export function composePrompt(record,task){
@@ -342,133 +479,209 @@ function worktreeState(record){
     return {exists:true,commitsAhead:commits,dirtyFiles:dirty,head};
   }catch{return {exists:fs.existsSync(record.worktree),commitsAhead:null,dirtyFiles:null,head:null};}
 }
-function autoCommit(record){
-  if(record.mode==='review')return null;
+function autoCommit(record,{message,force=false}={}){
+  if(record.mode==='review'&&!force)return null;
   const dirty=git(record.worktree,'status','--porcelain','--untracked-files=all').split('\n').filter(Boolean).length;
   if(dirty===0)return null;
   git(record.worktree,'add','-A');
   // Identidade do usuário quando configurada; sem ela (CI, máquina nova) o commit sai em nome do recruta, nunca falha em silêncio.
   let identity=[];try{if(!git(record.worktree,'config','user.email'))identity=['-c','user.name=bbx recruit','-c','user.email=bbrainx@localhost'];}catch{identity=['-c','user.name=bbx recruit','-c','user.email=bbrainx@localhost'];}
-  git(record.worktree,...identity,'commit','-q','-m','bbx recruit '+record.id+': '+record.title);
+  git(record.worktree,...identity,'commit','-q','--no-verify','-m',message??'bbx recruit '+record.id+': '+record.title);
   return git(record.worktree,'rev-parse','HEAD');
 }
-/** Processo separado (`recruit run`): lança a CLI, guarda o log, mede, confirma o commit e grava o estado final. Nunca retorna sucesso sem o close observado. */
+/**
+ * Log de recruta: credenciais redigidas por linha (o decodificador de cada fluxo não corta caractere nem linha ao meio),
+ * teto em disco de LIMITS.logBytes; o que passar disso é descartado com um aviso. Notas do supervisor sempre entram.
+ */
+export function recruitLog(file,{limit=LIMITS.logBytes}={}){
+  const fd=fs.openSync(file,'a',0o600);
+  let written=0;try{written=fs.fstatSync(fd).size;}catch{/* tamanho desconhecido */}
+  let capped=false;
+  const put=text=>{try{const data=Buffer.from(text);fs.writeSync(fd,data);written+=data.length;}catch{/* disco cheio ou log removido */}};
+  const emit=text=>{
+    if(capped||!text)return;
+    const clean=redact(text);
+    if(written+Buffer.byteLength(clean)>limit){capped=true;put('\n--- log limit of '+limit+' bytes reached; further harness output is not stored\n');return;}
+    put(clean);
+  };
+  const streams=[];
+  return {
+    stream(){
+      const decoder=new StringDecoder('utf8');let pending='';
+      const flush=()=>{pending+=decoder.end();if(pending){emit(pending);pending='';}};
+      streams.push(flush);
+      return chunk=>{pending+=decoder.write(chunk);const cut=pending.lastIndexOf('\n');
+        if(cut>=0){emit(pending.slice(0,cut+1));pending=pending.slice(cut+1);}
+        if(pending.length>65536){emit(pending);pending='';}};
+    },
+    note(text){put(redact(text));},
+    close(){for(const flush of streams)flush();try{fs.closeSync(fd);}catch{/* já fechado */}}
+  };
+}
+/** Últimos caracteres do log, lidos do fim do arquivo: um log grande nunca é carregado inteiro. */
+export function logTail(file,chars=4000){
+  let fd;
+  try{
+    fd=fs.openSync(file,fs.constants.O_RDONLY|(fs.constants.O_NOFOLLOW||0));
+    const size=fs.fstatSync(fd).size,length=Math.min(size,chars*4),buffer=Buffer.alloc(length);
+    fs.readSync(fd,buffer,0,length,size-length);
+    return redact(buffer.toString('utf8').replace(/^[\x80-\xbf]*�?/,'')).slice(-chars);
+  }catch{return null;}
+  finally{if(fd!==undefined)fs.closeSync(fd);}
+}
+/**
+ * Processo separado (`recruit run`): lança a CLI no grupo de processos dela, guarda o log, mede, confirma o commit e grava o
+ * estado final uma única vez, depois de devolver a faixa. Nunca retorna sucesso sem a saída da CLI observada.
+ */
 export async function runRecruit(brain,{project,id,env=process.env,entry}){
   identifier(id);
-  const record=recruitRecords(brain,project).items.find(r=>r.id===id);
-  ensure(record,'RECRUIT_NOT_FOUND');ensure(record.status==='starting','RECRUIT_NOT_STARTABLE','Recruit '+id+' is '+record.status+'.');
-  const node=stableNodePath({env,errors:{invalid:'RECRUIT_NODE_INVALID',mismatch:'RECRUIT_NODE_MISMATCH'}});
-  const self=entry??fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url));
-  const stableEntry=stableEntryPath(self,{env,errors:{invalid:'RECRUIT_ENTRY_INVALID',mismatch:'RECRUIT_ENTRY_MISMATCH'}});
-  const located=locateHarness(record.harness,{env});ensure(located,'RECRUIT_HARNESS_UNAVAILABLE',record.harness+' is not installed.');
-  const argv=harnessCommand(record,{node,entry:stableEntry,home:brain.home,binary:located.binary});
-  const save=patch=>{Object.assign(record,patch,{lastSeen:now()});saveRecruit(brain,project,record);};
-  const log=fs.openSync(record.log,'a',0o600);const write=text=>{try{fs.writeSync(log,text);}catch{/* log cheio ou removido */}};
-  write('\n--- bbx recruit '+id+' '+now()+' '+record.harness+' '+record.model+' '+record.effort+'\n');
-  // Índice da lane antes da CLI: a primeira busca do recruta já encontra a worktree. Falha aqui não impede o trabalho (a CLI pode chamar context_index).
-  save({});
-  try{const lane=new LaneStore(brain.home,project,record.lane);try{lane.beginOperation();const index=indexProject(lane,project);lane.endOperation();write('--- lane index: '+index.files+' files, snapshot '+index.snapshot.slice(0,12)+'\n');}finally{lane.close();}}
-  catch(e){write('--- lane index failed: '+(e.code||e.message)+'\n');}
-  let child;
-  try{child=spawn(argv[0],argv.slice(1),{cwd:record.worktree,stdio:['ignore','pipe','pipe'],env:accountEnv(record.harness,env,record.account),windowsHide:true});}
-  catch(e){save({status:'failed',reason:'SPAWN_FAILED',endedAt:now(),resultSummary:String(e.message).slice(0,LIMITS.resultChars)});fs.closeSync(log);return record;}
-  save({status:'running',pid:process.pid,childPid:child.pid});
-  const chunks=[];let bytes=0;
-  child.stdout.on('data',data=>{write(data);bytes+=data.length;chunks.push(data);while(bytes>LIMITS.outputBytes&&chunks.length>1){bytes-=chunks[0].length;chunks.shift();}});
-  child.stderr.on('data',data=>write(data));
-  const heartbeat=setInterval(()=>save({}),15000);
-  let reason=null;
-  const stop=why=>{if(reason)return;reason=why;try{child.kill('SIGTERM');}catch{/* já saiu */}setTimeout(()=>{try{child.kill('SIGKILL');}catch{/* já saiu */}},10000).unref();};
-  const deadline=setTimeout(()=>stop('TIMEOUT'),record.timeoutMinutes*60000);
+  let record=recruitRecord(brain,project,id);
+  ensure(record,'RECRUIT_NOT_FOUND');ensure(record.status==='starting'&&!record.pid,'RECRUIT_NOT_STARTABLE','Recruit '+id+' is '+record.status+(record.pid?' with supervisor '+record.pid:'')+'.');
+  const save=patch=>{record=updateRecruit(brain,project,id,current=>current.status==='dismissed'?null:{...current,...patch,lastSeen:now()});return record;};
+  // Identidade antes de qualquer trabalho: coleta e baixa reconhecem este supervisor já durante a indexação.
+  save({pid:process.pid,pidStart:processStart(process.pid)??null});
+  const log=recruitLog(record.log);
+  log.note('\n--- bbx recruit '+id+' '+now()+' '+record.harness+' '+record.model+' '+record.effort+'\n');
+  const group=process.platform!=='win32';
+  let child=null,reason=null,code=null,signal=null,failure=null,killTimer=null,deadline=null;
+  const kill=sig=>{if(!child?.pid)return;if(group)signalGroup(child.pid,sig);else{try{child.kill(sig);}catch{/* já saiu */}}};
+  const stop=why=>{if(reason)return;reason=why;kill('SIGTERM');killTimer=setTimeout(()=>kill('SIGKILL'),10000);};
   const onSignal=()=>stop('STOPPED');process.once('SIGTERM',onSignal);process.once('SIGINT',onSignal);
-  const [code,signal]=await new Promise(resolve=>child.once('close',(c,s)=>resolve([c,s])));
-  clearInterval(heartbeat);clearTimeout(deadline);process.off('SIGTERM',onSignal);process.off('SIGINT',onSignal);
-  const output=Buffer.concat(chunks).toString('utf8'),parsed=parseOutput(record.harness,output);
+  const heartbeat=setInterval(()=>{try{save({});}catch{/* próxima batida */}},15000);
+  const chunks=[];let bytes=0;
+  try{
+    const node=stableNodePath({env,errors:{invalid:'RECRUIT_NODE_INVALID',mismatch:'RECRUIT_NODE_MISMATCH'}});
+    const self=entry??fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url));
+    const stableEntry=stableEntryPath(self,{env,errors:{invalid:'RECRUIT_ENTRY_INVALID',mismatch:'RECRUIT_ENTRY_MISMATCH'}});
+    const located=locateHarness(record.harness,{env});ensure(located,'RECRUIT_HARNESS_UNAVAILABLE',record.harness+' is not installed.');
+    const argv=harnessCommand(record,{node,entry:stableEntry,home:brain.home,binary:located.binary});
+    // Índice da faixa antes da CLI: a primeira busca do recruta já encontra a worktree. Falha aqui não impede o trabalho.
+    try{const lane=new LaneStore(brain.home,project,record.lane);try{lane.beginOperation();const index=indexProject(lane,project);lane.endOperation();log.note('--- lane index: '+index.files+' files, snapshot '+index.snapshot.slice(0,12)+'\n');}finally{lane.close();}}
+    catch(e){log.note('--- lane index failed: '+(e.code||e.message)+'\n');}
+    if(!reason){
+      child=spawn(argv[0],argv.slice(1),{cwd:record.worktree,stdio:['ignore','pipe','pipe'],env:accountEnv(record.harness,env,record.account),windowsHide:true,detached:group});
+      child.on('error',()=>{/* tratado em exited */});
+      const exited=new Promise(resolve=>{child.once('error',e=>{failure??=e;resolve();});child.once('exit',(c,s)=>{code=c;signal=s;resolve();});});
+      const closed=new Promise(resolve=>child.once('close',resolve));
+      const out=log.stream(),err=log.stream();
+      child.stdout?.on('data',data=>{out(data);bytes+=data.length;chunks.push(data);while(bytes>LIMITS.outputBytes&&chunks.length>1){bytes-=chunks[0].length;chunks.shift();}});
+      child.stderr?.on('data',data=>err(data));
+      if(child.pid)save({status:'running',childPid:child.pid,childStart:processStart(child.pid)??null,childGroup:group});
+      if(reason)kill('SIGTERM'); // pedido de parada durante o spawn
+      deadline=setTimeout(()=>stop('TIMEOUT'),record.timeoutMinutes*60000);
+      await exited;
+      // A CLI saiu. Descendentes que ficaram (servidor de teste, watcher) saem com o grupo e não seguram os pipes.
+      if(group&&child.pid)signalGroup(child.pid,'SIGTERM');
+      let drainTimer;await Promise.race([closed,new Promise(resolve=>{drainTimer=setTimeout(resolve,5000);})]);clearTimeout(drainTimer);
+      if(group&&child.pid)signalGroup(child.pid,'SIGKILL');
+      child.stdout?.destroy();child.stderr?.destroy();
+    }
+  }catch(e){failure??=e;}
+  finally{clearInterval(heartbeat);clearTimeout(deadline);clearTimeout(killTimer);process.off('SIGTERM',onSignal);process.off('SIGINT',onSignal);}
+  const parsed=parseOutput(record.harness,Buffer.concat(chunks).toString('utf8'));
   let commit=null,commitError=null;
-  try{commit=autoCommit(record);}catch(e){commitError=String(e.stderr||e.message||'').trim().split('\n').at(-1)?.slice(0,200)||'COMMIT_FAILED';}
+  try{commit=autoCommit(record);}catch(e){commitError=redact(String(e.stderr||e.message||'').trim().split('\n').at(-1)?.slice(0,200)||'COMMIT_FAILED');}
   const state=worktreeState(record);
-  const status=reason==='STOPPED'?'stopped':reason==='TIMEOUT'?'failed':code===0&&!parsed.isError?'completed':'failed';
-  write('\n--- exit code '+code+(signal?' signal '+signal:'')+' status '+status+' '+now()+'\n');
-  fs.closeSync(log);
-  save({status,endedAt:now(),exitCode:code,signal:signal??null,reason:reason??(status==='failed'?(parsed.isError?'HARNESS_ERROR':'EXIT_'+code):null),sessionId:parsed.sessionId,usage:parsed.usage,costUsd:parsed.costUsd,
-    resultSummary:parsed.resultSummary?parsed.resultSummary.slice(0,LIMITS.resultChars):null,commit,commitError,commitsAhead:state.commitsAhead,dirtyFiles:state.dirtyFiles,head:state.head});
-  // A faixa existe para o MCP do recruta; sem a CLI rodando, nada a usa. Fecha já: o worktree e o ramo ficam
-  // para diff e merge, e a vaga volta para o projeto sem depender de alguém dar baixa.
+  const status=failure?'failed':reason==='STOPPED'?'stopped':reason==='TIMEOUT'?'failed':code===0&&!parsed.isError?'completed':'failed';
+  const why=failure?(failure.code&&/^[A-Z0-9_]{1,80}$/.test(failure.code)?(failure.syscall?.startsWith('spawn')?'SPAWN_FAILED':failure.code):'SUPERVISOR_FAILED'):reason??(status==='failed'?(parsed.isError?'HARNESS_ERROR':'EXIT_'+code):null);
+  log.note('\n--- exit code '+code+(signal?' signal '+signal:'')+' status '+status+(failure?' ('+(failure.code||failure.message)+')':'')+' '+now()+'\n');
+  log.close();
+  // A faixa existe para o MCP do recruta; sem a CLI rodando, nada a usa. Fecha antes do estado final, que é gravado uma vez só:
+  // uma baixa concorrente nunca é desfeita por uma gravação atrasada deste supervisor.
   const lane=releaseLane(brain,project,id);
-  if(lane.error)save({laneError:lane.error});else save({laneReleasedAt:now()});
+  const summary=parsed.resultSummary??(failure?String(failure.message||''):null);
+  save({status,endedAt:now(),exitCode:code,signal:signal??null,reason:why,sessionId:parsed.sessionId,usage:parsed.usage,costUsd:parsed.costUsd,
+    resultSummary:summary?redact(summary).slice(0,LIMITS.resultChars):null,commit,commitError,commitsAhead:state.commitsAhead,dirtyFiles:state.dirtyFiles,head:state.head,
+    ...(lane.error?{laneError:lane.error}:{laneReleasedAt:now()})});
   return record;
 }
 
-/** Fecha a faixa de um recruta; idempotente. Nunca lança: o resultado diz o que aconteceu. */
+/** Fecha a faixa de um recruta; idempotente, inclusive contra outra baixa ou coleta simultânea. Nunca lança. */
 export function releaseLane(brain,project,id){
   let registry;
   try{
     registry=new LaneRegistry(brain.home,{maxActive:LIMITS.laneCapacity});
     const lane=registry.get(project,id);
     if(!lane||lane.status!=='active')return {released:false,already:true};
-    registry.retire(project,id,lane.epoch);return {released:true};
+    try{registry.retire(project,id,lane.epoch);}catch(e){if(e.code==='LANE_NOT_ACTIVE'||e.code==='LANE_GENERATION_CONFLICT')return {released:false,already:true};throw e;}
+    return {released:true};
   }catch(e){return {released:false,error:e.code||'LANE_RELEASE_FAILED'};}
   finally{registry?.close();}
 }
 
+const RECRUIT_ID=/^r\d{10}-[0-9a-f]{6}$/;
 /**
- * Recolhe faixas que nenhum supervisor vivo usa: recruta terminado (o supervisor de versões antigas não fechava)
- * ou sem batimento e com o processo morto (queda, reboot). Nunca toca recruta vivo nem faixa de outra origem.
+ * Recolhe faixas ativas de recrutas que nenhum processo vivo usa: supervisor e CLI verificados por identidade (PID reaproveitado
+ * não conta). Percorre as faixas, não os registros: custo proporcional ao que está aberto, e faixa sem registro também fecha.
+ * Nunca toca recruta vivo, não verificável, nem faixa de outra origem.
  */
 export function collectLanes(store,{project,all=false}={}){
   const brain=store.authority??store;
   const projects=all?brain.projects().map(p=>p.id):[project];
-  const freed=[],kept=[];
+  const freed=[],kept=[],errors=[];
   for(const p of projects){
     identifier(p);
-    for(const r of recruitRecords(brain,p).items){
-      const state=liveness(r);
-      let dead=['completed','failed','stopped','dismissed'].includes(state);
-      if(state==='unknown'){dead=true;if(Number.isInteger(r.pid)&&r.pid>0){try{process.kill(r.pid,0);dead=false;}catch(e){dead=e.code==='ESRCH';}}}
-      if(!dead){kept.push({project:p,id:r.id,status:state});continue;}
-      const result=releaseLane(brain,p,r.id);
-      if(result.released)freed.push({project:p,id:r.id,status:state});
+    let lanes;
+    {const registry=new LaneRegistry(brain.home,{maxActive:LIMITS.laneCapacity});try{lanes=registry.list(p).filter(l=>l.status==='active'&&RECRUIT_ID.test(l.id));}finally{registry.close();}}
+    for(const lane of lanes){
+      let record=null;try{record=recruitRecord(brain,p,lane.id);}catch(e){errors.push({project:p,id:lane.id,error:e.code||'RECRUIT_RECORD_INVALID'});continue;}
+      const state=record?liveness(record):'orphan';
+      if(state==='running'||state==='starting'){kept.push({project:p,id:lane.id,status:state});continue;}
+      if(record){const processes=recruitProcesses(record);if(processes.alive){kept.push({project:p,id:lane.id,status:state,supervisor:processes.supervisor,harness:processes.harness});continue;}}
+      const result=releaseLane(brain,p,lane.id);
+      if(result.released)freed.push({project:p,id:lane.id,status:state});
+      else if(result.error)errors.push({project:p,id:lane.id,error:result.error});
     }
   }
-  return {freed,kept,note:'Only lanes of recruits whose supervisor is gone are closed; worktrees and branches are kept.'};
+  return {freed,kept,errors,note:'Only lanes no live recruit process uses are closed; worktrees and branches are kept.'};
 }
 
 // ---------------------------------------------------------------------------------------------- estado e baixa
 export function recruitStatus(store,project,{ids,includeLog=false}={}){
   const brain=store.authority??store;
   if(ids!==undefined){ensure(Array.isArray(ids)&&ids.length>=1&&ids.length<=50,'RECRUIT_IDS_INVALID');ids.forEach(identifier);}
-  const records=recruitRecords(brain,project);
-  const items=records.items.filter(r=>!ids||ids.includes(r.id)).sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)).slice(0,50).map(r=>{
+  // IDs pedidos são lidos direto do arquivo: nenhum registro some por causa do limite da listagem.
+  const records=ids?{items:ids.map(id=>recruitRecord(brain,project,id)).filter(Boolean),truncated:false,invalid:0}:recruitRecords(brain,project);
+  const items=records.items.sort((a,b)=>Date.parse(b.startedAt)-Date.parse(a.startedAt)).slice(0,50).map(r=>{
     const state=r.status==='dismissed'?{exists:false,commitsAhead:r.commitsAhead??null,dirtyFiles:null,head:r.head??null}:worktreeState(r);
     const item={...r,status:liveness(r),worktreeExists:state.exists,commitsAhead:state.commitsAhead,dirtyFiles:state.dirtyFiles,head:state.head};
-    if(includeLog){try{const text=fs.readFileSync(r.log,'utf8');item.logTail=text.slice(-4000);}catch{item.logTail=null;}}
+    if(typeof item.resultSummary==='string')item.resultSummary=redact(item.resultSummary);
+    if(includeLog)item.logTail=logTail(r.log);
     return item;
   });
   return {project,count:items.length,active:items.filter(i=>['running','starting'].includes(i.status)).length,items,truncated:records.truncated||records.items.length>50,invalidRecords:records.invalid,
     legend:{running:'supervisor alive (heartbeat within '+RECRUIT_LEASE_MS/1000+' s)',unknown:'no heartbeat: the supervisor died or the machine slept; inspect the log',completed:'CLI exited 0 without a reported error',failed:'non-zero exit, reported error or timeout',stopped:'dismissed with stop',dismissed:'worktree removed; branch kept unless deleted'}};
 }
+/**
+ * Baixa: só remove a worktree com todos os processos do recruta confirmadamente encerrados, e depois de fechar a faixa
+ * (um bloqueio, como serviço observado, recusa a baixa com tudo intacto). Trabalho não commitado vira commit no ramo,
+ * a menos que o ramo também vá ser apagado.
+ */
 export function dismissRecruit(store,project,id,{stop=false,deleteBranch=false}={}){
   identifier(id);const brain=store.authority??store;
-  const record=recruitRecords(brain,project).items.find(r=>r.id===id);ensure(record,'RECRUIT_NOT_FOUND');
+  let record=recruitRecord(brain,project,id);ensure(record,'RECRUIT_NOT_FOUND');
   ensure(record.status!=='dismissed','RECRUIT_ALREADY_DISMISSED');
-  const live=liveness(record);
-  if(live==='running'||live==='starting'){
-    ensure(stop,'RECRUIT_STILL_RUNNING','Recruit '+id+' is '+live+'; pass stop:true to end it first.');
-    // Só um supervisor com batimento recente é sinalizado: PID antigo reaproveitado nunca recebe sinal daqui.
-    if(record.pid&&live==='running'){try{process.kill(record.pid,'SIGTERM');}catch{/* já encerrou */}}
-    const until=Date.now()+15000;
-    while(Date.now()<until){const current=recruitRecords(brain,project).items.find(r=>r.id===id);if(current&&!['running','starting'].includes(current.status)){Object.assign(record,current);break;}Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,250);}
-    if(['running','starting'].includes(record.status))Object.assign(record,{status:'stopped',reason:'STOPPED',endedAt:now()});
+  const processes=recruitProcesses(record);
+  if(processes.alive){
+    ensure(processes.verified,'RECRUIT_LIVENESS_UNVERIFIED','Recruit '+id+' has a live process that cannot be identified on this system (PID '+(record.pid??record.childPid)+'); end it yourself, then dismiss.');
+    ensure(stop,'RECRUIT_STILL_RUNNING','Recruit '+id+' is still running ('+liveness(record)+'); pass stop:true to end it first.');
+    ensure(stopRecruitProcesses(brain,project,id),'RECRUIT_STOP_UNCONFIRMED','Recruit '+id+' did not exit; nothing was removed.');
+    record=recruitRecord(brain,project,id);
+    if(['running','starting'].includes(record.status))record=updateRecruit(brain,project,id,current=>({...current,status:'stopped',reason:'STOPPED',endedAt:now(),lastSeen:now()}));
   }
+  const lane=releaseLane(brain,project,id);
+  ensure(!lane.error,lane.error??'LANE_RELEASE_FAILED','The lane of '+id+' could not be closed ('+lane.error+'); the worktree was kept.');
   const {root}=brain.project(project);
-  const state=worktreeState(record);
-  if(state.exists){try{git(root,'worktree','remove','--force',record.worktree);}catch(e){ensure(false,'RECRUIT_WORKTREE_REMOVE_FAILED',String(e.stderr||e.message).trim().slice(0,200));}}
+  let state=worktreeState(record),preserved=null;
+  if(state.exists&&!deleteBranch&&state.dirtyFiles>0){
+    try{preserved=autoCommit(record,{force:true,message:'bbx recruit '+id+': uncommitted work kept at dismissal'});}
+    catch(e){ensure(false,'RECRUIT_PRESERVE_FAILED','Uncommitted work in '+record.worktree+' could not be committed ('+redact(String(e.stderr||e.message)).trim().slice(0,200)+'); nothing was removed.');}
+    state=worktreeState(record);
+  }
+  if(state.exists){try{git(root,'worktree','remove','--force',record.worktree);}catch(e){ensure(false,'RECRUIT_WORKTREE_REMOVE_FAILED',redact(String(e.stderr||e.message)).trim().slice(0,200));}}
   try{git(root,'worktree','prune');}catch{/* opcional */}
-  if(deleteBranch){try{git(root,'branch','-D',record.branch);}catch{/* branch já removido */}}
-  const registry=new LaneRegistry(brain.home,{maxActive:LIMITS.laneCapacity});
-  try{const lane=registry.get(project,id);if(lane&&lane.status==='active')registry.retire(project,id,lane.epoch);}finally{registry.close();}
+  if(deleteBranch){try{git(root,'branch','-D',record.branch);}catch{/* ramo já removido */}}
   for(const suffix of ['.task.md','.last.md'])fs.rmSync(record.log.replace(/\.log$/,suffix),{force:true});
-  Object.assign(record,{status:'dismissed',dismissedAt:now(),commitsAhead:state.commitsAhead,head:state.head,branchDeleted:deleteBranch,lastSeen:now()});
-  saveRecruit(brain,project,record);
-  return {id,status:'dismissed',branch:deleteBranch?null:record.branch,commitsAhead:state.commitsAhead,head:state.head,worktreeRemoved:true};
+  updateRecruit(brain,project,id,current=>({...current,status:'dismissed',dismissedAt:now(),commitsAhead:state.commitsAhead,head:state.head,preservedCommit:preserved,branchDeleted:deleteBranch,lastSeen:now()}));
+  return {id,status:'dismissed',branch:deleteBranch?null:record.branch,commitsAhead:state.commitsAhead,head:state.head,preservedCommit:preserved,worktreeRemoved:true};
 }

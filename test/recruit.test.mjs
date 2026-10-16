@@ -184,7 +184,7 @@ test('harness argv is exact, shell-free and never forwards --recruit to the recr
   const record={id:'r1',project:'p',lane:'r1',harness:'codex',model:'gpt-6-astra',effort:'high',mode:'implement',worktree:'/tmp/wt',branch:'bbx/r1',base:{commit:'a'.repeat(40)},log:'/tmp/r1.log',budgetUsd:null,tools:null};
   fs.writeFileSync('/tmp/r1.task.md','TASK TEXT');
   const codex=harnessCommand(record,{node:'/n/node',entry:'/e/bbrainx.mjs',home:'/h',binary:'/b/codex'});
-  assert.deepEqual(codex.slice(0,10),['/b/codex','exec','--skip-git-repo-check','-C','/tmp/wt','--sandbox','workspace-write','-m','gpt-6-astra','-c']);
+  assert.deepEqual(codex.slice(0,12),['/b/codex','exec','--skip-git-repo-check','-C','/tmp/wt','--sandbox','workspace-write','-c','sandbox_workspace_write.network_access=false','-m','gpt-6-astra','-c']);
   assert(codex.includes('mcp_servers.bbrainx.args=["/e/bbrainx.mjs","mcp","--project","p","--lane","r1","--workspace","/tmp/wt","--harness","codex"]'));
   assert(!codex.some(a=>a.includes('--recruit')));assert.match(codex.at(-1),/TASK:\nTASK TEXT$/);
   const claude=harnessCommand({...record,harness:'claude',model:'opus',effort:'max',budgetUsd:5,tools:['Bash(make test:*)']},{node:'/n/node',entry:'/e/bbrainx.mjs',home:'/h',binary:'/b/claude'});

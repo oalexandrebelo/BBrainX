@@ -130,7 +130,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       const sub=args[1],{recruitDoctor,planRecruits,startRecruits,runRecruit,recruitStatus,dismissRecruit}=await import('../src/recruit.mjs');
       if(sub==='doctor')print(await recruitDoctor({account:values.account}));
       else{
-        ensure(values.project,'PROJECT_REQUIRED');
+        ensure(values.project||(sub==='gc'&&values.all===true),'PROJECT_REQUIRED');
         if(sub==='start'){
           ensure(values.task,'TASK_REQUIRED','Use --task "o que o recruta deve fazer".');
           const plan=planRecruits(store,{project:values.project,spec:values.spec,task:values.task,title:values.title,mode:values.mode||'implement',base:values.base,timeoutMinutes:values.minutes===undefined?undefined:Number(values.minutes),account:values.account,network:values.network===true});
@@ -141,7 +141,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
         else if(sub==='status'){const result=recruitStatus(store,values.project,{...(values.id?{ids:[values.id]}:{}),includeLog:values.log===true});print(result);}
         else if(sub==='gc'){const {collectLanes}=await import('../src/recruit.mjs');ensure(values.project||values.all,'PROJECT_REQUIRED','Use --project ID ou --all.');print(collectLanes(store,{project:values.project,all:values.all===true}));}
         else if(sub==='dismiss'){ensure(values.id,'ID_REQUIRED');print(dismissRecruit(store,values.project,values.id,{stop:values.stop===true,deleteBranch:values['delete-branch']===true}));}
-        else throw new Error('Use: recruit doctor | start | status | dismiss');
+        else throw new Error('Use: recruit doctor | start | status | gc | dismiss');
       }
     }
     else if(command==='up'){
