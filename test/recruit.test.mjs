@@ -62,8 +62,9 @@ test('spec text, aliases and efforts normalize to the ids the CLIs accept',()=>{
   assert.equal(normalizeEffort('claude','extra-high'),'xhigh');
   assert.throws(()=>normalizeEffort('codex','turbo'),{code:'RECRUIT_EFFORT_INVALID'});
   assert.throws(()=>normalizeModel('claude','opus; rm -rf /'),{code:'RECRUIT_MODEL_INVALID'});
-  assert.throws(()=>parseRecruitSpec('5 opus'),{code:'RECRUIT_COUNT_INVALID'});
-  assert.throws(()=>parseRecruitSpec('4 opus e 3 sonnet'),{code:'RECRUIT_COUNT_INVALID'});
+  assert.throws(()=>parseRecruitSpec('11 opus'),{code:'RECRUIT_COUNT_INVALID'});
+  assert.throws(()=>parseRecruitSpec('6 opus e 5 sonnet'),{code:'RECRUIT_COUNT_INVALID'});
+  assert.equal(parseRecruitSpec('10 codex sol 6.1 xhigh')[0].count,10,'up to ten agents in one call');
   assert.throws(()=>parseRecruitSpec('high'),{code:'RECRUIT_SPEC_INVALID'});
   assert.throws(()=>parseRecruitSpec('2 mystery-model'),{code:'RECRUIT_SPEC_INVALID'});
 });
@@ -165,6 +166,16 @@ test('doctor reports the CLIs, their login and the Codex rate-limit windows with
   delete process.env.BBRAINX_CLAUDE;const located=locateHarness('claude',{env:{PATH:path.dirname(f.cli.claude)}});assert.equal(located.source,'PATH');
   const fallback=locateHarness('codex',{env:{PATH:'/nonexistent'},home:f.base});assert(fallback===null||(fallback.source==='known-install'&&path.isAbsolute(fallback.binary)),'only a real native install may answer without PATH');
   assert.throws(()=>locateHarness('codex',{env:{BBRAINX_CODEX:'relative/codex'}}),{code:'RECRUIT_HARNESS_OVERRIDE_INVALID'});
+});
+
+test('network is opt-in for Codex implement recruits and never widens a review',()=>{
+  const record={id:'r1',project:'p',lane:'r1',harness:'codex',model:'gpt-6-astra',effort:'max',mode:'implement',worktree:'/tmp/wt',branch:'bbx/r1',base:{commit:'a'.repeat(40)},log:'/tmp/rn.log',budgetUsd:null,tools:null};
+  fs.writeFileSync('/tmp/rn.task.md','T');
+  const flag='sandbox_workspace_write.network_access=true';
+  assert(!harnessCommand(record,{node:'/n',entry:'/e',home:'/h',binary:'/b/codex'}).includes(flag),'off by default');
+  assert(harnessCommand({...record,network:true},{node:'/n',entry:'/e',home:'/h',binary:'/b/codex'}).includes(flag));
+  assert(!harnessCommand({...record,network:true,mode:'review'},{node:'/n',entry:'/e',home:'/h',binary:'/b/codex'}).includes(flag),'review stays read-only and offline');
+  fs.rmSync('/tmp/rn.task.md',{force:true});
 });
 
 test('harness argv is exact, shell-free and never forwards --recruit to the recruit\'s own server',()=>{

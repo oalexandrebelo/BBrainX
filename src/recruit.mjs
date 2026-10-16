@@ -20,7 +20,7 @@ import { recruitRecords, saveRecruit, recruitDirectory, recruitLiveness as liven
 export const HARNESSES=Object.freeze(['claude','codex']);
 export const EFFORTS=Object.freeze({claude:['low','medium','high','xhigh','max'],codex:['minimal','low','medium','high','xhigh','max','ultra']});
 export const MODES=Object.freeze(['implement','review']);
-export const LIMITS=Object.freeze({perSpec:4,perCall:6,activePerProject:8,laneCapacity:8,taskChars:8000,specChars:500,resultChars:4000,outputBytes:8*1048576,timeoutMinutes:{default:60,min:5,max:240}});
+export const LIMITS=Object.freeze({perSpec:10,perCall:10,activePerProject:12,laneCapacity:12,taskChars:8000,specChars:500,resultChars:4000,outputBytes:8*1048576,timeoutMinutes:{default:60,min:5,max:240}});
 const CLAUDE_FAMILIES=['fable','opus','sonnet','haiku'], CODEX_FAMILIES=['astra','sol','luna','terra'];
 const FILLER=new Set(['agent','agente','agentes','agents','de','do','da','dos','das','com','with','em','no','na','para','modelo','model','models','o','a','os','as','the','an','x','×','em','run','rode','recrute','recruit','recrutar','usando','using','ao','mais','plus']);
 const COUNT_WORDS={um:1,uma:1,one:1,dois:2,duas:2,two:2,tres:3,'três':3,three:3,quatro:4,four:4};
@@ -211,7 +211,8 @@ function activeCount(brain,project){
 }
 
 /** Valida tudo sem efeito colateral: a recusa acontece antes de qualquer worktree. */
-export function planRecruits(store,{project,spec,recruits,task,title,mode='implement',base,timeoutMinutes,budgetUsd,account,tools}){
+export function planRecruits(store,{project,spec,recruits,task,title,mode='implement',base,timeoutMinutes,budgetUsd,account,tools,network=false}){
+  ensure(typeof network==='boolean','RECRUIT_NETWORK_INVALID','network must be true or false.');
   ensure(typeof task==='string'&&task.trim().length>0&&task.length<=LIMITS.taskChars,'RECRUIT_TASK_INVALID','task must be 1..'+LIMITS.taskChars+' characters.');
   ensure((spec===undefined)!==(recruits===undefined),'RECRUIT_SPEC_INVALID','Pass exactly one of spec (text) or recruits (list).');
   ensure(MODES.includes(mode),'RECRUIT_MODE_INVALID','mode must be implement or review.');
@@ -231,7 +232,7 @@ export function planRecruits(store,{project,spec,recruits,task,title,mode='imple
   ensure(missing.length===0,'RECRUIT_HARNESS_UNAVAILABLE',missing.map(s=>s.harness+': '+(s.installed?'not logged in ('+(s.identity||s.detail||'')+')':'not installed')).join('; '));
   const members=[];for(const s of specs)for(let i=0;i<s.count;i++)members.push({harness:s.harness,model:s.model,effort:s.effort});
   const cleanTitle=(title??task.split('\n')[0]).replace(/[\x00-\x1f\x7f]/g,' ').trim().slice(0,120);
-  return {project,root,common:workspace.common,base:{ref,commit:baseCommit},mode,task,title:cleanTitle,timeoutMinutes:minutes,budgetUsd:budgetUsd??null,account:account??null,tools:tools??null,members,
+  return {project,root,common:workspace.common,base:{ref,commit:baseCommit},mode,task,title:cleanTitle,timeoutMinutes:minutes,budgetUsd:budgetUsd??null,account:account??null,tools:tools??null,network,members,
     worktreeRoot:recruitsRoot(root),note:'Each recruit works in its own worktree and branch under '+recruitsRoot(root)+'; the checkout at '+root+' is never modified.'};
 }
 
@@ -254,7 +255,7 @@ export function startRecruits(store,plan,{env=process.env,entry}={}){
         const dir=recruitDirectory(brain,plan.project);
         fs.writeFileSync(path.join(dir,id+'.task.md'),plan.task,{mode:0o600});
         const record={id,project:plan.project,lane:id,harness:member.harness,model:member.model,effort:member.effort,mode:plan.mode,title:plan.title,taskDigest:hash(plan.task),
-          worktree:fs.realpathSync.native(worktree),branch,base:plan.base,timeoutMinutes:plan.timeoutMinutes,budgetUsd:plan.budgetUsd,account:plan.account,tools:plan.tools,
+          worktree:fs.realpathSync.native(worktree),branch,base:plan.base,timeoutMinutes:plan.timeoutMinutes,budgetUsd:plan.budgetUsd,account:plan.account,tools:plan.tools,network:plan.network===true,
           status:'starting',startedAt:now(),lastSeen:now(),endedAt:null,pid:null,childPid:null,exitCode:null,reason:null,sessionId:null,usage:null,costUsd:null,resultSummary:null,commit:null,log:path.join(dir,id+'.log')};
         saveRecruit(brain,plan.project,record);
         const log=fs.openSync(record.log,'a',0o600);
@@ -291,7 +292,8 @@ export function harnessCommand(record,{node,entry,home,binary}){
     if(record.budgetUsd)args.push('--max-budget-usd',String(record.budgetUsd));
     return args;
   }
-  return [binary,'exec','--skip-git-repo-check','-C',record.worktree,'--sandbox',record.mode==='review'?'read-only':'workspace-write','-m',record.model,'-c','model_reasoning_effort='+tomlString(record.effort),
+  // network: o sandbox workspace-write do Codex recusa rede e `listen` (EPERM); com a opção explícita, testes com servidor local e downloads funcionam.
+  return [binary,'exec','--skip-git-repo-check','-C',record.worktree,'--sandbox',record.mode==='review'?'read-only':'workspace-write',...(record.network===true&&record.mode!=='review'?['-c','sandbox_workspace_write.network_access=true']:[]),'-m',record.model,'-c','model_reasoning_effort='+tomlString(record.effort),
     '-c','mcp_servers.bbrainx.command='+tomlString(node),'-c','mcp_servers.bbrainx.args='+tomlArray(server.args),'-c','mcp_servers.bbrainx.env={BBRAINX_HOME='+tomlString(home)+'}',
     '--json','--color','never','-o',record.log.replace(/\.log$/,'.last.md'),prompt];
 }

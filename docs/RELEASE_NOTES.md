@@ -1,3 +1,10 @@
+# BBrainX 2.0.2 — Developer Preview — 16/10/2026
+
+| Medida | Valor |
+|---|---|
+| Recrutas por chamada | 10 (era 6); por entrada 10 (era 4); ativos por projeto 12 (era 8) |
+| `--network` / `network: true` | recruta Codex de implementação com rede e `listen` local (sandbox recusava com EPERM); revisão segue sem rede |
+
 # BBrainX 2.0.1 — Developer Preview — 15/10/2026
 
 Hosts que instalam servidores MCP por bundle (Chat On Steroids, Claude Desktop) passam a ter o BBrainX com formulário de configuração.

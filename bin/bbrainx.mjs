@@ -9,7 +9,7 @@ import { clientConfig, CLIENTS } from '../src/clients.mjs';
 import { VERSION } from '../src/version.mjs';
 
 // Argument errors are a short JSON line on stderr like every other failure: stdout is reserved for the MCP protocol and results.
-const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{interval:{type:'string'},project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},recruit:{type:'boolean'},'no-recruit':{type:'boolean'},spec:{type:'string'},task:{type:'string'},title:{type:'string'},base:{type:'string'},minutes:{type:'string'},account:{type:'string'},stop:{type:'boolean'},'delete-branch':{type:'boolean'},log:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
+const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{interval:{type:'string'},project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},recruit:{type:'boolean'},'no-recruit':{type:'boolean'},spec:{type:'string'},task:{type:'string'},title:{type:'string'},base:{type:'string'},minutes:{type:'string'},account:{type:'string'},stop:{type:'boolean'},'delete-branch':{type:'boolean'},network:{type:'boolean'},log:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
 const {values={},args=[]}=parsedArgs;
 // Hosts que não passam argumentos (bundle MCPB: Chat On Steroids, Claude Desktop) configuram por ambiente; argumento explícito vence; vazio é ausente.
 for(const [key,name] of [['project','BBRAINX_PROJECT'],['harness','BBRAINX_HARNESS'],['lane','BBRAINX_LANE'],['workspace','BBRAINX_WORKSPACE']])if(values[key]===undefined&&process.env[name])values[key]=process.env[name];
@@ -28,7 +28,7 @@ Começar (registra a pasta, indexa e mostra como ligar ao seu harness):
 
 Recrutar agentes (BYO: usa o Claude Code e o Codex já instalados e logados nesta máquina):
   node bin/bbrainx.mjs recruit doctor
-  node bin/bbrainx.mjs recruit start --project nome --spec "1 codex astra 6 high e 2 opus 5.5 xhigh" --task "o que fazer" [--mode review] [--base ref] [--minutes 60]
+  node bin/bbrainx.mjs recruit start --project nome --spec "1 codex astra 6 high e 2 opus 5.5 xhigh" --task "o que fazer" [--mode review] [--base ref] [--minutes 60] [--network]
   node bin/bbrainx.mjs recruit status --project nome [--id ID] [--log]
   node bin/bbrainx.mjs recruit dismiss --project nome --id ID [--stop] [--delete-branch]
   (o servidor MCP só recruta quando iniciado com --recruit; integrate --apply grava isso, salvo com --no-recruit)
@@ -130,7 +130,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
         ensure(values.project,'PROJECT_REQUIRED');
         if(sub==='start'){
           ensure(values.task,'TASK_REQUIRED','Use --task "o que o recruta deve fazer".');
-          const plan=planRecruits(store,{project:values.project,spec:values.spec,task:values.task,title:values.title,mode:values.mode||'implement',base:values.base,timeoutMinutes:values.minutes===undefined?undefined:Number(values.minutes),account:values.account});
+          const plan=planRecruits(store,{project:values.project,spec:values.spec,task:values.task,title:values.title,mode:values.mode||'implement',base:values.base,timeoutMinutes:values.minutes===undefined?undefined:Number(values.minutes),account:values.account,network:values.network===true});
           if(!values.apply){print({plan:{...plan,task:undefined,taskChars:plan.task.length},next:'Repita com --apply para lançar.'});}
           else print(startRecruits(store,plan));
         }

@@ -33,9 +33,9 @@ bbrainx recruit dismiss --project ID --id R [--stop] [--delete-branch]
 
 ## O que acontece em cada recruta
 
-1. `planRecruits` valida tudo antes de qualquer efeito: spec, tarefa (≤ 8.000 caracteres), modo, base (`HEAD` por padrão, resolvida a commit), capacidade (≤ 6 por chamada, ≤ 4 por entrada, ≤ 8 ativos por projeto), CLIs instaladas e logadas.
+1. `planRecruits` valida tudo antes de qualquer efeito: spec, tarefa (≤ 8.000 caracteres), modo, base (`HEAD` por padrão, resolvida a commit), capacidade (≤ 10 por chamada, ≤ 10 por entrada, ≤ 12 ativos por projeto), CLIs instaladas e logadas.
 2. `git worktree add --no-track -b bbx/<id> <raiz>.bbx/<id> <commit>` ao lado do repositório (nunca dentro dele: lanes recusam sobreposição). O checkout principal não é tocado.
-3. A worktree é registrada como lane `<id>` (capacidade 8 para recrutas). O supervisor indexa a lane antes de abrir a CLI.
+3. A worktree é registrada como lane `<id>` (capacidade 12 para recrutas). O supervisor indexa a lane antes de abrir a CLI.
 4. Um supervisor desacoplado (`bbrainx recruit run`) lança a CLI com o ambiente do usuário menos as variáveis de sessão aninhada (`CLAUDECODE`, `CLAUDE_CODE_*`, `CODEX_SANDBOX*`), grava stdout/stderr em `control-v1/<projeto>/recruits/<id>.log`, bate o coração a cada 15 s e aplica o prazo (`--minutes`, 5 a 240, padrão 60).
 5. O prompt diz ao recruta onde trabalhar, que o servidor `bbrainx` serve a lane dele (`context_bootstrap`, `context_search`, `session_checkpoint` com `task = <id>`), e, no modo `implement`, que rode a verificação do projeto e faça commit na branch. No modo `review` a CLI roda só leitura (`--permission-mode plan` / `--sandbox read-only`) e não há commit.
 6. Ao fechar, o supervisor interpreta a saída (Claude: JSON final com `session_id`, `total_cost_usd`, `usage`; Codex: JSONL com `thread.started`, `agent_message`, `turn.completed.usage`), faz o commit do que a CLI deixou sem commitar (`bbx recruit <id>: <título>`; o Codex em `workspace-write` não consegue criar `index.lock`), conta os commits à frente da base e grava o registro final.
@@ -76,3 +76,7 @@ Checkout principal: `git status` limpo. Suíte: `test/recruit.test.mjs` com exec
 | Limites do Claude Code por *statusline* opt-in | Só com consentimento explícito gravado pelo humano em `settings.json` |
 | Acompanhamento ao vivo (`--output-format stream-json`, `codex app-server` `turn/*`) | Custo de parsing medido; registro continua sem prompt nem corpo |
 | Fila: iniciar além de 8 ativos quando um termina | Sem lease global novo; respeitar capacidade de lanes |
+
+## Rede para recrutas do Codex (2.0.2)
+
+O sandbox `workspace-write` do Codex recusa rede: `listen` em 127.0.0.1 falha com `EPERM` e downloads (`npx`, `git fetch`) não saem. Testes que sobem servidor local falham dentro do recruta. `--network` (CLI) ou `network: true` (`agents_recruit`) liga `sandbox_workspace_write.network_access` só para aquele recruta de implementação; revisão continua só leitura e sem rede. Medido em 16/10/2026 com `codex sandbox`: sem a opção, `LISTEN_FAIL EPERM`; com ela, `LISTEN_OK`. Commit continua com o supervisor (o `index.lock` da worktree fica fora da pasta gravável) e o Electron continua proibido no sandbox (aborta e abre diálogos de crash na tela).

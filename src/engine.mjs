@@ -19,7 +19,7 @@ const recruitMember=z.object({harness:z.enum(HARNESSES),model:z.string().min(1).
 const recruitInput={spec:z.string().min(1).max(RECRUIT_LIMITS.specChars).optional(),recruits:z.array(recruitMember).min(1).max(RECRUIT_LIMITS.perCall).optional(),
   task:z.string().min(1).max(RECRUIT_LIMITS.taskChars),title:z.string().min(1).max(120).optional(),mode:z.enum(MODES).default('implement'),base:z.string().min(1).max(120).optional(),
   timeoutMinutes:z.number().int().min(RECRUIT_LIMITS.timeoutMinutes.min).max(RECRUIT_LIMITS.timeoutMinutes.max).optional(),budgetUsd:z.number().positive().max(1000).optional(),
-  account:z.string().min(1).max(4096).optional(),tools:z.array(z.string().min(1).max(220)).max(32).optional()};
+  account:z.string().min(1).max(4096).optional(),tools:z.array(z.string().min(1).max(220)).max(32).optional(),network:z.boolean().optional()};
 const checkpointContent=z.object({
   objective:z.string().min(1).max(4000),nextAction:z.string().min(1).max(4000),
   status:z.enum(['in_progress','paused','blocked','review_needed']),snapshot:z.string().length(64).optional(),
