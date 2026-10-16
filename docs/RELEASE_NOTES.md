@@ -1,7 +1,42 @@
+# BBrainX 2.1.2 — Developer Preview — 16/10/2026
+
+Revisão profunda da 2.1.1 em quatro áreas: 39 achados (10 P1), todos corrigidos, cada um com teste de regressão. Suíte **841/841**.
+
+| Medida (estado isolado, projetos reais, mediana de 50 buscas) | 2.1.1 | 2.1.2 |
+|---|---|---|
+| Busca + recorte, DoneFitt (2.588 arquivos) | 32,8 ms · p95 54,8 | **20,1 ms · p95 27,5** |
+| Busca + recorte, AB-Gestor (635 arquivos) | 22,4 ms · p95 44,1 | **20,4 ms · p95 30,7** |
+| Acertos servidos por consulta no orçamento de 4.000 tokens (DoneFitt) | 4,4 | **5,4** |
+| Pior uso do orçamento em 120 consultas reais (256 a 16.000 tokens) | primeiro acerto podia furar o teto | **≤ 100,0%** |
+| Indexação completa, DoneFitt | 2,4 s | 2,7 s (máscara de strings/comentários) |
+| Registros de recruta visíveis com 90 recrutas | 64 | **90** |
+
+| Área | O que mudou |
+|---|---|
+| Recrutas: baixa | Só remove a worktree com supervisor e CLI confirmadamente encerrados (identidade por início do processo; PID reaproveitado nunca recebe sinal). Trabalho não commitado vira commit no ramo. A faixa fecha antes de qualquer remoção |
+| Recrutas: processos | CLI em grupo próprio: prazo, parada e fim encerram os descendentes; drenagem dos pipes limitada a 5 s. Falha assíncrona do spawn vira `SPAWN_FAILED` com a vaga devolvida |
+| Recrutas: estado | Registro reservado com exclusividade antes de worktree, ramo e faixa; colisão de ID troca o ID sem tocar no que existia. Trava entre processos; `dismissed` nunca é reescrito; estado final gravado uma vez |
+| Recrutas: coleta | `recruit gc` percorre as faixas ativas, confere supervisor e CLI, fecha faixas de criação interrompida e sem registro, devolve erros. `recruit gc --all` funciona |
+| Recrutas: ambiente | Só os marcadores da sessão saem (`CLAUDE_CODE_USE_BEDROCK`, `CLAUDE_CODE_MAX_TURNS` ficam); `NODE_OPTIONS`, `DYLD_*`, `LD_*` e `PATH` relativo saem; servidor do recruta com `BBRAINX_RECRUIT=false`; rede do Codex sempre explícita |
+| Git do host | Sem hooks, sem `core.fsmonitor`, filtros `clean`/`smudge`/`process` neutralizados; `GIT_*` herdado não muda o repositório lido nem os carimbos |
+| Logs e respostas | Credenciais redigidas (chaves conhecidas, `Authorization`, `x-api-key`, URL com senha); log com teto de 32 MiB; cauda lida do fim do arquivo |
+| Índice | Pastas `secrets/`, `credentials/`, `.env/` excluídas também em repositórios Git; cota de bytes conferida em cada lote; `ENOTDIR` recuperável; declarações em strings e comentários ignoradas; nomes de uma letra encontrados; rank FTS nativo |
+| Busca | Teto de tokens vale para o primeiro corpo e para os ponteiros; recorte em tempo linear |
+| Integrações e MCP | Bloco TOML gerenciado nunca apaga servidor alheio; `--no-recruit` vence o ambiente e fica gravado; `agents_status` ≤ 512 KiB com `omittedAgentIds`; tamanho final e permissões preservados na instalação e no rollback; `arguments:null` recusado; prazo conferido após exceção síncrona; `lockedClosure` resolve aninhados primeiro |
+| Estado e backups | Pastas de estado só do dono (0700); `backup` nunca fica legível por outros durante a escrita |
+
+**Schema 3.** Abrir o banco com a 2.1.2 cria `brain.v2-backup.sqlite`, adiciona o índice `(project,status,id)` de memórias e reconstrói o índice derivado: cada projeto pede `context_index` (ou `bbrainx index --project ID`) uma vez. Voltar para a 2.1.1 exige restaurar o backup v2 (ou o backup do instalador); a 2.1.1 recusa o schema 3 com `MIGRATION_REQUIRED`.
+
+| Oportunidade | Critério |
+|---|---|
+| Reindexação automática dos projetos registrados após a migração | Sem bloquear servidores MCP abertos; uma vez por projeto |
+| `ps` ausente (contêineres mínimos, Windows) | Hoje a baixa recusa processo vivo não identificável; identidade nativa por plataforma |
+| LFS em worktree de recruta | Filtros neutralizados entregam ponteiros; autorização explícita para `git lfs` |
+
+[Integrações e MCP](worklog-2026-10-16-integrations-mcp-review.md) · [Índice e busca](worklog-2026-10-16-retrieval-review.md) · [Recrutas](RECRUIT.md)
+
 # BBrainX 2.1.1 — Developer Preview — 16/10/2026
 
-Correções da revisão integrações/MCP: recusa de blocos TOML que apagariam dados alheios; opt-out de recrutamento persistido; `agents_status` limitado pelo envelope serializado com IDs omitidos recuperáveis; validação do tamanho final e preservação de permissões na instalação/rollback; dependências MCPB resolvidas a partir do importador; prazo conferido também após exceção síncrona; `arguments:null` recusado com `INVALID_PARAMS`. [Regressões e evidência local](worklog-2026-10-16-integrations-mcp-review.md).
-Correções de recuperação em revisão: diretórios sensíveis excluídos também em candidatos Git; cota de bytes conferida antes de cada commit de lote; recuperação após `ENOTDIR`; orçamento de busca aplicado ao primeiro corpo e aos ponteiros; declarações em strings/comentários ignoradas e nomes como `f`/`T` localizáveis. FTS usa rank nativo com os mesmos pesos. **Schema 3:** backup `brain.v2-backup.sqlite`, preservação de estado durável e reconstrução obrigatória do índice; acrescenta índice `(project,status,id)` de memórias. [Testes, medição e roteiro de retorno](worklog-2026-10-16-retrieval-review.md).
 
 Faixas (lanes) deixam de travar o recrutamento entre projetos.
 

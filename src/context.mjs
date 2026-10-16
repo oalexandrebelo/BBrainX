@@ -23,20 +23,27 @@ const pointer=item=>item.path+':'+item.start_line+'-'+item.end_line;
  */
 export function fitSearch(result,budget=SEARCH_BUDGET){
   ensure(Number.isInteger(budget)&&budget>=256&&budget<=16000,'INVALID_BUDGET');
-  const hits=result.items, hasCode=hits.some(item=>item.kind!=='doc'), served=new Set();
-  const selected=()=>hits.filter((item,index)=>served.has(index)), cost=items=>tokenCount(JSON.stringify(items));
+  const hits=result.items, hasCode=hits.some(item=>item.kind!=='doc'), served=new Set(), exact=items=>tokenCount(JSON.stringify(items));
+  // Cada acerto é tokenizado uma vez (custo linear). Array JSON: colchetes e vírgulas pagam 1 token cada nesta estimativa;
+  // a conferência final mede o JSON real, então nem um único corpo nem os ponteiros furam o teto.
+  const unit=[];let used=1,docs=1;
   hits.forEach((item,index)=>{
-    const proposed=[...selected(),item];
-    if(cost(proposed)>budget||(hasCode&&item.kind==='doc'&&cost(proposed.filter(x=>x.kind==='doc'))>budget/2))return;
-    served.add(index);
+    if(used+2>budget)return;
+    const cost=(unit[index]=tokenCount(JSON.stringify(item)))+1;
+    if(used+cost>budget||(hasCode&&item.kind==='doc'&&docs+cost>budget/2))return;
+    used+=cost;if(item.kind==='doc')docs+=cost;served.add(index);
   });
-  const rest=()=>hits.filter((item,index)=>!served.has(index)), more=()=>rest().slice(0,SEARCH_POINTERS).map(pointer);
-  // Os arrays JSON e seus separadores também pagam; nem um único corpo pode furar o teto.
-  while(served.size&&cost(selected())+(rest().length?cost(more()):0)>budget)served.delete(Math.max(...served));
-  const left=rest(), pointers=[], used=cost(selected());
-  // Caminhos longos também podem não caber. Mantém só ponteiros completos, em ordem, até o mesmo teto.
-  for(const value of more())if(used+cost([...pointers,value])<=budget)pointers.push(value);
-  return {...result,items:hits.filter((item,index)=>served.has(index)),...(pointers.length?{more:pointers}:{}),truncated:result.truncated||left.length>0,omitted:left.length};
+  const selected=()=>hits.filter((item,index)=>served.has(index)), rest=()=>hits.filter((item,index)=>!served.has(index));
+  const fit=()=>{
+    const left=rest(), body=exact(selected()), pointers=[];let total=body+(left.length?1:0);
+    for(const item of left.slice(0,SEARCH_POINTERS)){const value=pointer(item),cost=tokenCount(JSON.stringify(value))+1;if(total+cost>budget)break;pointers.push(value);total+=cost;}
+    while(pointers.length&&body+exact(pointers)>budget)pointers.pop();
+    return {body,pointers,left};
+  };
+  // Corpos têm prioridade; ponteiros ocupam o que sobra do mesmo orçamento. Se nem o corpo real cabe, o último acerto servido vira ponteiro.
+  let state=fit();
+  while(served.size&&state.body>budget){served.delete(Math.max(...served));state=fit();}
+  return {...result,items:selected(),...(state.pointers.length?{more:state.pointers}:{}),truncated:result.truncated||state.left.length>0,omitted:state.left.length};
 }
 const memoryLine=memory=>'Approved memory '+memory.id+': '+memory.statement+' [source: '+memory.source+']';
 const REMEDY='peça ao humano que revogue memórias ou mude-as para relevant (CLI: bbrainx memory, approve --mode relevant, revoke).';

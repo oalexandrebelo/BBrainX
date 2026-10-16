@@ -30,6 +30,9 @@ export function resolveLimits(override = {}, env = process.env) {
   return limits;
 }
 
+// GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE ou GIT_CONFIG_* herdados mudariam o repositório lido (um GIT_DIR inválido viraria
+// "not a git repository" e a varredura de pastas, sem as exclusões do Git). Só o repositório da raiz registrada vale.
+function gitScopeEnv(){const env={LC_ALL:'C'};for(const [name,value] of Object.entries(process.env))if(!name.startsWith('GIT_')&&name!=='LC_ALL')env[name]=value;return env;}
 export function included(relative) {
   const parts=relative.replaceAll('\\','/').split('/');
   return parts.every(x=>x!=='.'&&x!=='..'&&!deniedPart.test(x)&&!secretName.test(x)&&!x.startsWith('.ci-'))&&allowed.has(path.extname(relative).toLowerCase());
@@ -53,7 +56,7 @@ export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
 function candidates(root, limits) {
   verifyRoot(root);
   const base=['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',root];
-  const options={encoding:'utf8',timeout:5000,maxBuffer:65536,stdio:['ignore','pipe','pipe'],windowsHide:true,shell:false,env:{...process.env,LC_ALL:'C'}};
+  const options={encoding:'utf8',timeout:5000,maxBuffer:65536,stdio:['ignore','pipe','pipe'],windowsHide:true,shell:false,env:gitScopeEnv()};
   // Um processo só: ls-files dentro do repositório lista; fora dele sai com 128 "not a git repository".
   const listed=spawnSync('git',[...base,'ls-files','--cached','--others','--exclude-standard','-z','--','.'],{...options,timeout:30000,maxBuffer:64*1048576});
   if(listed.error)ensure(false,listed.error.code==='ENOENT'?'GIT_UNAVAILABLE':'GIT_INDEX_READ_FAILED','Não será usado fallback que desconsidere as exclusões Git.');
