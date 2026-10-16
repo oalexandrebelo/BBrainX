@@ -5,7 +5,7 @@ import { ensure, hash, text } from './primitives.mjs';
 import { classify, definitions, isStopword, plainWord, splitIdentifier, stemPrefix, symbolTerms } from './analyze.mjs';
 import { translate } from './glossary.mjs';
 import { verifyRoot } from './source-root.mjs';
-import { maskDeclarations } from './declarations.mjs';
+import { maskDeclarations, literalShare } from './declarations.mjs';
 
 const allowed = new Set(['.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
 const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
@@ -267,6 +267,19 @@ const asksForTests=/\b(?:tests?|testes?|specs?|fixtures?|mocks?)\b/i;
 // Peso do segundo estágio (radicais e glossário pt → en) em relação ao casamento exato.
 const LOOSE_WEIGHT=.5;
 /**
+ * Trecho de código dominado por texto em strings (prompts, dicionários, tabelas de i18n, dados embutidos) casa as palavras de uma
+ * pergunta sobre comportamento sem implementá-lo. Acima de 30% de literais, o peso cai até a metade. Medido em corpora fixos:
+ * nas perguntas cegas (mem0 e plandex) melhorou 16 casos e piorou 3 (teste do sinal p ≈ 0,004); docs/EVALUATION.md.
+ */
+const PROSE_FLOOR=.3, PROSE_PENALTY=.5, proseCache=new Map();
+function proseFactor(row){
+  if(row.kind!=='source')return 1;
+  // O id do trecho é o hash de projeto, caminho, conteúdo e posição: a fração calculada nunca fica velha.
+  let share=proseCache.get(row.id);
+  if(share===undefined){share=literalShare(row.body,path.extname(row.path).toLowerCase());if(proseCache.size>=200000)proseCache.clear();proseCache.set(row.id,share);}
+  return 1-PROSE_PENALTY*Math.max(0,share-PROSE_FLOOR)/(1-PROSE_FLOOR);
+}
+/**
  * Busca lexical ordenada, em dois estágios somados: (1) termos exatos, com BM25 por coluna; (2) os mesmos termos
  * por radical e pela ponte pt → en, com metade do peso. Depois: reforço quando o termo é um nome DECLARADO no
  * trecho e desconto para teste, documentação e gerado (a menos que a consulta peça testes).
@@ -305,7 +318,7 @@ export function search(store,project,query,limit=12,{byFile=true}={}){
   const items=[...found.values()].map(({defs,...row})=>{
     // Reforço proporcional à fração dos termos que o trecho DECLARA: um identificador sozinho triplica; uma palavra entre seis quase não pesa.
     const declared=new Set(defs.toLowerCase().split(' ')), share=lowered.filter(x=>declared.has(x)).length/lowered.length;
-    return {...row,declares:share>0,score:-row.rank*(row.kind==='test'&&keepTests?1:kindWeight[row.kind]??1)*(1+2*share)};
+    return {...row,declares:share>0,score:-row.rank*(row.kind==='test'&&keepTests?1:kindWeight[row.kind]??1)*(1+2*share)*proseFactor(row)};
   }).sort((a,b)=>b.score-a.score||byPath(a,b)||a.start_line-b.start_line);
   if(!byFile)return {project,snapshot:meta.snapshot,items:items.slice(0,limit),truncated:overflow||items.length>limit};
   const files=new Map();

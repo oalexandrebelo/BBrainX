@@ -69,10 +69,11 @@ test('csvToXlsx gera OOXML mínimo com números, texto escapado e cabeçalho em 
   for(const part of ['[Content_Types].xml','_rels/.rels','xl/workbook.xml','xl/_rels/workbook.xml.rels','xl/worksheets/sheet1.xml','xl/styles.xml'])assert.ok(files.has(part),part);
   wellFormedParts(files,'xlsx');
   const sheet=files.get('xl/worksheets/sheet1.xml').toString('utf8');
-  assert.match(sheet,/<c r="B2"><v>1234\.56<\/v><\/c>/);
-  assert.match(sheet,/<c r="B3"><v>1234\.5<\/v><\/c>/);
-  assert.match(sheet,/<c r="C2"><v>-3<\/v><\/c>/);
-  assert.match(sheet,/<c r="C3"><v>1234<\/v><\/c>/,'milhar brasileiro com ;');
+  // Coluna com decimais: estilo 2 (#,##0.00); coluna com milhar: estilo 3 (#,##0). O valor da célula é o número cru.
+  assert.match(sheet,/<c r="B2" s="2"><v>1234\.56<\/v><\/c>/);
+  assert.match(sheet,/<c r="B3" s="2"><v>1234\.5<\/v><\/c>/);
+  assert.match(sheet,/<c r="C2" s="3"><v>-3<\/v><\/c>/);
+  assert.match(sheet,/<c r="C3" s="3"><v>1234<\/v><\/c>/,'milhar brasileiro com ;');
   assert.match(sheet,/<c r="A2" t="inlineStr"><is><t xml:space="preserve">&lt;Café &amp; Cia&gt;<\/t><\/is><\/c>/);
   assert.match(sheet,/<c r="D2" t="inlineStr"><is><t xml:space="preserve">01310100<\/t>/,'zero à esquerda continua texto');
   assert.match(sheet,/<c r="D3" t="inlineStr"><is><t xml:space="preserve">linha\nquebrada<\/t>/);
@@ -84,7 +85,7 @@ test('csvToXlsx gera OOXML mínimo com números, texto escapado e cabeçalho em 
   assert.match(files.get('xl/workbook.xml').toString('utf8'),/<sheet name="Vendas_ 2026_10"/);
   const comma=unzip(csvToXlsx('a,b\n"1.234,56",2.5\n')).get('xl/worksheets/sheet1.xml').toString('utf8');
   assert.match(comma,/<c r="A2" t="inlineStr"><is><t xml:space="preserve">1\.234,56</);
-  assert.match(comma,/<c r="B2"><v>2\.5<\/v>/);
+  assert.match(comma,/<c r="B2" s="2"><v>2\.5<\/v>/);
   const wide=unzip(csvToXlsx(Array.from({length:30},(_,i)=>`c${i}`).join(','))).get('xl/worksheets/sheet1.xml').toString('utf8');
   for(const ref of ['A1','Z1','AA1','AD1'])assert.match(wide,new RegExp(`r="${ref}"`));
   assert.deepEqual([0,25,26,27,701,702,16383].map(columnName),['A','Z','AA','AB','ZZ','AAA','XFD']);
@@ -206,4 +207,14 @@ test('textToPdf em modo texto preserva linhas em Courier e quebra as longas',()=
   assert.deepEqual(lines.slice(0,5),['linha 1','**não é markdown**','x'.repeat(80),'x'.repeat(80),'x'.repeat(40)]);
   assert.match(buffer.toString('latin1'),/\/Count 1 /);
   assert.ok(lines.includes('1 / 1'));
+});
+
+test('csvToXlsx keeps the number look per column: decimals as #,##0.00, thousands as #,##0, plain integers general', () => {
+  const sheet = unzip(csvToXlsx('item;horas;valor;total\nA;10;1.500,00;1.200\nB;24;3.600,5;15\n')).get('xl/worksheets/sheet1.xml').toString('utf8');
+  assert.match(sheet, /<c r="B2"><v>10<\/v><\/c>/, 'integers without grouping stay general');
+  assert.match(sheet, /<c r="C2" s="2"><v>1500<\/v><\/c>/);assert.match(sheet, /<c r="C3" s="2"><v>3600.5<\/v><\/c>/);
+  assert.match(sheet, /<c r="D2" s="3"><v>1200<\/v><\/c>/);assert.match(sheet, /<c r="D3" s="3"><v>15<\/v><\/c>/);
+  assert.match(sheet, /<c r="C1" s="1" t="inlineStr">/, 'the header keeps its bold style');
+  const styles = unzip(csvToXlsx('a\n1\n')).get('xl/styles.xml').toString('utf8');
+  assert.match(styles, /<cellXfs count="4">.*numFmtId="4".*numFmtId="3"/);
 });

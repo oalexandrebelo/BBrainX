@@ -1,3 +1,35 @@
+# BBrainX 2.2.0 — Developer Preview — 16/10/2026
+
+Pasta de necessidades: o que os modelos geram fica gravado direto no computador, em `Downloads/Projetos/AAAA-MM-DD-nome`, pela web (AB-S00S, toggle Arquivos) e pelos harnesses locais (`--files`). Suíte **861/861**.
+
+| Medida | Valor |
+|---|---|
+| Pasta base | macOS `~/Downloads/Projetos` · Windows pasta Downloads real do registro (também se movida para outro disco) · Linux `XDG_DOWNLOAD_DIR` · `BBRAINX_FILES_ROOT` troca |
+| Gravação | só texto (18 extensões), até 1 MiB; nunca sobrescreve (`nome-2` … `nome-99`); criação exclusiva sem seguir symlink |
+| Web | partes de até 192 KiB guardadas fora da pasta do usuário até a última; envio abandonado apagado em 24 h |
+| Entregáveis | uma vez por dia, a versão mais recente vira proposta: `.md` → PDF + DOCX, `.txt` → PDF, `.csv` → XLSX (números com o formato da coluna); gera só com aprovação, sem dependências |
+| Ferramentas MCP | `files_open`, `files_write`, `files_list`, `files_read`, `files_proposals`, `files_build`, `files_dismiss` (só com `--files`) |
+| Busca | a pasta é o projeto `projetos`; cada gravação reindexa; `context_search` acha o arquivo logo depois de gravado |
+
+**Ranking:** trecho de código dominado por texto em strings (prompts, dicionários, i18n) perde até metade do peso acima de 30% de literais.
+
+| Conjunto | Entre os 3 | MRR |
+|---|---|---|
+| eval-natural (36) | 0,583 → **0,667** | 0,474 → **0,546** |
+| blind-plandex (39) | 0,718 = | 0,589 → **0,621** |
+| blind-mem0 (40) | 0,650 = | 0,605 → **0,626** |
+| eval-self (24) | 0,917 = | 0,833 = |
+
+Perguntas cegas, caso a caso: 16 melhoraram e 3 pioraram (p ≈ 0,004). Busca quente sem custo extra; a primeira busca custa +0,9 ms (mediana).
+
+| Oportunidade | Critério |
+|---|---|
+| Binários vindos da web (imagens) | Hoje só texto; base64 com teto e tipo conferido |
+| DOCX com listas numeradas nativas | Hoje marcador e recuo; `numbering.xml` quando um caso pedir |
+| AB-S00S no Windows e no Linux | O núcleo `files` é multiplataforma; a tela e o túnel seguem homologados só no macOS |
+
+[Pasta de necessidades](FILES.md) · [Medição do ranking](EVALUATION.md#peso-de-literais-220)
+
 # BBrainX 2.1.2 — Developer Preview — 16/10/2026
 
 Revisão profunda da 2.1.1 em quatro áreas: 39 achados (10 P1), todos corrigidos, cada um com teste de regressão. Suíte **841/841**.

@@ -43,7 +43,7 @@ function templateEnd(text,start){
   return i;
 }
 /** Mascara literais e comentários antes de dividir em linhas/trechos, sem mudar offsets ou quebras de linha. */
-export function maskDeclarations(text,extension='.mjs'){
+export function maskDeclarations(text,extension='.mjs',stats){
   const hash=hashComments.has(extension),sql=extension==='.sql',js=javascript.has(extension),slash=!hash&&extension!=='.json';
   const out=[];let copied=0,i=0,canRegex=true;
   while(i<text.length){
@@ -88,6 +88,7 @@ export function maskDeclarations(text,extension='.mjs'){
       else{if(js&&!/\s/.test(text[i]))canRegex=expressionPunctuation.test(text[i]);i++;}
       continue;
     }
+    if(stats&&literal)stats.literal+=text.slice(start,end).replace(/\s/g,'').length;
     out.push(text.slice(copied,start),text.slice(start,end).replace(/[^\r\n]/g,' '));copied=end;i=end;if(literal)canRegex=false;
   }
   return out.join('')+text.slice(copied);
@@ -119,4 +120,10 @@ export function* declarationsIn(text,extension='.mjs',masked=false){
       :i===9?'method':'function';
     yield {name,kind};
   }
+}
+
+/** Fração dos caracteres visíveis dentro de literais de string (comentários não contam: descrevem a implementação). */
+export function literalShare(text,extension){
+  const visible=text.replace(/\s/g,'').length;if(!visible)return 0;
+  const stats={literal:0};maskDeclarations(text,extension,stats);return stats.literal/visible;
 }

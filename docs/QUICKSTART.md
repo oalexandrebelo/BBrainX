@@ -136,6 +136,10 @@ Não é necessário alterar `ANTHROPIC_BASE_URL`, a configuração da OpenAI, ga
 
 Com `--recruit` nos args do servidor (padrão do `integrate --apply`), peça ao harness: "recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para …". Cada recruta roda na CLI já logada, em worktree e branch próprias ao lado do repositório (`<pasta>.bbx/<id>`), com um BBrainX da lane dele. Acompanhe com `bbrainx recruit status --project ID` ou na aba Painel; dê baixa com `recruit dismiss`. Detalhes, limites e o que foi medido: [RECRUIT.md](RECRUIT.md).
 
+### Pasta de necessidades (Downloads/Projetos)
+
+`bbrainx files setup` cria `Downloads/Projetos` e a registra para busca. Com `--files` nos args do servidor (o `integrate --apply` grava quando a pasta existe), peça ao harness algo como "crie a necessidade proposta cliente x e grave a proposta". O texto vai direto para `Downloads/Projetos/AAAA-MM-DD-proposta-cliente-x/proposta.md`, nunca sobrescreve, e uma vez por dia vira proposta de PDF, DOCX ou XLSX, que só é gerado com a sua aprovação. Pela web: toggle Arquivos no AB-S00S. Detalhes: [FILES.md](FILES.md).
+
 ## 5. Checkpoint manual
 
 A saída de `index` contém `snapshot`. Use esse valor no arquivo:

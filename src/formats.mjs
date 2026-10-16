@@ -117,7 +117,7 @@ export function columnName(index){
   return name;
 }
 const sheetTitle=value=>String(value).replace(CONTROL,'').replace(/[[\]:*?/\\]/g,'_').replace(/^'+|'+$/g,'').trim().slice(0,31)||'Planilha';
-const XLSX_STYLES=`${XML_HEAD}<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+const XLSX_STYLES=`${XML_HEAD}<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/><family val="2"/></font><font><b/><sz val="11"/><name val="Calibri"/><family val="2"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="4"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="4" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/><xf numFmtId="3" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
 export function csvToXlsx(text,{sheetName='Planilha',delimiter}={}){
   input(text,'csv');
   const sep=delimiter??detectDelimiter(text.replace(/^\uFEFF/,'')),rows=parseCsv(text,{delimiter:sep});
@@ -127,13 +127,19 @@ export function csvToXlsx(text,{sheetName='Planilha',delimiter}={}){
   const names=Array.from({length:width},(_,i)=>columnName(i)),widths=new Array(width).fill(0);
   // Decimal com vírgula só faz sentido em CSV com ';' — com ',' a vírgula já é separador.
   const brazilian=sep===';';
+  // Formato por coluna, pelos formatos embutidos do Excel (cada um vê no separador do próprio idioma): coluna com casas decimais
+  // usa #,##0.00 (id 4, estilo 2); com separador de milhar, #,##0 (id 3, estilo 3). "1.500,00" volta a aparecer como 1.500,00.
+  const format=new Array(width).fill(0);
+  rows.forEach((row,r)=>{if(r===0)return;row.forEach((raw,c)=>{const v=raw.trim();if(numeric(v,brazilian)===null)return;
+    const decimals=brazilian?/,\d+$/.test(v):/\.\d+$/.test(v)&&!/[eE]/.test(v), grouped=brazilian&&/\.\d{3}/.test(v);
+    format[c]=decimals?2:format[c]===2?2:grouped?3:format[c];});});
   const body=rows.map((row,r)=>`<row r="${r+1}">${row.map((raw,c)=>{
     const value=raw.replace(/\r\n?/g,'\n').replace(CONTROL,'');
     if(value==='')return '';
     ensure(value.length<=32767,'XLSX_LIMIT',`célula ${names[c]}${r+1} acima de 32.767 caracteres`);
     widths[c]=Math.max(widths[c],Math.min(60,value.length));
     const head=`<c r="${names[c]}${r+1}"${r===0?' s="1"':''}`,number=numeric(value.trim(),brazilian);
-    return number!==null?`${head}><v>${number}</v></c>`:`${head} t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
+    return number!==null?`${r>0&&format[c]?head.replace(/>?$/,'')+' s="'+format[c]+'"':head}><v>${number}</v></c>`:`${head} t="inlineStr"><is><t xml:space="preserve">${xml(value)}</t></is></c>`;
   }).join('')}</row>`).join('');
   const cols=widths.map((w,i)=>w?`<col min="${i+1}" max="${i+1}" width="${Math.max(8,w+2)}" customWidth="1"/>`:'').join('');
   const dimension=rows.length&&width?`<dimension ref="A1:${names[width-1]}${rows.length}"/>`:'';
