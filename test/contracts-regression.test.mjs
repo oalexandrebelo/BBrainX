@@ -38,8 +38,9 @@ const history=()=>Array.from({length:25},(_,i)=>`Leitura auxiliar ${i}: ${'detal
 test('authorization wait consumes the invocation deadline; no late action runs',async()=>{
   const started=barrier(),finish=barrier();let runs=0;
   const engine=make({access:async()=>{started.release();await finish.promise;return true;},run:()=>{runs++;return {value:'executed'};}});
-  const pending=engine.invoke('op',{text:'x'},{principal:{id:'local'}});
-  await started.promise;
+  // Observado desde a chamada: sob carga o prazo de 40 ms pode vencer antes da etapa de acesso começar.
+  const pending=engine.invoke('op',{text:'x'},{principal:{id:'local'}});pending.catch(()=>{});
+  await Promise.race([started.promise,pending.catch(()=>{})]);
   const result=await settledBefore(pending);finish.release();await delay(5);
   expectCode(result,'TIMEOUT');assert.equal(runs,0);
 });
@@ -47,7 +48,7 @@ test('async input validation consumes the same deadline',async()=>{
   const started=barrier(),finish=barrier();let runs=0;
   const schema=asyncZodSchema(input.superRefine(async()=>{started.release();await finish.promise;}));
   const engine=make({input:schema,run:()=>{runs++;return {value:'executed'};}});
-  const pending=engine.invoke('op',{text:'x'});await started.promise;
+  const pending=engine.invoke('op',{text:'x'});pending.catch(()=>{});await Promise.race([started.promise,pending.catch(()=>{})]);
   const result=await settledBefore(pending);finish.release();await delay(5);
   expectCode(result,'TIMEOUT');assert.equal(runs,0);
 });
