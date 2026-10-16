@@ -49,6 +49,8 @@ export function manifest(version = VERSION) {
     tools: [
       { name: 'context_bootstrap', description: 'Bounded context pack with verified source hashes for an objective; resumes a checkpoint.' },
       { name: 'context_search', description: 'Search the project; declarations rank above usages and tests; capped by a token budget.' },
+      { name: 'context_read', description: 'Read a bounded numbered window from an indexed file, with a verified hash.' },
+      { name: 'context_symbol', description: 'Find exact lexical declarations with file, line, kind and a verified hash.' },
       { name: 'context_index', description: 'Refresh or inspect the worktree index.' },
       { name: 'session_get', description: 'Read a task checkpoint.' },
       { name: 'session_checkpoint', description: 'Save a task checkpoint with what was done, decisions, files and evidence.' },

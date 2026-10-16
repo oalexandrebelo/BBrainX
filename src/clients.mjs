@@ -7,9 +7,10 @@
  * Antigravity e Kilo conferidos em 07/10/2026: antigravity.google/docs/mcp e
  * kilo.ai/docs/automate/mcp/using-in-kilo-code (timeout em milissegundos).
  */
+import { abS00sServer, openhandsConfig } from './ab-s00s-config.mjs';
 import { ensure, hash } from './primitives.mjs';
 
-export const CLIENTS=Object.freeze(['claude','codex','cursor','vscode','gemini','antigravity','kilo','cos']);
+export const CLIENTS=Object.freeze(['claude','codex','cursor','vscode','gemini','antigravity','kilo','cos','openhands']);
 const shell=value=>/^[A-Za-z0-9_\/.:=@+-]+$/.test(value)?value:"'"+value.replaceAll("'","'\\''")+"'";
 
 /**
@@ -36,10 +37,12 @@ function codexRegistration({node,args,home,project}){
     '[mcp_servers.'+name+'.env]','BBRAINX_HOME = '+JSON.stringify(home)].join('\n');
 }
 
-export function clientConfig(client,{node,entry,project,home}){
+export function clientConfig(client,{node,entry,project,home,...options}){
   for(const value of [node,entry,project,home])ensure(typeof value==='string'&&value.length>0&&!/[\u0000-\u001f\u007f]/.test(value),'INVALID_CONFIG_VALUE');
   const args=[entry,'mcp','--project',project], env={BBRAINX_HOME:home}, server={command:node,args,env};
   const json=value=>JSON.stringify(value,null,2);
+  if(client==='openhands')return openhandsConfig(server,abS00sServer({...options,node,project,home}));
+  ensure(options.abS00s===undefined&&options.abS00sBin===undefined,'AB_S00S_CLIENT_UNSUPPORTED','Use config --client openhands ou integrate para configurar o AB-S00S.');
   if(client==='claude')return '# Claude Code — rode na pasta do projeto (escopo local, só seu); para versionar com a equipe, cole o JSON em .mcp.json\nclaude mcp add bbrainx --env BBRAINX_HOME='+shell(home)+' -- '+[node,...args].map(shell).join(' ')+'\n\n'+json({mcpServers:{bbrainx:server}});
   if(client==='codex')return codexRegistration({node,args,home,project});
   if(client==='cursor')return '# Cursor — cole em .cursor/mcp.json (projeto) ou ~/.cursor/mcp.json\n'+json({mcpServers:{bbrainx:{type:'stdio',...server}}});

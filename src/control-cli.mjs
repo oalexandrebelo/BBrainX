@@ -64,7 +64,7 @@ export async function controlCommand(command,v,args){
         }
       }
       const entry=stableEntryPath(fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),{errors:{invalid:'INVALID_INTEGRATION_ENTRY',mismatch:'INTEGRATION_ENTRY_MISMATCH'}});
-      const plan=planIntegrations({root,project,lane:v.lane,home,node,entry,clients:v.clients?.split(','),adoptExisting:v['adopt-existing']===true,recruit:v['no-recruit']!==true});
+      const plan=planIntegrations({root,project,lane:v.lane,home,node,entry,clients:v.clients?.split(','),abS00s:v['ab-s00s'],abS00sBin:v['ab-s00s-bin'],adoptExisting:v['adopt-existing']===true,recruit:v['no-recruit']!==true});
       if(!v.apply)return plan;
       ensure(!plan.files.some(x=>x.status==='blocked'),'INTEGRATION_PLAN_BLOCKED');
       if(v.lane){
