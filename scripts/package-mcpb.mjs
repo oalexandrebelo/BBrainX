@@ -74,10 +74,11 @@ export function lockedClosure(lock, names) {
   const packages = lock.packages, seen = new Map(), queue = names.map(name => ['node_modules/' + name, null]);
   while (queue.length) {
     const [key, from] = queue.shift();
-    if (seen.has(key)) continue;
-    let entry = packages[key], resolved = key;
+    let resolved = key;
     // Resolução Node: dependência aninhada primeiro, depois o nível acima, até a raiz.
-    if (!entry && from) { let base = from; while (!entry && base) { const nested = base + '/node_modules/' + key.slice('node_modules/'.length); if (packages[nested]) { entry = packages[nested]; resolved = nested; break; } base = base.includes('/node_modules/') ? base.slice(0, base.lastIndexOf('/node_modules/')) : ''; } }
+    if (from) { let base = from; while (base) { const nested = base + '/' + key; if (packages[nested]) { resolved = nested; break; } base = base.includes('/node_modules/') ? base.slice(0, base.lastIndexOf('/node_modules/')) : ''; } }
+    if (seen.has(resolved)) continue;
+    const entry = packages[resolved];
     if (!entry) throw Object.assign(new Error('Pacote fora do lockfile: ' + key), { code: 'MCPB_DEPENDENCY_UNLOCKED' });
     if (entry.dev || entry.optional && !entry.dependencies) { if (entry.dev) throw Object.assign(new Error('Dependência de desenvolvimento no bundle: ' + key), { code: 'MCPB_DEV_DEPENDENCY' }); }
     seen.set(resolved, entry);

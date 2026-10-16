@@ -110,8 +110,8 @@ export function createEngine({name,version,capabilities={},libraries=[],onEvent}
         const receivedInput=structuredClone(rawInput), receivedPrincipal=structuredClone(principal);
         const stage=async work=>{
           limit.check();
-          const result=await race(Promise.resolve().then(()=>{limit.check();return work();}),limit.signal);
-          limit.check();return result;
+          try{return await race(Promise.resolve().then(()=>{limit.check();return work();}),limit.signal);}
+          finally{limit.check();}
         };
         const input=structuredClone(await stage(()=>validate(capability.input,receivedInput,'INPUT_INVALID','Capability input validation failed.')));
         const who=snapshotPrincipal(receivedPrincipal);

@@ -104,12 +104,12 @@ export function planIntegrations(options){
     let target;
     try{
       target=location(root,client);const before=readFile(root,target),args=[entry,'mcp','--project',project,...(lane?['--lane',lane]:[]),...(options.recruit===true?['--recruit']:[]),'--workspace',root,'--harness',client];
-      const env={BBRAINX_HOME:home},server=client==='kilo'?{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}:{...(client==='vscode'?{type:'stdio'}:{}),command:node,args,env};
+      const env={BBRAINX_HOME:home,...(options.recruit===true?{}:{BBRAINX_RECRUIT:'false'})},server=client==='kilo'?{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}:{...(client==='vscode'?{type:'stdio'}:{}),command:node,args,env};
       const canUpdate=before.sha!==null&&owned(home,target,before.sha),rendered=renderConfig(client,before.bytes,server,canUpdate,options.adoptExisting===true);
       const companionOwned=before.sha!==null&&owned(home,target,before.sha,'ab-s00s'),supportsCompanion=['codex','claude','vscode'].includes(client);
       const after=companion!==undefined&&supportsCompanion
         ?renderConfig(client,rendered.bytes,companion&&client==='vscode'?{type:'stdio',...companion}:companion,companionOwned,false,'ab-s00s').bytes:rendered.bytes;
-      const afterSha256=hash(after);
+      ensure(after.length<=MAX_BYTES,'INTEGRATION_FILE_TOO_LARGE');const afterSha256=hash(after);
       const file={client,detected,target,scope:'project',status:before.sha===afterSha256?'unchanged':before.bytes?'update':'create',beforeSha256:before.sha,afterSha256,serverName:'bbrainx'};
       if(supportsCompanion&&(companionOwned||companion))file.serverNames=['bbrainx',...(companion===null?[]:['ab-s00s'])];
       if(rendered.adoption)file.adoption='exact-legacy-generator';
@@ -125,7 +125,7 @@ function compare(root,draft){const current=readFile(root,draft.file.target);ensu
 function replace(anchor,target,bytes,mode=0o600){
   safePath(anchor,target);fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});safePath(anchor,target);
   const temp=path.join(path.dirname(target),'.bbrainx-'+randomUUID()+'.tmp');
-  try{const fd=fs.openSync(temp,'wx',mode);try{fs.writeFileSync(fd,bytes);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temp,target);}finally{if(exists(temp))fs.unlinkSync(temp);}
+  try{const fd=fs.openSync(temp,'wx',mode);try{fs.writeFileSync(fd,bytes);fs.fchmodSync(fd,mode);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temp,target);}finally{if(exists(temp))fs.unlinkSync(temp);}
 }
 function receiptReport(receipt){return {schemaVersion:1,id:receipt.id,status:receipt.status,project:receipt.project,root:receipt.root,files:receipt.files.map(({client,target,beforeSha256,afterSha256})=>({client,target,beforeSha256,afterSha256}))};}
 

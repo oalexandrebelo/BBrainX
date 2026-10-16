@@ -22,6 +22,7 @@ const PARSE_ERROR=-32700, INVALID_REQUEST=-32600, METHOD_NOT_FOUND=-32601, INVAL
 // A lista de ferramentas é a mesma para todo chamador e só muda com a versão do programa.
 const CACHE={ttlMs:300000,cacheScope:'public'};
 const EXECUTION_FAILED=JSON.stringify({code:'EXECUTION_FAILED',message:'Capability execution failed.'});
+const AGENTS_STATUS_MAX_BYTES=512*1024;
 
 /** Nome portátil da ferramenta: `context.search` → `context_search`; acima de 64 caracteres, prefixo + hash. */
 export function toolName(capabilityId){
@@ -70,17 +71,29 @@ export function createMcpHandler(engine,{principal=null,source='mcp-stdio',instr
     if(typeof params?.name!=='string')return rpcError(id,INVALID_PARAMS,'Tool name is required.');
     const capabilityId=catalog.capabilityFor(params.name);
     if(capabilityId===undefined)return rpcError(id,INVALID_PARAMS,'Unknown tool: '+params.name);
-    const args=params.arguments??{};
+    const args=params.arguments===undefined?{}:params.arguments;
     if(!plainObject(args))return rpcError(id,INVALID_PARAMS,'Tool arguments must be an object.');
     if(running.has(id))return rpcError(id,INVALID_REQUEST,'Request id is already active.');
     if(running.size>=maxInFlightCalls){busy++;return reply(refusal({code:'MCP_BUSY',message:'Concurrent tool-call limit reached. Wait for a prior operation to settle.'}));}
     if(!allowed()){limited++;return reply(refusal({code:'RATE_LIMITED',message:'More than '+rateLimit.calls+' tool calls in '+Math.round(rateLimit.perMs/1000)+' s. Wait and try again.'}));}
     const entry={controller:new AbortController(),cancelled:false};running.set(id,entry);admitted++;peakRunning=Math.max(peakRunning,running.size);
     try{
-      const structuredContent=await engine.invoke(capabilityId,args,{principal,source,signal:entry.controller.signal});
+      let structuredContent=await engine.invoke(capabilityId,args,{principal,source,signal:entry.controller.signal});
       // Requisição cancelada pelo cliente não recebe mais nenhuma mensagem.
       if(entry.cancelled)return undefined;
-      return reply({content:[{type:'text',text:JSON.stringify(structuredContent)}],structuredContent,...(isFailure?.(structuredContent)===true?{isError:true}:{})});
+      const complete=()=>reply({content:[{type:'text',text:JSON.stringify(structuredContent)}],structuredContent,...(isFailure?.(structuredContent)===true?{isError:true}:{})});
+      if(capabilityId==='agents.status'&&structuredContent?.ok&&Array.isArray(structuredContent.data?.items)){
+        const data={...structuredContent.data,items:[...structuredContent.data.items],omittedAgentIds:[]};structuredContent={...structuredContent,data};
+        let response=complete();
+        // O teto inclui JSON-RPC, metadados, texto escapado e structuredContent, mais o LF do writer.
+        while(Buffer.byteLength(JSON.stringify(response))+1>AGENTS_STATUS_MAX_BYTES&&data.items.length){
+          data.omittedAgentIds.unshift(data.items.pop().id);data.truncated=true;
+          data.count=data.items.length;data.active=data.items.filter(item=>['running','starting'].includes(item.status)).length;
+          response=complete();
+        }
+        return response;
+      }
+      return complete();
     }catch(error){return entry.cancelled?undefined:reply(failure(error));}
     finally{if(running.get(id)===entry)running.delete(id);}
   }

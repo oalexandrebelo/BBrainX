@@ -60,6 +60,28 @@ test('config --client cos prints the executable form with --harness cos and --re
   assert.match(out, /Chat On Steroids/); assert.match(out, /"--harness",\s*"cos",\s*"--recruit"/); assert.match(out, /MCPB file/); assert.doesNotMatch(out, /api.?key|token/i);
 });
 
+test('mcp --no-recruit overrides inherited recruitment and an explicit --recruit', async t => {
+  const { home } = project(t);
+  for (const flags of [['--no-recruit'], ['--recruit', '--no-recruit'], ['--no-recruit', '--recruit']]) {
+    const served = await catalog({ command: process.execPath, args: [entry, 'mcp', '--project', 'p', ...flags], env: { BBRAINX_HOME: home, BBRAINX_RECRUIT: 'true' }, cwd: os.tmpdir() });
+    assert.equal(served.tools.length, 8); assert.ok(!served.tools.includes('agents_recruit')); assert.equal(served.search, true);
+  }
+});
+
+test('lockedClosure resolves nested dependencies before root and deduplicates resolved paths', () => {
+  const packages = {
+    'node_modules/a': { version: '1.0.0', dependencies: { b: '^2', c: '^1' } },
+    'node_modules/b': { version: '1.0.0' },
+    'node_modules/a/node_modules/b': { version: '2.0.0', dependencies: { c: '^1', a: '^1' } },
+    'node_modules/c': { version: '1.0.0', dependencies: { b: '^1' } }
+  };
+  const closure = lockedClosure({ packages }, ['a', 'b']);
+  assert.equal(closure.get('node_modules/b').version, '1.0.0');
+  assert.equal(closure.get('node_modules/a/node_modules/b')?.version, '2.0.0');
+  assert.deepEqual([...closure.keys()].sort(), Object.keys(packages).sort());
+  assert.equal(lockedClosure({ packages }, ['a']).get('node_modules/a/node_modules/b')?.version, '2.0.0');
+});
+
 test('the MCPB manifest validates, expands without leftovers and launches the bundled server with only locked runtime packages', async t => {
   const { home } = project(t);
   const target = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'bb-mcpb-stage-')), 'stage');

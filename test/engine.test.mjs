@@ -48,6 +48,18 @@ test('engine tells a deadline from a cancellation and hides the cause of an unex
   assert.equal(failed.code,'EXECUTION_FAILED');assert.ok(!failed.message.includes('secret'));assert.equal(failed.publicDetails,undefined);
 });
 
+test('elapsed deadline wins over synchronous throws in run, validation and access',async()=>{
+  const events=[],block=()=>{const end=performance.now()+40;while(performance.now()<end){}throw new Error('private failure');};
+  const engine=engineWith({
+    run:capability(block,{timeoutMs:10}),
+    input:capability(()=>({value:'unused'}),{timeoutMs:10,input:z.object({text:z.string()}).superRefine(block)}),
+    access:capability(()=>({value:'unused'}),{timeoutMs:10,access:block}),
+    output:capability(()=>({value:'unused'}),{timeoutMs:10,output:output.superRefine(block)})
+  },event=>events.push(event));
+  for(const id of ['run','input','access','output'])assert.equal((await code(engine.invoke(id,{text:'x'}))).code,'TIMEOUT',id);
+  assert.deepEqual(events.filter(event=>event.type==='invocation.failed').map(event=>event.code),['TIMEOUT','TIMEOUT','TIMEOUT','TIMEOUT']);
+});
+
 test('a call that is already cancelled never starts, and an abandoned run cannot crash the process',async()=>{
   let runs=0;const unhandled=[];const onUnhandled=reason=>unhandled.push(reason);process.on('unhandledRejection',onUnhandled);
   try{
@@ -101,6 +113,17 @@ test('MCP catalog publishes portable names, hints and both schemas, and rejects 
 
 const waitCapability=()=>capability(({context})=>new Promise((_,reject)=>context.signal.addEventListener('abort',()=>reject(new Error('stopped')))));
 const modernMeta=(version='2026-07-28')=>({'io.modelcontextprotocol/protocolVersion':version,'io.modelcontextprotocol/clientCapabilities':{},'io.modelcontextprotocol/clientInfo':{name:'probe-client',version:'1'}});
+
+test('MCP rejects arguments null before execution but defaults omitted arguments to an empty object in both eras',async()=>{
+  let runs=0;const handler=createMcpHandler(engineWith({empty:capability(()=>{runs++;return {value:'ok'};},{input:z.object({}).strict()})}));
+  for(const meta of [undefined,modernMeta()]){
+    const params={name:'empty',...(meta?{_meta:meta}:{})},before=runs;
+    const rejected=await handler.handle({jsonrpc:'2.0',id:1,method:'tools/call',params:{...params,arguments:null}});
+    assert.equal(rejected.error?.code,-32602);assert.equal(runs,before);
+    const accepted=await handler.handle({jsonrpc:'2.0',id:2,method:'tools/call',params});
+    assert.deepEqual(accepted.result.structuredContent,{value:'ok'});assert.equal(runs,before+1);
+  }
+});
 
 test('MCP legacy era: initialize negotiates the version, falsy ids survive, protocol errors use JSON-RPC codes',async()=>{
   const handler=createMcpHandler(engineWith({echo:capability(({input})=>({value:input.text}))}),{instructions:'use it well'});
