@@ -20,8 +20,13 @@ function sandbox(t) {
   for (const dir of [root, user, codex, path.join(user, '.local', 'bin')]) fs.mkdirSync(dir, { recursive: true });
   execFileSync('git', ['init', '-q', '-b', 'main'], { cwd: root });
   fs.writeFileSync(path.join(root, 'app.ts'), 'export const a = 1;\n');
-  const saved = Object.fromEntries(['HOME', 'CODEX_HOME', 'BBRAINX_FILES_ROOT', 'BBRAINX_HOME'].map(k => [k, process.env[k]]));
-  Object.assign(process.env, { HOME: user, CODEX_HOME: codex, BBRAINX_FILES_ROOT: path.join(base, 'Downloads', 'Projetos'), BBRAINX_HOME: home });
+  // Harnesses determinísticos: os executáveis falsos da suíte num PATH próprio, nada do que está instalado na máquina.
+  const bin = path.join(base, 'bin');fs.mkdirSync(bin);
+  for (const [name, target] of [['claude', 'fake-claude.mjs'], ['codex', 'fake-codex.mjs'], ['code', null]])
+    fs.writeFileSync(path.join(bin, name), target ? '#!/bin/sh\nexec ' + JSON.stringify(process.execPath) + ' ' + JSON.stringify(fileURLToPath(new URL('./fixtures/' + target, import.meta.url))) + ' "$@"\n' : '#!/bin/sh\nexit 0\n', { mode: 0o755 });
+  const saved = Object.fromEntries(['HOME', 'CODEX_HOME', 'BBRAINX_FILES_ROOT', 'BBRAINX_HOME', 'PATH', 'BBRAINX_CLAUDE', 'BBRAINX_CODEX'].map(k => [k, process.env[k]]));
+  delete process.env.BBRAINX_CLAUDE;delete process.env.BBRAINX_CODEX;
+  Object.assign(process.env, { HOME: user, CODEX_HOME: codex, BBRAINX_FILES_ROOT: path.join(base, 'Downloads', 'Projetos'), BBRAINX_HOME: home, PATH: [bin, path.dirname(process.execPath), '/usr/bin', '/bin'].join(path.delimiter) });
   const store = new BrainStore(home);
   t.after(() => { store.close(); for (const [k, v] of Object.entries(saved)) if (v === undefined) delete process.env[k]; else process.env[k] = v; fs.rmSync(base, { recursive: true, force: true }); });
   return { base, home, root, user, codex, store };

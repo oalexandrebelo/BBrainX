@@ -9,7 +9,7 @@ import { VERSION } from './version.mjs';
 import { harnessStatus, launchEnv } from './recruit.mjs';
 import { filesRoot } from './files.mjs';
 import { clientConfig } from './clients.mjs';
-import { planDiff, rollbackIntegration } from './integrations.mjs';
+import { planDiff, rollbackIntegration, discoverIntegrations } from './integrations.mjs';
 import { planProjectIntegration, applyProjectIntegration } from './control-cli.mjs';
 import { controlOverview } from './control.mjs';
 
@@ -102,11 +102,18 @@ const BLOCK_GUIDE = {
   INTEGRATION_MANAGED_BLOCK_INVALID: 'O bloco gerenciado pelo BBrainX foi editado à mão ou contém outro servidor. Abra o arquivo, mova o que for seu para fora dos marcadores BBRAINX e confira de novo.',
   INTEGRATION_CONFIG_INVALID: 'O arquivo de configuração não é JSON/TOML válido. Abra, corrija a sintaxe e confira de novo.'
 };
-function project({ id, root }, { servers }) {
+const CONFIG_FILES = { claude: '.mcp.json', codex: path.join('.codex', 'config.toml'), vscode: path.join('.vscode', 'mcp.json'), kilo: path.join('.kilo', 'kilo.json') };
+/** Harnesses a conferir: os detectados nesta máquina e também os que já têm config no projeto (CLI fora do PATH não some da checagem). */
+function clientsFor(root, detected) {
+  return [...new Set([...detected, ...Object.entries(CONFIG_FILES).filter(([, file]) => fs.existsSync(path.join(root, file))).map(([client]) => client)])];
+}
+function project({ id, root }, { servers, detected }) {
   const items = [];
   if (!fs.existsSync(root)) return [item('project.' + id + '.root', 'Pasta do projeto', 'warn', root + ' não existe mais.', [], 'Se o projeto mudou de lugar, rode `bbrainx integrate --root <novo caminho> --project ' + id + ' --apply` na nova pasta.')];
   let plan;
-  try { plan = planProjectIntegration({ root, project: id }).plan; }
+  const clients = clientsFor(root, detected);
+  if (!clients.length) return [item('project.' + id + '.clients', 'Harnesses', 'manual', 'Nenhum harness detectado neste computador e nenhuma configuração no projeto.', [], 'Instale o Claude Code, o Codex ou o VS Code e confira de novo.')];
+  try { plan = planProjectIntegration({ root, project: id, clients: clients.join(',') }).plan; }
   catch (e) { return [item('project.' + id + '.plan', 'Configurações', 'fail', 'Não foi possível planejar: ' + (e.code || e.message) + '.', [], e.code === 'PROJECT_ROOT_OVERLAP' ? 'Esta pasta está dentro de outro projeto registrado (ou o contém). Um projeto por pasta raiz.' : undefined)]; }
   const pending = plan.files.filter(f => f.status === 'update' || f.status === 'create');
   for (const file of plan.files) {
@@ -166,11 +173,11 @@ function antigravitySnippet(id, root) {
 /** Todas as checagens; só leitura (nenhum servidor é iniciado para conferir). */
 export async function runChecks(store, { projects } = {}) {
   const home = store.home, registered = store.projects().filter(p => p.id !== 'projetos' && p.id !== 'demo').filter(p => !projects || projects.includes(p.id));
-  const servers = runningServers();
+  const servers = runningServers(), detected = discoverIntegrations().clients.filter(c => c.detected).map(c => c.id);
   const groups = [
     { id: 'machine', title: 'Este computador', items: machine({ home }) },
     { id: 'harnesses', title: 'Harnesses', items: harnesses() },
-    ...registered.map(p => ({ id: 'project:' + p.id, title: p.id, subtitle: p.root, items: project(p, { servers }) }))
+    ...registered.map(p => ({ id: 'project:' + p.id, title: p.id, subtitle: p.root, items: project(p, { servers, detected }) }))
   ];
   for (const p of registered) { const connections = fs.existsSync(p.root) ? connectionsItem(store, p.id, p.root) : null; if (connections) groups.find(g => g.id === 'project:' + p.id).items.push(connections); }
   const all = groups.flatMap(g => g.items), count = status => all.filter(i => i.status === status).length;
@@ -204,7 +211,8 @@ function launcherText() { const source = path.join(launcherDir(), 'bbrainx'); re
  */
 export function previewAction(store, action, params = {}) {
   if (action === 'integrate') {
-    const { plan } = planProjectIntegration({ root: projectRoot(store, params.project), project: params.project });
+    const root = projectRoot(store, params.project), clients = clientsFor(root, discoverIntegrations().clients.filter(c => c.detected).map(c => c.id)).join(',');
+    const { plan } = planProjectIntegration({ root, project: params.project, clients });
     return { action, planId: plan.id, blocked: plan.files.filter(f => f.status === 'blocked').map(f => ({ client: f.client, reason: f.reason })), changes: planDiff(plan) };
   }
   if (action === 'files-setup') { const { root } = filesRoot(); return { action, planId: 'files:' + root, changes: [{ target: root, status: fs.existsSync(root) ? 'unchanged' : 'create', diff: [{ op: '+', text: 'pasta ' + root }, { op: '+', text: 'projeto de busca "projetos" registrado e indexado' }] }] }; }
@@ -227,7 +235,8 @@ export async function runAction(store, action, params = {}, { planId } = {}) {
   // Gravações: só com o planId da prévia, e só se o plano refeito agora for o mesmo.
   ensure(typeof planId === 'string', 'CHECK_PREVIEW_REQUIRED', 'Veja o que muda antes de executar.');
   if (action === 'integrate') {
-    const prepared = planProjectIntegration({ root: projectRoot(store, params.project), project: params.project });
+    const root = projectRoot(store, params.project), clients = clientsFor(root, discoverIntegrations().clients.filter(c => c.detected).map(c => c.id)).join(',');
+    const prepared = planProjectIntegration({ root, project: params.project, clients });
     ensure(prepared.plan.id === planId, 'CHECK_PLAN_CHANGED', 'Algo mudou desde a prévia. Veja o que muda de novo.');
     const result = await applyProjectIntegration(prepared);
     return { project: params.project, receipt: result.receipt?.id ?? null, status: result.receipt?.status, files: result.plan.files.map(f => ({ client: f.client, status: f.status })), next: result.next };
