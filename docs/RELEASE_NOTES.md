@@ -1,6 +1,7 @@
 # BBrainX 2.1.1 — Developer Preview — 16/10/2026
 
 Correções da revisão integrações/MCP: recusa de blocos TOML que apagariam dados alheios; opt-out de recrutamento persistido; `agents_status` limitado pelo envelope serializado com IDs omitidos recuperáveis; validação do tamanho final e preservação de permissões na instalação/rollback; dependências MCPB resolvidas a partir do importador; prazo conferido também após exceção síncrona; `arguments:null` recusado com `INVALID_PARAMS`. [Regressões e evidência local](worklog-2026-10-16-integrations-mcp-review.md).
+Correções de recuperação em revisão: diretórios sensíveis excluídos também em candidatos Git; cota de bytes conferida antes de cada commit de lote; recuperação após `ENOTDIR`; orçamento de busca aplicado ao primeiro corpo e aos ponteiros; declarações em strings/comentários ignoradas e nomes como `f`/`T` localizáveis. FTS usa rank nativo com os mesmos pesos. **Schema 3:** backup `brain.v2-backup.sqlite`, preservação de estado durável e reconstrução obrigatória do índice; acrescenta índice `(project,status,id)` de memórias. [Testes, medição e roteiro de retorno](worklog-2026-10-16-retrieval-review.md).
 
 Faixas (lanes) deixam de travar o recrutamento entre projetos.
 

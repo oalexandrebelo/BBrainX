@@ -85,3 +85,39 @@ test('a file that changes while the index is running is stored consistently, nev
   assert.ok(indexProject(store, 'p').changed <= 1, 'the next index converges');
   assert.equal(committedState(other).rows.find(r => r.path === 'f0390.ts').hash, hash(Buffer.from(after)));
 });
+
+test('actual bytes are checked before every batch commit when files grow after the scan',t=>{
+  const {root,store,other}=workspace(t,252);let grown=false;
+  const reads=observeReads(root,(file,n)=>{
+    if(n===252&&!grown){grown=true;for(let i=0;i<252;i++)fs.writeFileSync(path.join(root,'f'+String(i).padStart(4,'0')+'.ts'),'x'.repeat(i<250?200:10000));}
+  });
+  try{assert.throws(()=>indexProject(store,'p',{maxBytes:65536}),{code:'INDEX_BYTE_LIMIT'});}finally{reads.restore();}
+  assert(grown);const state=committedState(other);assert.equal(state.rows.length,250);assert.equal(state.snapshot,manifestSnapshot(state.rows));
+  assert.equal(other.prepare('SELECT sum(bytes) AS bytes FROM files').get().bytes,50000);
+  fs.writeFileSync(path.join(root,'f0250.ts'),'recovered');fs.writeFileSync(path.join(root,'f0251.ts'),'recovered');
+  const result=indexProject(store,'p',{maxBytes:65536});assert.equal(result.bytes,50018);assert.equal(result.files,252);
+});
+test('index reports committed bytes after growth within quota rather than the initial scan total',t=>{
+  const {root,store,other}=workspace(t,2);let grown=false;
+  const reads=observeReads(root,(file,n)=>{if(n===2&&!grown){grown=true;for(let i=0;i<2;i++)fs.writeFileSync(path.join(root,'f000'+i+'.ts'),'x'.repeat(20000));}});
+  let result;try{result=indexProject(store,'p',{maxBytes:65536});}finally{reads.restore();}
+  assert(grown);assert.equal(result.bytes,40000);assert.equal(result.bytes,other.prepare('SELECT sum(bytes) AS bytes FROM files').get().bytes);
+});
+test('in-quota file replacements prune obsolete rows before admitting the replacement batch',t=>{
+  const {root,store}=workspace(t,1);fs.writeFileSync(path.join(root,'f0000.ts'),'x'.repeat(60000));indexProject(store,'p',{maxBytes:65536});
+  fs.unlinkSync(path.join(root,'f0000.ts'));fs.writeFileSync(path.join(root,'replacement.ts'),'y'.repeat(60000));
+  const result=indexProject(store,'p',{maxBytes:65536});assert.equal(result.bytes,60000);assert.equal(result.removed,1);assert.equal(result.changed,1);
+  assert.deepEqual(store.stmt('SELECT path FROM files').all().map(x=>x.path),['replacement.ts']);
+});
+test('in-quota shrinking files are reconciled before growth in another batch',t=>{
+  const {root,store}=workspace(t,251);
+  for(let i=0;i<251;i++)fs.writeFileSync(path.join(root,'f'+String(i).padStart(4,'0')+'.ts'),'x'.repeat(i===250?60000:1));indexProject(store,'p',{maxBytes:65536});
+  for(let i=0;i<251;i++)fs.writeFileSync(path.join(root,'f'+String(i).padStart(4,'0')+'.ts'),'y'.repeat(i===0?50000:1));
+  const result=indexProject(store,'p',{maxBytes:65536});assert.equal(result.bytes,50250);assert.equal(result.changed,251);assert.equal(result.files,251);
+});
+test('growth past the byte quota in the first batch leaves files, FTS and snapshot uncommitted',t=>{
+  const {root,store,other}=workspace(t,2);let grown=false;
+  const reads=observeReads(root,(file,n)=>{if(n===2&&!grown){grown=true;for(let i=0;i<2;i++)fs.writeFileSync(path.join(root,'f000'+i+'.ts'),'x'.repeat(40000));}});
+  try{assert.throws(()=>indexProject(store,'p',{maxBytes:65536}),{code:'INDEX_BYTE_LIMIT'});}finally{reads.restore();}
+  assert(grown);assert.deepEqual(committedState(other),{snapshot:null,rows:[]});assert.equal(other.prepare('SELECT count(*) AS n FROM chunks').get().n,0);assert.equal(store.events('p').filter(x=>x.type==='index.completed').length,0);
+});

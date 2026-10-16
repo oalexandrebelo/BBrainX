@@ -5,6 +5,7 @@ import { ensure, hash, text } from './primitives.mjs';
 import { classify, definitions, isStopword, plainWord, splitIdentifier, stemPrefix, symbolTerms } from './analyze.mjs';
 import { translate } from './glossary.mjs';
 import { verifyRoot } from './source-root.mjs';
+import { maskDeclarations } from './declarations.mjs';
 
 const allowed = new Set(['.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
 const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
@@ -12,7 +13,7 @@ const secretName = /(?:^\.env(?:\.|$)|credentials|secrets?|id_rsa|id_ed25519|\.p
 // Formatos inequívocos de credencial. Falso positivo só tira o arquivo do índice, com o motivo declarado.
 const secretBody = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[a-zA-Z0-9_-]{20,}|gh[pousr]_[a-zA-Z0-9]{20,}|github_pat_[a-zA-Z0-9_]{30,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[abprs]-[0-9A-Za-z-]{20,}|[sr]k_live_[0-9A-Za-z]{20,})\b/;
 // EACCES/EPERM: um arquivo ilegível sai do manifesto com o motivo declarado, nos dois lados (índice e verificação), em vez de derrubar toda busca.
-const skippable = new Set(['ENOENT','EACCES','EPERM','SYMLINK_REJECTED','FILE_TOO_LARGE','BINARY_OR_LARGE_FILE','INVALID_UTF8','SECRET_PATTERN_REJECTED']);
+const skippable = new Set(['ENOENT','ENOTDIR','EACCES','EPERM','SYMLINK_REJECTED','FILE_TOO_LARGE','BINARY_OR_LARGE_FILE','INVALID_UTF8','SECRET_PATTERN_REJECTED']);
 const CHUNK_LINES = 60;
 
 const defaults = {maxFiles:20000, maxBytes:256*1048576, maxFileBytes:262144};
@@ -31,7 +32,7 @@ export function resolveLimits(override = {}, env = process.env) {
 
 export function included(relative) {
   const parts=relative.replaceAll('\\','/').split('/');
-  return parts.every(x=>x!=='.'&&x!=='..'&&!deniedPart.test(x)&&!x.startsWith('.ci-'))&&!secretName.test(parts.at(-1))&&allowed.has(path.extname(relative).toLowerCase());
+  return parts.every(x=>x!=='.'&&x!=='..'&&!deniedPart.test(x)&&!secretName.test(x)&&!x.startsWith('.ci-'))&&allowed.has(path.extname(relative).toLowerCase());
 }
 export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
   ensure(typeof relative==='string'&&!path.isAbsolute(relative),'UNSAFE_PATH');
@@ -81,12 +82,12 @@ function removeFile(store,project,file){
 }
 function replaceFile(store,project,file,content){
   removeFile(store,project,file);
-  const kind=classify(file), extension=path.extname(file).toLowerCase(), lines=content.body.split('\n');
+  const kind=classify(file), extension=path.extname(file).toLowerCase(), lines=content.body.split('\n'), maskedLines=maskDeclarations(content.body,extension).split('\n');
   store.stmt('INSERT INTO files(project,path,hash,bytes,kind) VALUES(?,?,?,?,?)').run(project,file,content.hash,content.bytes,kind);
   const insert=store.stmt('INSERT INTO chunks(id,project,path,file_hash,start_line,end_line,kind,body,defs,symbols) VALUES(?,?,?,?,?,?,?,?,?,?)');
   for(let offset=0;offset<lines.length;offset+=CHUNK_LINES){
     const body=lines.slice(offset,offset+CHUNK_LINES).join('\n');
-    insert.run(hash({project,path:file,hash:content.hash,offset}),project,file,content.hash,offset+1,Math.min(offset+CHUNK_LINES,lines.length),kind,body,definitions(body,extension),symbolTerms(body));
+    insert.run(hash({project,path:file,hash:content.hash,offset}),project,file,content.hash,offset+1,Math.min(offset+CHUNK_LINES,lines.length),kind,body,definitions(body,extension,maskedLines.slice(offset,offset+CHUNK_LINES).join('\n')),symbolTerms(body));
   }
 }
 function megabytes(bytes){return (bytes/1048576).toFixed(1)+' MiB';}
@@ -116,7 +117,7 @@ function readForScan(root,relative,maxBytes,verifiedDirs){
   const key=full+'\0'+maxBytes, sig=signature(st), hit=scanCache.get(key);
   if(hit&&hit.sig===sig){if(hit.code)ensure(false,hit.code);return hit.file;}
   let file,code;
-  try{file=readSafe(root,relative,maxBytes);}catch(e){if(!skippable.has(e.code)||e.code==='ENOENT')throw e;code=e.code;}
+  try{file=readSafe(root,relative,maxBytes);}catch(e){if(!skippable.has(e.code)||['ENOENT','ENOTDIR'].includes(e.code))throw e;code=e.code;}
   if(scanCache.size>=SCAN_CACHE_MAX)scanCache.clear();
   // Só a assinatura e o hash: o corpo não fica em memória.
   scanCache.set(key,{sig,code,file:file&&{hash:file.hash,bytes:file.bytes}});
@@ -143,7 +144,7 @@ function scanProject(root,limits){
     ensure(entries.length<limits.maxFiles,'INDEX_FILE_LIMIT','Mais de '+limits.maxFiles+' arquivos elegíveis. Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxFiles+'.');
     totalBytes+=file.bytes;
     ensure(totalBytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' (em '+relative+'). Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxBytes+'.');
-    entries.push({path:relative,hash:file.hash});
+    entries.push({path:relative,hash:file.hash,bytes:file.bytes});
   }
   return {entries,skipped,skippedByReason,totalBytes};
 }
@@ -182,20 +183,23 @@ const INDEX_BATCH_FILES=250, INDEX_BATCH_BYTES=4*1048576;
 /**
  * Reconcilia o índice com a worktree. Um arquivo por vez: a memória não cresce com o repositório.
  * Arquivo inalterado (mesmo hash) mantém seus trechos. Nada é executado; nada sai da máquina.
- * Duas fases: (1) varredura sem lock de escrita (lê e confere cada arquivo, aplica os tetos; só guarda caminho e hash), de modo que
+ * Duas fases: (1) varredura sem lock de escrita (lê e confere cada arquivo, aplica os tetos; só guarda caminho, hash e tamanho), de modo que
  * recusas não alteram nada; (2) gravação dos arquivos que mudaram em lotes curtos. Cada lote publica o snapshot calculado sobre o
- * manifesto realmente indexado, então todo estado confirmado tem snapshot coerente com seus arquivos; a remoção dos que sumiram e o
- * snapshot final saem numa última transação. Falha no meio deixa um índice coerente que a próxima chamada completa.
+ * manifesto realmente indexado, então todo estado confirmado tem snapshot coerente com seus arquivos; os que sumiram saem no primeiro
+ * lote (ou na transação final, se não houver lote), antes de admitir crescimentos. Falha no meio deixa um índice coerente que a próxima chamada completa.
  */
 export function indexProject(store, project, override) {
   const limits=resolveLimits(override), {root}=store.project(project);
-  const {entries,skipped,skippedByReason,totalBytes}=scanProject(root,limits);
-  const previous=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
-  const present=new Set(entries.map(x=>x.path)), stale=entries.filter(x=>previous.get(x.path)!==x.hash);
+  const {entries,skipped,skippedByReason}=scanProject(root,limits);
+  const previous=new Map(store.stmt('SELECT path,hash,bytes FROM files WHERE project=?').all(project).map(x=>[x.path,x]));
+  const present=new Set(entries.map(x=>x.path)), delta=x=>x.bytes-(previous.get(x.path)?.bytes??0);
+  // Reduções antes de crescimentos; entre os demais mantém a ordem de caminhos, inclusive no índice novo.
+  const stale=entries.filter(x=>previous.get(x.path)?.hash!==x.hash).sort((a,b)=>(delta(a)<0?0:1)-(delta(b)<0?0:1)||byPath(a,b));
   const publish=()=>{const snapshot=snapshotOf(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project));store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);return snapshot;};
-  let changed=0;
+  let changed=0,removed=0;
+  const prune=()=>{for(const {path:old} of store.stmt('SELECT path FROM files WHERE project=?').all(project))if(!present.has(old)){removeFile(store,project,old);removed++;}};
   for(let at=0;at<stale.length;){
-    const batch=[];let batchBytes=0;
+    const firstBatch=at===0,batch=[];let batchBytes=0;
     while(at<stale.length&&batch.length<INDEX_BATCH_FILES&&batchBytes<INDEX_BATCH_BYTES){
       const {path:relative}=stale[at++];
       let file=null;
@@ -204,19 +208,24 @@ export function indexProject(store, project, override) {
       batch.push({relative,file});
     }
     store.transaction(()=>{
+      if(firstBatch)prune();
       for(const {relative,file} of batch){
         const known=store.stmt('SELECT hash FROM files WHERE project=? AND path=?').get(project,relative);
         if(!file){if(known)removeFile(store,project,relative);}
         else if(known?.hash!==file.hash){replaceFile(store,project,relative,file);changed++;}
       }
+      // Vale o manifesto do lote realmente lido, inclusive os arquivos reutilizados; recusa reverte também o FTS.
+      const {bytes}=store.stmt('SELECT coalesce(sum(bytes),0) AS bytes FROM files WHERE project=?').get(project);
+      ensure(bytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto indexado passou de '+megabytes(limits.maxBytes)+'.');
       publish();
     });
   }
   return store.transaction(()=>{
-    let removed=0;
-    for(const {path:old} of store.stmt('SELECT path FROM files WHERE project=?').all(project))if(!present.has(old)){removeFile(store,project,old);removed++;}
-    const snapshot=publish(), files=store.stmt('SELECT count(*) AS n FROM files WHERE project=?').get(project).n;
-    const result={project,snapshot,files,changed,reused:entries.length-stale.length,removed,bytes:totalBytes,skipped,skippedByReason,limits,scope:'supported-text-files',automaticWatcher:false};
+    prune();
+    const {files,bytes}=store.stmt('SELECT count(*) AS files,coalesce(sum(bytes),0) AS bytes FROM files WHERE project=?').get(project);
+    ensure(bytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto indexado passou de '+megabytes(limits.maxBytes)+'.');
+    const snapshot=publish();
+    const result={project,snapshot,files,changed,reused:entries.length-stale.length,removed,bytes,skipped,skippedByReason,limits,scope:'supported-text-files',automaticWatcher:false};
     store.event(project,'index.completed',{snapshot,files,changed,reused:result.reused,removed}); return result;
   });
 }
@@ -283,7 +292,7 @@ export function search(store,project,query,limit=12,{byFile=true}={}){
     for(const term of translate(plain))loose.add(quote(term)+' *');
   }
   const pool=Math.min(400,limit*10), found=new Map();let overflow=false;
-  const select=store.stmt('SELECT c.id,c.project,c.path,c.file_hash,c.start_line,c.end_line,c.kind,c.body,c.defs, bm25(chunk_search,'+columnWeights+') AS rank FROM chunk_search JOIN chunks c ON c.seq=chunk_search.rowid WHERE chunk_search MATCH ? AND c.project=? ORDER BY rank LIMIT ?');
+  const select=store.stmt("SELECT c.id,c.project,c.path,c.file_hash,c.start_line,c.end_line,c.kind,c.body,c.defs, chunk_search.rank AS rank FROM chunk_search JOIN chunks c ON c.seq=chunk_search.rowid WHERE chunk_search MATCH ? AND c.project=? AND chunk_search.rank MATCH 'bm25("+columnWeights+")' ORDER BY chunk_search.rank LIMIT ?");
   for(const [clauses,weight] of [[exact,1],[loose,LOOSE_WEIGHT]]){
     if(!clauses.size)continue;
     const rows=select.all([...clauses].join(' OR '),project,pool+1);if(rows.length>pool)overflow=true;

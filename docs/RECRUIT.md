@@ -38,9 +38,11 @@ As capacidades ACI também estão disponíveis na lane do recruta: leitura numer
 ## O que acontece em cada recruta
 
 1. `planRecruits` valida tudo antes de qualquer efeito: spec, tarefa (≤ 8.000 caracteres), modo, base (`HEAD` por padrão, resolvida a commit), capacidade (≤ 10 por chamada, ≤ 10 por entrada, ≤ 12 ativos por projeto), CLIs instaladas e logadas.
-2. `git worktree add --no-track -b bbx/<id> <raiz>.bbx/<id> <commit>` ao lado do repositório (nunca dentro dele: lanes recusam sobreposição). O checkout principal não é tocado.
+2. O registro `<id>.json` é criado com exclusividade antes de tudo (reserva do ID). Depois, `git worktree add --no-track -b bbx/<id> <raiz>.bbx/<id> <commit>` ao lado do repositório (nunca dentro dele: lanes recusam sobreposição). Ramo ou pasta de mesmo nome que já existam não são deste início: o ID é trocado e nada existente é removido. O checkout principal não é tocado.
 3. A worktree é registrada como lane `<id>` (capacidade 12 para recrutas). O supervisor indexa a lane antes de abrir a CLI.
-4. Um supervisor desacoplado (`bbrainx recruit run`) lança a CLI com o ambiente do usuário menos as variáveis de sessão aninhada (`CLAUDECODE`, `CLAUDE_CODE_*`, `CODEX_SANDBOX*`), grava stdout/stderr em `control-v1/<projeto>/recruits/<id>.log`, bate o coração a cada 15 s e aplica o prazo (`--minutes`, 5 a 240, padrão 60).
+4. Um supervisor desacoplado (`bbrainx recruit run`) publica a própria identidade (PID e início pelo `ps`) antes de indexar, lança a CLI num grupo de processos próprio e grava stdout/stderr em `control-v1/<projeto>/recruits/<id>.log` (credenciais redigidas, teto de 32 MiB em disco). Bate o coração a cada 15 s e aplica o prazo (`--minutes`, 5 a 240, padrão 60). Prazo, parada e fim da CLI encerram o grupo inteiro: um servidor de teste deixado para trás não segura o recruta.
+   Ambiente da CLI: o do usuário, menos os marcadores da sessão que chamou (`CLAUDECODE`, `CLAUDE_CODE_ENTRYPOINT`, `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_MESSAGING_*`, `CODEX_SANDBOX*`…), carregadores (`NODE_OPTIONS`, `DYLD_*`, `LD_*`) e entradas relativas do `PATH`. Ajustes do usuário como `CLAUDE_CODE_USE_BEDROCK` ou `CLAUDE_CODE_MAX_TURNS` ficam. O servidor `bbrainx` do recruta recebe `BBRAINX_RECRUIT=false`.
+   O git do lado do host (worktree, status, commit automático) roda sem hooks, sem `core.fsmonitor` e com os filtros `clean`/`smudge`/`process` neutralizados: nenhum comando configurado no repositório executa fora do sandbox da CLI. Consequência: arquivos LFS chegam à worktree do recruta como ponteiros.
 5. O prompt diz ao recruta onde trabalhar, que o servidor `bbrainx` serve a lane dele (`context_bootstrap`, `context_search`, `session_checkpoint` com `task = <id>`), e, no modo `implement`, que rode a verificação do projeto e faça commit na branch. No modo `review` a CLI roda só leitura (`--permission-mode plan` / `--sandbox read-only`) e não há commit.
 6. Ao fechar, o supervisor interpreta a saída (Claude: JSON final com `session_id`, `total_cost_usd`, `usage`; Codex: JSONL com `thread.started`, `agent_message`, `turn.completed.usage`), faz o commit do que a CLI deixou sem commitar (`bbx recruit <id>: <título>`; o Codex em `workspace-write` não consegue criar `index.lock`), conta os commits à frente da base e grava o registro final.
 
@@ -48,7 +50,14 @@ Registro (`control-v1/<projeto>/recruits/<id>.json`, ≤ 64 KiB): sem prompt (s�
 
 No MCP, `agents_status` limita a resposta inteira a 512 KiB UTF-8, incluindo JSON-RPC, metadados e as duas representações do resultado. Quando os relatórios não cabem, `truncated:true` e `omittedAgentIds` identificam os removidos; consulte-os com `ids:[ID]`. Os relatórios retornados ficam integrais; `count` e `active` descrevem os itens retornados. Esse teto é do MCP, sem alterar a saída da CLI `recruit status`.
 
-Estados: `starting` → `running` → `completed` | `failed` (saída ≠ 0, erro declarado pela CLI ou prazo) | `stopped` (baixa com `stop`) → `dismissed`. `unknown` = sem batimento há mais de 90 s (supervisor morreu, máquina dormiu): leia o log. A baixa remove a worktree e fecha a lane; a branch fica, salvo `deleteBranch`. Só um supervisor com batimento recente recebe `SIGTERM`; PID antigo nunca é sinalizado.
+Estados: `starting` → `running` → `completed` | `failed` (saída ≠ 0, erro declarado pela CLI, prazo ou falha do spawn: `SPAWN_FAILED`) | `stopped` (baixa com `stop`) → `dismissed`. `unknown` = sem batimento há mais de 90 s (supervisor morreu, máquina dormiu): leia o log. O estado final é gravado uma vez, depois de devolver a faixa; um registro `dismissed` nunca é reescrito.
+
+Baixa (`recruit dismiss`, `agents_dismiss`):
+
+- Processos do recruta (supervisor e grupo da CLI) são verificados por identidade, não só por PID: um PID reaproveitado por outro programa conta como morto e nunca recebe sinal. Zumbi conta como encerrado.
+- Algum processo vivo: sem `stop`, recusa (`RECRUIT_STILL_RUNNING`), mesmo com o batimento vencido. Com `stop`, pede o fim ao supervisor (ou ao grupo da CLI, se o supervisor já morreu) e só segue com a saída confirmada; senão `RECRUIT_STOP_UNCONFIRMED` e nada é removido. Processo vivo que não dá para identificar (sem `ps`): `RECRUIT_LIVENESS_UNVERIFIED`.
+- A faixa fecha antes de qualquer remoção: um bloqueio (serviço observado na faixa) recusa a baixa com a worktree intacta.
+- Trabalho não commitado vira um commit no ramo (`uncommitted work kept at dismissal`), salvo com `deleteBranch`. A worktree sai; o ramo fica, salvo `deleteBranch`.
 
 ## Contas e limites de uso
 
@@ -89,4 +98,4 @@ O sandbox `workspace-write` do Codex recusa rede: `listen` em 127.0.0.1 falha co
 
 ## Faixas: vida e capacidade (2.1.1)
 
-Cada recruta tem uma faixa (lane) para o seu servidor MCP. O supervisor a fecha assim que a CLI termina; o worktree e o ramo continuam até `recruit dismiss`. A capacidade é por projeto (`BBRAINX_LANE_CAPACITY`, padrão 12, de 1 a 32), com teto de 64 faixas ativas na máquina. `bbrainx recruit gc --project ID` (ou `--all`) fecha faixas de recrutas cujo supervisor não existe mais (concluídos de versões antigas, quedas, reboot); nunca toca recruta vivo nem faixa sem registro de recruta. O recrutamento roda essa coleta no próprio projeto antes de pedir vaga.
+Cada recruta tem uma faixa (lane) para o seu servidor MCP. O supervisor a fecha assim que a CLI termina; o worktree e o ramo continuam até `recruit dismiss`. A capacidade é por projeto (`BBRAINX_LANE_CAPACITY`, padrão 12, de 1 a 32), com teto de 64 faixas ativas na máquina. `bbrainx recruit gc --project ID` (ou `--all`) percorre as faixas ativas de recrutas e fecha as que nenhum processo vivo usa: concluídos de versões antigas, quedas, reboot, criação interrompida e faixa de recruta sem registro. Supervisor e CLI são conferidos por identidade; vivo ou não verificável fica. Erros de fechamento voltam em `errors`. O recrutamento roda essa coleta no próprio projeto antes de pedir vaga.

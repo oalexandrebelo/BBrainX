@@ -1,5 +1,5 @@
 import path from 'node:path';
-import { declarationsIn } from './declarations.mjs';
+import { declarationsIn, maskDeclarations } from './declarations.mjs';
 
 const testPath=/(?:^|\/)(?:__tests__|__mocks__|tests?|specs?|e2e|fixtures?)(?:\/|$)|[._-](?:test|spec|stories)\.[a-z0-9]+$|_test\.(?:go|py|rb)$|(?:^|\/)test_[^/]+\.py$/i;
 const generatedPath=/\.generated\.|\.min\.|\.d\.ts$|(?:^|\/)(?:generated|__generated__|__snapshots__)(?:\/|$)/i;
@@ -26,10 +26,10 @@ export function splitIdentifier(word){
 const heading=/^#{1,6}[ \t]{1,8}(.{1,300})$/gm;
 
 /** Nomes declarados no trecho, com as partes dos compostos. Em Markdown, as palavras dos títulos. */
-export function definitions(body,extension){
-  const names=new Set(), text=body.split('\n').filter(line=>line.length<=MAX_LINE).join('\n');
+export function definitions(body,extension,maskedBody){
+  const names=new Set(), source=extension==='.md'?body:maskedBody??maskDeclarations(body,extension),text=source.split('\n').map(line=>line.length<=MAX_LINE?line:'').join('\n');
   if(extension==='.md')for(const match of text.matchAll(heading))for(const word of match[1].match(/[\p{L}\p{N}_]{1,128}/gu)||[])names.add(word);
-  else for(const {name} of declarationsIn(text))names.add(name);
+  else for(const {name} of declarationsIn(text,extension,true))names.add(name);
   const out=[];
   for(const name of names){out.push(name,...splitIdentifier(name));if(out.length>=120)break;}
   return out.join(' ');

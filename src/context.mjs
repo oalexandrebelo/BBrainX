@@ -17,22 +17,25 @@ export const SEARCH_BUDGET=4000, SEARCH_POINTERS=25;
 const pointer=item=>item.path+':'+item.start_line+'-'+item.end_line;
 /**
  * Limita o que context_search devolve a um orçamento de tokens (o JSON de cada item, que é o que o modelo lê). Mesma cota de documentação do
- * pacote: havendo código entre os acertos, documentos ficam com até metade. O melhor acerto sempre é servido. O que não coube volta como
+ * pacote: havendo código entre os acertos, documentos ficam com até metade. Inclusive o primeiro corpo precisa caber. O que não coube volta como
  * ponteiros `caminho:linhas` (cerca de 10 tokens cada, no máximo SEARCH_POINTERS, dentro do mesmo orçamento): o agente sabe onde mais olhar sem pagar os corpos.
  * `omitted` conta todos os acertos sem corpo; `truncated` também vale quando o orçamento corta.
  */
 export function fitSearch(result,budget=SEARCH_BUDGET){
   ensure(Number.isInteger(budget)&&budget>=256&&budget<=16000,'INVALID_BUDGET');
-  const hits=result.items, cost=hits.map(item=>tokenCount(JSON.stringify(item))), hasCode=hits.some(item=>item.kind!=='doc'), served=new Set();
-  let used=0,docs=0;
+  const hits=result.items, hasCode=hits.some(item=>item.kind!=='doc'), served=new Set();
+  const selected=()=>hits.filter((item,index)=>served.has(index)), cost=items=>tokenCount(JSON.stringify(items));
   hits.forEach((item,index)=>{
-    if(served.size&&(used+cost[index]>budget||(hasCode&&item.kind==='doc'&&docs+cost[index]>budget/2)))return;
-    used+=cost[index];if(item.kind==='doc')docs+=cost[index];served.add(index);
+    const proposed=[...selected(),item];
+    if(cost(proposed)>budget||(hasCode&&item.kind==='doc'&&cost(proposed.filter(x=>x.kind==='doc'))>budget/2))return;
+    served.add(index);
   });
-  const rest=()=>hits.flatMap((item,index)=>served.has(index)?[]:[item]), more=()=>rest().slice(0,SEARCH_POINTERS).map(pointer);
-  // Os ponteiros pagam do mesmo orçamento: se não cabem, o último acerto servido passa a ser ponteiro.
-  while(served.size>1&&used+(rest().length?tokenCount(JSON.stringify(more())):0)>budget){const last=Math.max(...served);served.delete(last);used-=cost[last];}
-  const left=rest(), pointers=more();
+  const rest=()=>hits.filter((item,index)=>!served.has(index)), more=()=>rest().slice(0,SEARCH_POINTERS).map(pointer);
+  // Os arrays JSON e seus separadores também pagam; nem um único corpo pode furar o teto.
+  while(served.size&&cost(selected())+(rest().length?cost(more()):0)>budget)served.delete(Math.max(...served));
+  const left=rest(), pointers=[], used=cost(selected());
+  // Caminhos longos também podem não caber. Mantém só ponteiros completos, em ordem, até o mesmo teto.
+  for(const value of more())if(used+cost([...pointers,value])<=budget)pointers.push(value);
   return {...result,items:hits.filter((item,index)=>served.has(index)),...(pointers.length?{more:pointers}:{}),truncated:result.truncated||left.length>0,omitted:left.length};
 }
 const memoryLine=memory=>'Approved memory '+memory.id+': '+memory.statement+' [source: '+memory.source+']';
