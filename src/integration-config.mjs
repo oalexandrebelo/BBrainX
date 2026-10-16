@@ -7,7 +7,7 @@ const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value)
 function legacyServer(client,current,server){
   if(!object(current))return false;
   // Configs antigas não tinham `--workspace ... --harness ...` (4 últimos) nem `--recruit`.
-  const legacy=client==='kilo'?{...server,command:server.command.filter(a=>a!=='--recruit').slice(0,-4)}:{...server,args:server.args.filter(a=>a!=='--recruit').slice(0,-4)};
+  const legacy=client==='kilo'?{...server,command:server.command.filter(a=>a!=='--recruit'&&a!=='--files').slice(0,-4)}:{...server,args:server.args.filter(a=>a!=='--recruit'&&a!=='--files').slice(0,-4)};
   const envKey=client==='kilo'?'environment':'env';
   if(legacy[envKey]?.BBRAINX_RECRUIT==='false'){legacy[envKey]={...legacy[envKey]};delete legacy[envKey].BBRAINX_RECRUIT;}
   if(client==='claude'&&current.type==='stdio')legacy.type='stdio';

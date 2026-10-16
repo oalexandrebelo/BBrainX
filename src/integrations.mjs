@@ -103,7 +103,7 @@ export function planIntegrations(options){
     if(client==='antigravity'){files.push({client,detected,target:null,scope:'manual',status:'manual-required',reason:'ANTIGRAVITY_IDE_WORKSPACE_NOT_VERIFIED',serverName:'bbrainx'});continue;}
     let target;
     try{
-      target=location(root,client);const before=readFile(root,target),args=[entry,'mcp','--project',project,...(lane?['--lane',lane]:[]),...(options.recruit===true?['--recruit']:[]),'--workspace',root,'--harness',client];
+      target=location(root,client);const before=readFile(root,target),args=[entry,'mcp','--project',project,...(lane?['--lane',lane]:[]),...(options.recruit===true?['--recruit']:[]),...(options.files===true?['--files']:[]),'--workspace',root,'--harness',client];
       const env={BBRAINX_HOME:home,...(options.recruit===true?{}:{BBRAINX_RECRUIT:'false'})},server=client==='kilo'?{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}:{...(client==='vscode'?{type:'stdio'}:{}),command:node,args,env};
       const canUpdate=before.sha!==null&&owned(home,target,before.sha),rendered=renderConfig(client,before.bytes,server,canUpdate,options.adoptExisting===true);
       const companionOwned=before.sha!==null&&owned(home,target,before.sha,'ab-s00s'),supportsCompanion=['codex','claude','vscode'].includes(client);

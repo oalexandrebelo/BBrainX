@@ -9,6 +9,9 @@ import { verifyRoot } from './source-root.mjs';
 import { LANE_SCHEMA,LANE_SCHEMA_HASH,gitWorkspace } from './lanes/registry.mjs';
 import { planIntegrations,applyIntegrationPlan,rollbackIntegration,discoverIntegrations } from './integrations.mjs';
 import { workspaceSeen,discoverOpenWorkspaces,controlOverview,saveTestRun,archiveTestRun } from './control.mjs';
+import { filesRoot } from './files.mjs';
+/** --files grava files_* nas configs; sem flag, liga quando a pasta de necessidades já existe (depois de `files setup`). */
+const filesWanted=v=>v['no-files']!==true&&(v.files===true||(()=>{try{return fs.statSync(filesRoot().root).isDirectory();}catch{return false;}})());
 
 export const CONTROL_COMMANDS=['integrate','integrations','discover','workspace-seen','control','test','test-history','import-context','budget'];
 function catalog(home){
@@ -64,7 +67,7 @@ export async function controlCommand(command,v,args){
         }
       }
       const entry=stableEntryPath(fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),{errors:{invalid:'INVALID_INTEGRATION_ENTRY',mismatch:'INTEGRATION_ENTRY_MISMATCH'}});
-      const plan=planIntegrations({root,project,lane:v.lane,home,node,entry,clients:v.clients?.split(','),abS00s:v['ab-s00s'],abS00sBin:v['ab-s00s-bin'],adoptExisting:v['adopt-existing']===true,recruit:v['no-recruit']!==true});
+      const plan=planIntegrations({root,project,lane:v.lane,home,node,entry,clients:v.clients?.split(','),abS00s:v['ab-s00s'],abS00sBin:v['ab-s00s-bin'],adoptExisting:v['adopt-existing']===true,recruit:v['no-recruit']!==true,files:filesWanted(v)});
       if(!v.apply)return plan;
       ensure(!plan.files.some(x=>x.status==='blocked'),'INTEGRATION_PLAN_BLOCKED');
       if(v.lane){
