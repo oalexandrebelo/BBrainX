@@ -1,4 +1,4 @@
-# BBrainX 2.1.0 — rascunho — WP-B — 16/10/2026
+# BBrainX 2.1.0 — Developer Preview — 16/10/2026
 
 - **Integração AB-S00S opt-in:** `integrate --ab-s00s on|off` adiciona/remove a segunda entrada gerenciada em `.mcp.json`, `.codex/config.toml` e `.vscode/mcp.json`. Mesmo recibo por arquivo, backup privado, controle de hash e rollback. Sem a flag, mantém o comportamento anterior. Caminho por `--ab-s00s-bin` ou `realpath` de `~/.local/bin/ab-s00s`; `off` funciona sem o binário. Entradas alheias não são adotadas.
 - **OpenHands Agent Canvas:** `config --client openhands` imprime JSON de `mcp_config` do Agent Server (`transport: "stdio"`), com `bbrainx` e AB-S00S quando solicitado. Formato conferido na referência local `0c7c225`; sem instalação ou certificação de conexão nativa.
