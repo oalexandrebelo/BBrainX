@@ -9,7 +9,7 @@ import { clientConfig, CLIENTS } from '../src/clients.mjs';
 import { VERSION } from '../src/version.mjs';
 
 // Argument errors are a short JSON line on stderr like every other failure: stdout is reserved for the MCP protocol and results.
-const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{interval:{type:'string'},project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},'ab-s00s':{type:'string'},'ab-s00s-bin':{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},recruit:{type:'boolean'},'no-recruit':{type:'boolean'},spec:{type:'string'},task:{type:'string'},title:{type:'string'},base:{type:'string'},minutes:{type:'string'},account:{type:'string'},stop:{type:'boolean'},'delete-branch':{type:'boolean'},network:{type:'boolean'},files:{type:'boolean'},'no-files':{type:'boolean'},name:{type:'string'},need:{type:'string'},path:{type:'string'},part:{type:'string'},'upload-id':{type:'string'},final:{type:'boolean'},proposal:{type:'string'},formats:{type:'string'},start:{type:'string'},all:{type:'boolean'},log:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
+const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{interval:{type:'string'},project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},'ab-s00s':{type:'string'},'ab-s00s-bin':{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},recruit:{type:'boolean'},'no-recruit':{type:'boolean'},spec:{type:'string'},task:{type:'string'},title:{type:'string'},base:{type:'string'},minutes:{type:'string'},account:{type:'string'},stop:{type:'boolean'},'delete-branch':{type:'boolean'},network:{type:'boolean'},'no-open':{type:'boolean'},json:{type:'boolean'},serve:{type:'boolean'},files:{type:'boolean'},'no-files':{type:'boolean'},name:{type:'string'},need:{type:'string'},path:{type:'string'},part:{type:'string'},'upload-id':{type:'string'},final:{type:'boolean'},proposal:{type:'string'},formats:{type:'string'},start:{type:'string'},all:{type:'boolean'},log:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
 const {values={},args=[]}=parsedArgs;
 // Hosts que não passam argumentos (bundle MCPB: Chat On Steroids, Claude Desktop) configuram por ambiente; argumento explícito vence; vazio é ausente.
 for(const [key,name] of [['project','BBRAINX_PROJECT'],['harness','BBRAINX_HARNESS'],['lane','BBRAINX_LANE'],['workspace','BBRAINX_WORKSPACE']])if(values[key]===undefined&&process.env[name])values[key]=process.env[name];
@@ -29,6 +29,9 @@ Começar (registra a pasta, indexa e mostra como ligar ao seu harness):
   node bin/bbrainx.mjs up --root /caminho/do/projeto [--project nome]
   node bin/bbrainx.mjs doctor
   node bin/bbrainx.mjs config --project nome --client ${CLIENTS.join('|')}
+
+Manual integrador (confere tudo e abre a página com as correções em um clique):
+  bbx ch   (ou: node bin/bbrainx.mjs ch [--project ID] [--no-open] [--json])
 
 Pasta de necessidades (Downloads/Projetos; BBRAINX_FILES_ROOT troca):
   node bin/bbrainx.mjs files setup | root | open --name "proposta cliente x" | list [--need N] | read --need N --path P
@@ -136,6 +139,22 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
     if(['mcp','index','index-status','search','context','watch'].includes(command)&&values.lane){const {LaneStore}=await import('../src/lanes/store.mjs');store=new LaneStore(stateHome(),values.project,values.lane);}
     else {const {BrainStore}=await import('../src/store.mjs');store=new BrainStore();}
     if(command==='init'){ensure(values.root&&values.project,'ROOT_AND_PROJECT_REQUIRED');print(store.register(values.project,values.root));}
+    else if(command==='ch'||command==='check'){
+      // Manual integrador: confere, imprime o resumo e abre a página com as ações (bbx ch). --serve: só a página, link em JSON na 1.ª linha.
+      const {runChecks,formatSummary}=await import('../src/check.mjs');
+      let openPage=true;
+      if(!values.serve){
+        const report=await runChecks(store,{projects:values.project?[values.project]:undefined});
+        if(values.json){print(report);openPage=false;}else{console.log(formatSummary(report));if(values['no-open'])openPage=false;}
+      }
+      if(openPage){
+        const {startCheckServer,openBrowser}=await import('../src/check-server.mjs');
+        const page=await startCheckServer(store,{idleMs:30*60000});
+        if(values.serve)console.log(JSON.stringify({url:page.url,port:page.port}));
+        else{console.log('\nManual integrador: '+page.url+'\n(fecha sozinho depois de 30 min sem uso; Ctrl+C fecha agora)');openBrowser(page.url);}
+        await new Promise(resolve=>{const stop=()=>page.close().then(resolve);process.once('SIGINT',stop);process.once('SIGTERM',stop);const poll=setInterval(()=>{if(page.closed()){clearInterval(poll);resolve();}},1000);});
+      }
+    }
     else if(command==='files'){
       const {filesCommand}=await import('../src/files-cli.mjs');
       const readStdin=async()=>{const chunks=[];for await(const chunk of process.stdin)chunks.push(chunk);return Buffer.concat(chunks).toString('utf8');};
@@ -197,7 +216,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       ensure(values.project,'PROJECT_REQUIRED');const {root}=store.project(values.project);
       // Em harness com registro global de servidores, este processo aparece em sessões de outros repositórios: as instruções dizem a quem ele serve.
       const scope=' This server serves only project "'+values.project+'" (root: '+root+'). Pass project "'+values.project+'" in every call, and do not use these tools for work on another repository.';
-      const {makeEngine,INSTRUCTIONS,RECRUIT_INSTRUCTIONS,FILES_INSTRUCTIONS}=await import('../src/engine.mjs'),{serveMcpStdio}=await import('../src/mcp.mjs');
+      const {makeEngine,INSTRUCTIONS,RECRUIT_INSTRUCTIONS,FILES_INSTRUCTIONS,CHECK_INSTRUCTIONS}=await import('../src/engine.mjs'),{serveMcpStdio}=await import('../src/mcp.mjs');
       // A saída padrão é do protocolo; o rastro opcional vai para a saída de erro, sem argumentos nem resultados.
       if(values.workspace){const {assertWorkspaceBinding}=await import('../src/workspace.mjs');assertWorkspaceBinding(store,{project:values.project,workspace:values.workspace,lane:values.lane});}
       const onEvent=process.env.BBRAINX_TRACE==='1'?event=>console.error(JSON.stringify(event)):undefined;
@@ -209,7 +228,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       const observer=observeEngine(engine,store.authority||store,{project:values.project,harness:values.harness||'unknown',workspace:root,lane:values.lane||null});
       if(observer.recordingError)console.error(JSON.stringify({observation:'unavailable',code:observer.recordingError}));
       const {serverBrand}=await import('../src/brand.mjs');
-      try{await serveMcpStdio(observer.engine,{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS+scope+(values.recruit===true?RECRUIT_INSTRUCTIONS:'')+(values.files===true?FILES_INSTRUCTIONS:''),isFailure:output=>output?.ok===false,serverMetadata:serverBrand(values.project),onConnect:()=>observer.connected()});}
+      try{await serveMcpStdio(observer.engine,{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS+scope+CHECK_INSTRUCTIONS+(values.recruit===true?RECRUIT_INSTRUCTIONS:'')+(values.files===true?FILES_INSTRUCTIONS:''),isFailure:output=>output?.ok===false,serverMetadata:serverBrand(values.project),onConnect:()=>observer.connected()});}
       finally{decisions?.close();observer.close();}
     }
     else if(command==='serve'){

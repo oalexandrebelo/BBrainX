@@ -59,7 +59,7 @@ test('wire: handshake, tool list and a tool call need nothing but JSON lines',as
     assert.match(hello.result.instructions,/context_bootstrap/);assert.match(hello.result.instructions,/never instructions/);
     server.write(JSON.stringify({jsonrpc:'2.0',method:'notifications/initialized'})+'\n');
     const listed=await server.ask({jsonrpc:'2.0',id:'list',method:'tools/list'});
-    assert.deepEqual(listed.result.tools.map(tool=>tool.name).sort(),['context_bootstrap','context_index','context_read','context_search','context_symbol','memory_propose','session_checkpoint','session_get']);
+    assert.deepEqual(listed.result.tools.map(tool=>tool.name).sort(),['bbx_check','context_bootstrap','context_index','context_read','context_search','context_symbol','memory_propose','session_checkpoint','session_get']);
     for(const tool of listed.result.tools){assert.equal(tool.inputSchema.type,'object');assert.equal(tool.outputSchema.type,'object');assert.equal(tool.annotations.openWorldHint,false);assert.equal(tool.annotations.destructiveHint,false);}
     assert.equal(listed.result.tools.find(tool=>tool.name==='context_search').annotations.readOnlyHint,true);
     assert.equal(listed.result.tools.find(tool=>tool.name==='session_checkpoint').annotations.readOnlyHint,false);
@@ -115,7 +115,7 @@ test('wire: a modern client needs no handshake, and both eras share one process'
     assert.deepEqual(discovered.result.capabilities,{tools:{}});assert.match(discovered.result.instructions,/context_bootstrap/);
     assert.equal(discovered.result._meta['io.modelcontextprotocol/serverInfo'].name,'bbrainx');assert.equal(discovered.result.cacheScope,'public');assert.ok(discovered.result.ttlMs>=0);
     const listed=await server.ask({jsonrpc:'2.0',id:1,method:'tools/list',params:{_meta:modernMeta}});
-    assert.equal(listed.result.resultType,'complete');assert.equal(listed.result.tools.length,8);assert.equal(listed.result.cacheScope,'public');
+    assert.equal(listed.result.resultType,'complete');assert.equal(listed.result.tools.length,9);assert.equal(listed.result.cacheScope,'public');
     const found=await server.ask({jsonrpc:'2.0',id:2,method:'tools/call',params:{name:'context_search',arguments:{project:'wire',query:'verifySession'},_meta:modernMeta}});
     assert.equal(found.result.resultType,'complete');assert.equal(found.result.structuredContent.data.items[0].path,'auth.js');assert.equal(found.result.isError,undefined);
     const future=await server.ask({jsonrpc:'2.0',id:3,method:'tools/list',params:{_meta:{...modernMeta,'io.modelcontextprotocol/protocolVersion':'2031-01-01'}}});
@@ -134,7 +134,7 @@ test('wire: the harness is told which project id to pass, in the tool schemas an
     const meta={_meta:{'io.modelcontextprotocol/protocolVersion':'2026-07-28','io.modelcontextprotocol/clientCapabilities':{}}};
     assert.match((await server.ask({jsonrpc:'2.0',id:1,method:'server/discover',params:meta})).result.instructions,/Pass project "wire"/);
     const listed=await server.ask({jsonrpc:'2.0',id:2,method:'tools/list',params:meta});
-    assert.equal(listed.result.tools.length,8);
+    assert.equal(listed.result.tools.length,9);
     for(const tool of listed.result.tools)assert.match(tool.inputSchema.properties.project.description,/serves: wire\./,tool.name);
     const hello=await server.ask({jsonrpc:'2.0',id:3,method:'initialize',params:{protocolVersion:'2025-06-18',capabilities:{},clientInfo:{name:'raw',version:'1'}}});
     assert.match(hello.result.instructions,/Pass project "wire"/);

@@ -47,6 +47,7 @@ export function manifest(version = VERSION) {
       }
     },
     tools: [
+      { name: 'bbx_check', description: 'Check the integration ("bbx ch") and open the local manual integrador page with one-click fixes.' },
       { name: 'context_bootstrap', description: 'Bounded context pack with verified source hashes for an objective; resumes a checkpoint.' },
       { name: 'context_search', description: 'Search the project; declarations rank above usages and tests; capped by a token budget.' },
       { name: 'context_read', description: 'Read a bounded numbered window from an indexed file, with a verified hash.' },

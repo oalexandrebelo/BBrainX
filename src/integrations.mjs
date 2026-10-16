@@ -129,6 +129,27 @@ function replace(anchor,target,bytes,mode=0o600){
 }
 function receiptReport(receipt){return {schemaVersion:1,id:receipt.id,status:receipt.status,project:receipt.project,root:receipt.root,files:receipt.files.map(({client,target,beforeSha256,afterSha256})=>({client,target,beforeSha256,afterSha256}))};}
 
+/** Diferenças linha a linha de cada arquivo do plano, para mostrar antes de aplicar. Só do plano original deste processo. */
+export function planDiff(plan,{maxLines=4000}={}){
+  const ctx=contexts.get(plan);ensure(ctx&&hash(plan)===ctx.publicSha,'INTEGRATION_PLAN_UNTRUSTED');
+  return ctx.drafts.filter(draft=>draft.file.status!=='unchanged').map(({file,before,after})=>({client:file.client,target:file.target,status:file.status,
+    diff:lineDiff(before.bytes?before.bytes.toString('utf8'):'',after.toString('utf8'),maxLines)}));
+}
+/** Diff mínimo (LCS) em linhas, com 2 linhas de contexto; arquivo grande demais devolve só o resumo. */
+export function lineDiff(a,b,maxLines=4000){
+  const x=a===''?[]:a.replace(/\n$/,'').split('\n'),y=b===''?[]:b.replace(/\n$/,'').split('\n');
+  if(x.length*y.length>maxLines*maxLines)return [{op:'note',text:x.length+' → '+y.length+' linhas (grande demais para mostrar)'}];
+  const n=x.length,m=y.length,table=Array.from({length:n+1},()=>new Uint32Array(m+1));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)table[i][j]=x[i]===y[j]?table[i+1][j+1]+1:Math.max(table[i+1][j],table[i][j+1]);
+  const ops=[];let i=0,j=0;
+  while(i<n||j<m){if(i<n&&j<m&&x[i]===y[j]){ops.push({op:' ',text:x[i]});i++;j++;}else if(j<m&&(i===n||table[i][j+1]>=table[i+1][j])){ops.push({op:'+',text:y[j]});j++;}else{ops.push({op:'-',text:x[i]});i++;}}
+  const keep=new Set();ops.forEach((o,k)=>{if(o.op!==' ')for(let d=-2;d<=2;d++)keep.add(k+d);});
+  const out=[];let skipped=0;
+  ops.forEach((o,k)=>{if(keep.has(k)){if(skipped){out.push({op:'note',text:skipped+' linha(s) iguais'});skipped=0;}out.push(o);}else skipped++;});
+  if(skipped)out.push({op:'note',text:skipped+' linha(s) iguais'});
+  return out;
+}
+
 /** Accepts only the original in-process plan; serialized or altered plans cannot write files. */
 export function applyIntegrationPlan(plan){
   const ctx=contexts.get(plan);ensure(ctx&&hash(plan)===ctx.publicSha,'INTEGRATION_PLAN_UNTRUSTED');

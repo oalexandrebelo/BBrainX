@@ -19,7 +19,7 @@ function fixture(t){
   fs.mkdirSync(root);fs.writeFileSync(path.join(root,'README.md'),'# Project\n');
   t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
   const run=(node,args=[])=>spawnSync(process.execPath,[entry,'integrate','--root',root,'--project','sample','--clients','claude',...args],{
-    cwd:root,env:{...process.env,BBRAINX_HOME:home,BBRAINX_ENTRY:entry,BBRAINX_NODE:node},encoding:'utf8',timeout:15000
+    cwd:root,env:{...process.env,BBRAINX_HOME:home,BBRAINX_ENTRY:entry,BBRAINX_NODE:node,BBRAINX_FILES_ROOT:path.join(home,'sem-pasta-de-necessidades')},encoding:'utf8',timeout:15000
   });
   return {directory,root,home,run};
 }

@@ -69,10 +69,10 @@ test('spec text, aliases and efforts normalize to the ids the CLIs accept',()=>{
   assert.throws(()=>parseRecruitSpec('2 mystery-model'),{code:'RECRUIT_SPEC_INVALID'});
 });
 
-test('recruitment is a host grant: without --recruit the catalog keeps eight tools; with it, eleven, still scoped to the allowlist',async t=>{
+test('recruitment is a host grant: without --recruit the catalog keeps nine tools; with it, twelve, still scoped to the allowlist',async t=>{
   const f=fixture(t);
-  assert.equal(toolCatalog(makeEngine(f.store,['p'])).tools.length,8);
-  const tools=toolCatalog(f.engine).tools.map(x=>x.name);assert.equal(tools.length,11);
+  assert.equal(toolCatalog(makeEngine(f.store,['p'])).tools.length,9);
+  const tools=toolCatalog(f.engine).tools.map(x=>x.name);assert.equal(tools.length,12);
   for(const name of ['agents_recruit','agents_status','agents_dismiss'])assert(tools.includes(name),name);
   await assert.rejects(f.engine.invoke('agents.status',{project:'other'},principal),{code:'FORBIDDEN'});
   await assert.rejects(f.engine.invoke('agents.recruit',{project:'p',task:'x'},{principal:null}),{code:'UNAUTHENTICATED'});
@@ -204,17 +204,17 @@ test('CLI: start without --apply only plans; status and doctor are read-only; th
   assert.match(run('help').stdout,/recruit start --project/);
 });
 
-test('a real stdio server started with --recruit lists eleven tools and says so in its instructions; without the flag, eight and silence',async t=>{
+test('a real stdio server started with --recruit lists twelve tools and says so in its instructions; without the flag, nine and silence',async t=>{
   const f=fixture(t);
-  for(const [flags,expected] of [[['--recruit'],11],[[],8]]){
+  for(const [flags,expected] of [[['--recruit'],12],[[],9]]){
     const client=new Client({name:'recruit-probe',version:'1'});
     const transport=new StdioClientTransport({command:process.execPath,args:[entry,'mcp','--project','p',...flags],env:{...process.env,BBRAINX_HOME:f.home},stderr:'pipe'});
     transport.stderr?.on('data',()=>{});
     try{
       await client.connect(transport);
       const tools=(await client.listTools()).tools.map(x=>x.name);assert.equal(tools.length,expected,flags.join(' '));
-      assert.equal(tools.includes('agents_recruit'),expected===11);
-      const instructions=client.getInstructions()||'';assert.equal(/agents_recruit/.test(instructions),expected===11,'instructions mention recruitment only when granted');
+      assert.equal(tools.includes('agents_recruit'),expected===12);
+      const instructions=client.getInstructions()||'';assert.equal(/agents_recruit/.test(instructions),expected===12,'instructions mention recruitment only when granted');
     }finally{await client.close();}
   }
 });

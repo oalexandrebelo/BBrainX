@@ -93,10 +93,10 @@ test('ACI: host allowlist and lane bindings apply to both capabilities',async t=
   const read=await engine.invoke('context.read',{project:'product',path:symbols.data.items[0].path},principal);assert(read.ok);assert(read.data.text.includes('ALPHA_MARKER'));assert(!read.data.text.includes('BETA_MARKER'));
   await assert.rejects(()=>engine.invoke('context.read',{project:'product',path:symbols.data.items[0].path,lane:'beta'},principal));
 });
-test('ACI: real MCP stdio exposes eight default tools and both read-only capabilities',async t=>{
+test('ACI: real MCP stdio exposes nine default tools and both read-only capabilities',async t=>{
   const f=fixture(t),client=new Client({name:'aci-proof',version:'1'}),transport=new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),'mcp','--project','app'],cwd:f.root,env:{...process.env,BBRAINX_HOME:f.store.home},stderr:'pipe'});
   transport.stderr?.on('data',()=>{});t.after(()=>client.close());await client.connect(transport);
-  const {tools}=await client.listTools();assert.equal(tools.length,8);
+  const {tools}=await client.listTools();assert.equal(tools.length,9);
   for(const name of ['context_read','context_symbol'])assert.equal(tools.find(x=>x.name===name).annotations.readOnlyHint,true);
   const symbols=await client.callTool({name:'context_symbol',arguments:{project:'app',symbol:'targetSymbol'}});assert(symbols.structuredContent.ok);
   const read=await client.callTool({name:'context_read',arguments:{project:'app',path:'code.mjs',start:450,end:450}});assert(read.structuredContent.ok);assert.match(read.structuredContent.data.text,/^   450\| /);

@@ -17,7 +17,7 @@ test('two real MCP processes use separate worktrees/checkpoints and one memory a
   let a,b;
   try{
     [a,b]=await Promise.all([connect(f.home,'alpha'),connect(f.home,'beta')]);
-    const lists=await Promise.all([a.listTools(),b.listTools()]);for(const {tools} of lists){assert.equal(tools.length,8);assert(!tools.some(t=>/exec|shell|approve/.test(t.name)));}
+    const lists=await Promise.all([a.listTools(),b.listTools()]);for(const {tools} of lists){assert.equal(tools.length,9);assert(!tools.some(t=>/exec|shell|approve/.test(t.name)));}
     const indexed=await Promise.all([call(a,'context_index',{}),call(b,'context_index',{})]);for(const r of indexed)assert.equal(r.ok,true);
     const packs=await Promise.all([call(a,'context_bootstrap',{query:'workspaceMarker',budget:2000}),call(b,'context_bootstrap',{query:'workspaceMarker',budget:2000})]);
     assert(packs[0].data.text.includes('ALPHA_MARKER'));assert(!packs[0].data.text.includes('BETA_MARKER'));

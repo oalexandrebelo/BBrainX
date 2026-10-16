@@ -1,3 +1,25 @@
+# BBrainX 2.3.0 — Developer Preview — 16/10/2026
+
+**Manual integrador.** `bbx ch` (ou "bbx ch" no chat do Claude Code, Codex ou VS Code) confere a integração inteira e abre uma página local com as correções em um clique. Suíte **868/868**.
+
+| Medida | Valor |
+|---|---|
+| Casos | máquina (Node, atalho `bbx`, pasta de necessidades), harnesses (Claude Code e Codex logados, VS Code e extensão), cada projeto (configs de Claude Code/Codex/VS Code/Kilo, entrada alheia, Antigravity, confiança no Codex, conexões registradas, sessões com configuração anterior) |
+| Tempo da checagem completa | < 1 s com 9 projetos (só leitura; nenhum servidor é iniciado para conferir) |
+| Gravação | prévia com diff linha a linha → segundo clique; plano refeito e conferido (`CHECK_PLAN_CHANGED` se algo mudou); recibo com Desfazer |
+| Página | só `127.0.0.1`, token no fragmento do link, Host e Origin conferidos, CSP com nonce, lista fechada de ações, fecha após 30 min sem uso |
+| Senhas | nunca pedidas, vistas ou guardadas; login abre o fluxo oficial da CLI no Terminal |
+| Ferramenta MCP | `bbx_check` sempre presente (9 ferramentas padrão; 12 com `--recruit`) |
+
+Também: a suíte não depende mais de existir `Downloads/Projetos` na máquina (teste do `integrate` isolado).
+
+| Oportunidade | Critério |
+|---|---|
+| Casos da web (ChatGPT/Claude via AB-S00S) | Mesmo modelo de prévia e passo guiado |
+| Contas e cotas | Só o que a CLI expõe |
+
+[Manual integrador](INTEGRADOR.md)
+
 # BBrainX 2.2.0 — Developer Preview — 16/10/2026
 
 Pasta de necessidades: o que os modelos geram fica gravado direto no computador, em `Downloads/Projetos/AAAA-MM-DD-nome`, pela web (AB-S00S, toggle Arquivos) e pelos harnesses locais (`--files`). Suíte **861/861**.

@@ -10,7 +10,7 @@ test('real MCP stdio: two independently started clients share a durable checkpoi
  async function connect(name){const client=new Client({name,version:'1.0'});const transport=new StdioClientTransport({command:process.execPath,args:[fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),'mcp','--project','test'],env:{...process.env,BBRAINX_HOME:path.join(home,'state')},stderr:'pipe'});transport.stderr?.on('data',()=>{});await client.connect(transport);return client;}
  let first,second;
  try{
-  first=await connect('harness-A');const {tools}=await first.listTools();assert.equal(tools.length,8);assert.ok(tools.some(x=>x.name==='session_checkpoint'));
+  first=await connect('harness-A');const {tools}=await first.listTools();assert.equal(tools.length,9);assert.ok(tools.some(x=>x.name==='session_checkpoint'));
   const write=await first.callTool({name:'session_checkpoint',arguments:{project:'test',task:'T1',expectedVersion:0,idempotencyKey:'first',content:{objective:'Preserve authentication',nextAction:'Review implementation',snapshot,status:'review_needed'}}});assert.equal(write.structuredContent.ok,true);await first.close();first=null;
   second=await connect('harness-B');const read=await second.callTool({name:'session_get',arguments:{project:'test',task:'T1'}});assert.equal(read.structuredContent.data.checkpoint.version,1);assert.equal(read.structuredContent.data.checkpoint.content.nextAction,'Review implementation');
   const denied=await second.callTool({name:'session_get',arguments:{project:'forbidden',task:'T1'}});assert.equal(denied.isError,true);
