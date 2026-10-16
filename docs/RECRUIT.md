@@ -21,7 +21,7 @@ Aliases aceitos: `fable`, `opus`, `sonnet`, `haiku` (com ou sem versão, por exe
 
 Em hosts que não passam argumentos (bundle MCPB no Chat On Steroids ou no Claude Desktop), o ambiente faz o mesmo papel: `BBRAINX_PROJECT`, `BBRAINX_HOME` e `BBRAINX_RECRUIT=true` (`npm run package:mcpb` gera o bundle; `config --client cos` imprime a forma por executável).
 
-`integrate --apply` grava `--recruit` nos argumentos do servidor MCP (`.mcp.json`, `.codex/config.toml`, `.vscode/mcp.json`); `--no-recruit` omite. Sem o flag, o catálogo continua com seis ferramentas e qualquer pedido de recrutamento não tem ferramenta para chamar: a concessão vem do host (a configuração que o humano gravou), nunca de argumento de ferramenta nem de texto recuperado. O servidor de cada recruta é iniciado **sem** `--recruit`: não há recrutamento recursivo.
+`integrate --apply` grava `--recruit` nos argumentos do servidor MCP (`.mcp.json`, `.codex/config.toml`, `.vscode/mcp.json`); `--no-recruit` omite. Com `--recruit`, o catálogo tem onze ferramentas. Sem o flag, são oito (incluindo `context_read` e `context_symbol`) e não há ferramenta para atender pedidos de recrutamento: a concessão vem do host (a configuração que o humano gravou), nunca de argumento de ferramenta nem de texto recuperado. O servidor de cada recruta é iniciado **sem** `--recruit`: não há recrutamento recursivo.
 
 ```sh
 bbrainx recruit doctor                                   # CLIs encontradas, versão, login, limites de uso do Codex
@@ -30,6 +30,10 @@ bbrainx recruit start … --apply                          # sem --apply só mos
 bbrainx recruit status --project ID [--id R] [--log]
 bbrainx recruit dismiss --project ID --id R [--stop] [--delete-branch]
 ```
+
+`--ab-s00s on|off` em `integrate` controla um segundo servidor nas três configurações acima, usando o mesmo recibo/backup/rollback. Não concede recrutamento ao AB-S00S nem altera o modo dos recrutas. `config --client openhands` gera somente o fragmento do Agent Server, com AB-S00S opcional. [Como configurar](QUICKSTART.md#ab-s00s-e-openhands-agent-canvas).
+
+As capacidades ACI também estão disponíveis na lane do recruta: leitura numerada de até 400 linhas e busca de declarações, ambas restritas ao índice da worktree e com hash verificado. O agente continua iniciando por `context_bootstrap`, buscando com `context_search` e salvando o checkpoint ao terminar.
 
 ## O que acontece em cada recruta
 

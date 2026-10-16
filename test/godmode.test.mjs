@@ -161,7 +161,7 @@ test('each client gets its own configuration shape, with paths that survive spac
   assert.match(clientConfig('codex',options),/\n#\s+codex mcp add bbrainx-app --env BBRAINX_HOME='\/Users\/me\/Library\/Application Support\/BBrainX' -- \/opt\/node '\/Users\/me\/My Apps\/bbrainx\.mjs' mcp --project app\n/);
   assert.match(clientConfig('codex',options),/\[mcp_servers\.bbrainx-app\]\ncommand = "\/opt\/node"\nargs = \["\/Users\/me\/My Apps\/bbrainx\.mjs","mcp","--project","app"\]/);
   assert.throws(()=>clientConfig('unknown',options),error=>error.code==='UNKNOWN_CLIENT');
-  assert.deepEqual([...CLIENTS],['claude','codex','cursor','vscode','gemini','antigravity','kilo','cos']);
+  assert.deepEqual([...CLIENTS],['claude','codex','cursor','vscode','gemini','antigravity','kilo','cos','openhands']);
 });
 test('`up` registers, indexes and names the next steps; running it again reuses the project',t=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-up-')), root=path.join(dir,'My Project (v2)');t.after(()=>fs.rmSync(dir,{recursive:true,force:true}));

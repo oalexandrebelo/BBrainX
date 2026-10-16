@@ -59,6 +59,39 @@ node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO
 
 Rollback recusa arquivos editados posteriormente. Se a indexação falhar após aplicação, a CLI retorna recibo e `indexError`: corrija a indexação ou use esse rollback. Configurações com caminhos absolutos do estado/runtime merecem revisão antes de serem versionadas. `config --project meu-app --client cursor` continua imprimindo fragmentos manuais (também claude, codex, vscode e gemini); ele não escreve arquivos. Na 1.5.0, Cursor e Gemini CLI só têm esse fragmento: a conexão não foi verificada. Claude Code e Codex foram verificados com clientes reais; VS Code, com o `.vscode/mcp.json` gerado exercitado por um cliente do SDK MCP (o início pela interface é manual). Evidência: [HOMOLOGACAO_2026-10-10.md](HOMOLOGACAO_2026-10-10.md).
 
+### AB-S00S e OpenHands Agent Canvas
+
+```sh
+node bin/bbrainx.mjs integrate --root /raiz/do/projeto --project meu-app --clients claude,codex,vscode --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs
+node bin/bbrainx.mjs integrate --root /raiz/do/projeto --project meu-app --clients claude,codex,vscode --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs --apply
+node bin/bbrainx.mjs integrate --root /raiz/do/projeto --clients claude,codex,vscode --ab-s00s off --apply
+node bin/bbrainx.mjs config --project meu-app --client openhands
+node bin/bbrainx.mjs config --project meu-app --client openhands --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs
+```
+
+O toggle é explícito: sem `--ab-s00s`, nenhuma entrada AB-S00S é alterada. `on` acrescenta `ab-s00s` em `.mcp.json`, `.codex/config.toml` e `.vscode/mcp.json`, entre os clientes selecionados. O comando é `NODE BIN_AB_S00S mcp --project ID`, com o mesmo `BBRAINX_HOME`. O binário vem de `--ab-s00s-bin` (absoluto) ou de `~/.local/bin/ab-s00s`, resolvido por `realpath`, sem executar o arquivo. `off` não precisa do binário instalado. Kilo e Antigravity não ganham a segunda entrada neste pacote. `on` junto de `--lane` recusa com `AB_S00S_LANE_UNSUPPORTED`: o AB-S00S ainda não recebe identidade de lane. Use a raiz primária; `off` permanece disponível nas lanes para limpeza.
+
+Cada arquivo recebe um único recibo, com hashes e backup dos bytes anteriores. `integrations rollback --id RECIBO` desfaz também o toggle, preservando o estado anterior de ambos os servidores. Colisões com entrada AB-S00S alheia e edições posteriores recusam a operação; `--adopt-existing` continua restrito ao gerador antigo de `bbrainx`. Uma configuração `bbrainx` gerenciada não concede propriedade sobre um `ab-s00s` preexistente.
+
+O cliente `openhands` imprime JSON puro com `{ "mcp_config": { "bbrainx": { "transport": "stdio", "command": "…", "args": ["…"], "env": { "BBRAINX_HOME": "…" } } } }`. `--ab-s00s on` inclui a segunda entrada; `off` ou ausência da flag imprime só `bbrainx`. Mescle o mapa em `agent_settings.mcp_config` do Agent Server, preservando os outros servidores. A saída é um fragmento, não um comando que altera configurações nem uma operação de remoção remota. Caminhos de Node, scripts e estado precisam existir na máquina ou contêiner onde o Agent Server roda.
+
+Formato conferido em `OpenHands/src/utils/mcp-config.ts`, `src/types/mcp-server.ts` e `src/types/settings.ts`, revisão `0c7c2258a8acc309852ceb248b3ade606b79869c`. A interface do Canvas usa `type`; o formato persistido usa **`transport`**. A conferência do formato não certifica conexão nativa nem instalação do Agent Canvas.
+
+### Leitura ACI no agente
+
+O catálogo padrão tem oito ferramentas; `--recruit` acrescenta três, totalizando onze. Use `context_search` para localizar arquivos, `context_symbol` para declarações e `context_read` para a janela desejada:
+
+```json
+{"project":"meu-app","symbol":"authenticate","limit":20}
+{"project":"meu-app","path":"src/auth.ts","start":10,"end":50}
+```
+
+O primeiro objeto é argumento de `context_symbol`; o segundo, de `context_read`. Ambas exigem índice atual e concessão do host para o projeto/lane. `INDEX_REQUIRED` pede indexação inicial; `INDEX_STALE` pede `context_index` e nova tentativa, sem atualização implícita. Texto retornado é evidência, nunca instrução.
+
+`context_read`: caminho relativo com `/`, sem travessia, caminho absoluto ou symlink; arquivo precisa estar no índice. `start`/`end` são inclusivos, base 1; padrão 200 linhas, máximo 400 por janela. O fim é limitado ao fim do arquivo; início além do fim recusa. Arquivo vazio retorna texto vazio e `end: 0`. Cada linha usa `%6d| `, por exemplo `    10| código`. A resposta traz SHA-256 completo, linhas e frescor; acima de 64 KiB recusa com `READ_WINDOW_TOO_LARGE`, pedindo janela menor.
+
+`context_symbol`: nome exato, sensível a maiúsculas; `path` opcional restringe a um arquivo indexado. Retorna `path`, `startLine`, `endLine`, `kind` e `hash` por declaração (a linha da declaração, não o corpo inteiro). `limit` padrão 20, máximo 50; até 200 trechos candidatos, com `truncated` quando há candidatos omitidos. Usa as heurísticas lexicais existentes, sem AST/Tree-sitter: pode omitir sintaxe não reconhecida ou nomes que não entraram nos termos do índice. Não resolve referências semanticamente. Técnicas de janela numerada e saída limitada estudadas no SWE-agent, revisão `3ea751c087f32b16e039a2233dd6eefecef325d5`; nenhum runtime externo foi incorporado.
+
 ### Plugin e descoberta de pastas abertas
 
 ```sh

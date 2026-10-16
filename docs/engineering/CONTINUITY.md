@@ -1,5 +1,7 @@
 # Ponto de retomada da engenharia
 
+WP-B em revisão (16/10/2026), base `8b394b909f9f`, branch `bbx/r2610160601-998a5f`: toggle AB-S00S, fragmento OpenHands e ACI. [Worklog com comandos, aceite e pendências](../worklog-2026-10-16-wp-b.md). Próxima ação: supervisor revisar a árvore/evidências e commitar nesta branch; o sandbox do recruta não pode criar o `index.lock` externo da worktree. Este registro não promove a revisão remota nem substitui os gates de entrega.
+
 BBrainX **2.0.0 Developer Preview**: PR #22 (AB-BBX, watcher/lane, `INDEX_STALE`, checkpoint 2.000, métricas por capacidade) mais o recrutamento BYO de agentes nas CLIs já logadas (`agents_recruit`, `agents_status`, `agents_dismiss`; [RECRUIT.md](../RECRUIT.md)). Mac mini e MacBook Pro M5 prioritários; Windows no backlog por decisão do mantenedor em 12/10/2026. [Contrato, fontes fixadas, custos e aceite](../BBRAINX_2_0.md). Conferir SHA e checks da PR antes de promover.
 
 Entrega publicada anteriormente: **1.5.0 Developer Preview** (tag `v1.5.0-preview`); números e oportunidades em [HOMOLOGACAO_2026-10-10.md](../HOMOLOGACAO_2026-10-10.md).

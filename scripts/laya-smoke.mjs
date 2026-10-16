@@ -37,7 +37,7 @@ try{
   const transport=new StdioClientTransport({command:process.execPath,args:[entry,'mcp','--project',values.project,'--laya'],env:{...process.env,BBRAINX_HOME:home},stderr:'pipe'});
   const client=new Client({name:'bbrainx-laya-proof',version:'1.0.0'});
   try{
-    await client.connect(transport);const catalog=await client.listTools();assert.ok(catalog.tools.some(tool=>tool.name==='decision_evaluate'));assert.equal(catalog.tools.length,7);report.checks.push('MCP real catalog adds opt-in seventh tool');
+    await client.connect(transport);const catalog=await client.listTools();assert.ok(catalog.tools.some(tool=>tool.name==='decision_evaluate'));assert.equal(catalog.tools.length,9);report.checks.push('MCP real catalog adds opt-in ninth tool');
     const result=await client.callTool({name:'decision_evaluate',arguments:args});const data=result.structuredContent||JSON.parse(result.content.find(x=>x.type==='text').text);assert.equal(data.ok,true);assert.equal(data.data.status,'suggested');
     if(values['expected-device'])assert.equal(data.data.runtime.device,values['expected-device']);
     report.results.mcp=data.data;report.checks.push('MCP real model inference');

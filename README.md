@@ -14,7 +14,7 @@ A versão 2.0 atende projetos distintos, com prioridade para Mac mini e MacBook 
 
 ### Recrutar agentes (BYO: suas CLIs, seus logins)
 
-Numa sessão ligada ao BBrainX, diga ao harness **"recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para corrigir X"**. O BBrainX lança o Claude Code e o Codex que já estão instalados e logados nesta máquina, um por recruta, cada um em worktree, branch e lane próprios; o checkout principal não é tocado. Nenhuma assinatura nova, nenhum token lido. `integrate --apply` concede isso ao servidor com `--recruit` (nove ferramentas); sem o flag, seis. `bbrainx recruit doctor` mostra as CLIs, o login e os limites de uso do Codex. Medido em 13/10/2026 com as duas CLIs reais: dois recrutas, dois commits, checkout limpo. [docs/RECRUIT.md](docs/RECRUIT.md).
+Numa sessão ligada ao BBrainX, diga ao harness **"recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para corrigir X"**. O BBrainX lança o Claude Code e o Codex que já estão instalados e logados nesta máquina, um por recruta, cada um em worktree, branch e lane próprios; o checkout principal não é tocado. Nenhuma assinatura nova, nenhum token lido. `integrate --apply` concede isso ao servidor com `--recruit` (onze ferramentas); sem o flag, oito. `bbrainx recruit doctor` mostra as CLIs, o login e os limites de uso do Codex. Medido em 13/10/2026 com as duas CLIs reais: dois recrutas, dois commits, checkout limpo. [docs/RECRUIT.md](docs/RECRUIT.md).
 
 ## O que é
 
@@ -25,6 +25,7 @@ O BBrainX roda na sua máquina e entrega ao agente de programação o que ele pr
 | Claude Code | **Verificado.** `claude -p --mcp-config` chamou `context_search`; como recruta (haiku), trabalhou em worktree própria e commitou |
 | Codex | **Verificado.** `codex exec` chamou `context_search`; como recruta (gpt-6-astra), chamou `context_bootstrap`, `context_search`, `session_checkpoint` e `session_get` na lane dele |
 | VS Code | **Verificado em parte.** O `.vscode/mcp.json` gerado foi exercitado por um cliente do SDK MCP, do jeito que o VS Code o inicia. O início pela interface do VS Code é manual |
+| OpenHands Agent Canvas | **Formato conferido na referência local.** `config --client openhands` imprime `mcp_config` stdio; conexão nativa não homologada |
 | Cursor, Gemini CLI | **Não verificado.** Só imprime os fragmentos de configuração (`config --client cursor` e `--client gemini`) |
 
 Esta branch propõe a **2.0.0** na única [PR #22](https://github.com/oalexandrebelo/BBrainX/pull/22). Versão declarada não significa atualização já instalada nos dispositivos. Windows fica no backlog por decisão do mantenedor; suas falhas continuam visíveis e não bloqueiam a entrega para Mac. Evidências históricas da 1.5.0: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
@@ -51,6 +52,16 @@ node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto --apply
 ```
 
 Sem `--apply`, `integrate` mostra destinos, hashes e pendências. Com `--apply`, registra a raiz, aplica a entrada MCP do projeto com backups privados e indexa os arquivos; preserva credenciais, provedores, trust e aprovações. Descobre Codex, Claude Code, VS Code, Kilo e Antigravity IDE por metadados locais, sem executar clientes. Codex/Claude/VS Code/Kilo têm configuração automática; Antigravity IDE exige etapa manual e não recebe cadastro global de todos os projetos. `--clients codex,claude,vscode,kilo` permite selecionar os destinos, inclusive preparar cliente ainda não instalado. Instalações antigas só podem ser migradas com `--adopt-existing` quando coincidem exatamente com o gerador anterior. Rollback: `node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO`; uma edição posterior impede sobrescrita. [Contrato do instalador](docs/integrations/INSTALLER.md).
+
+Para adicionar o AB-S00S como segundo servidor nas configurações de Claude Code, Codex e VS Code:
+
+```sh
+node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto --clients claude,codex,vscode --apply --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs
+node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto --clients claude,codex,vscode --apply --ab-s00s off
+node bin/bbrainx.mjs config --project meu-projeto --client openhands --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs
+```
+
+`on` inclui `ab-s00s` no mesmo recibo e backup de `bbrainx`; `off` remove somente a entrada gerenciada e funciona mesmo após desinstalar o AB-S00S. Sem `--ab-s00s`, a entrada existente é preservada. Sem `--ab-s00s-bin`, resolve `~/.local/bin/ab-s00s` por `realpath`. Nenhum desses comandos instala ou inicia o AB-S00S. OpenHands recebe JSON puro de `mcp_config`, com `transport: "stdio"`; mescle-o nas configurações do Agent Server. [Passos e limites](docs/QUICKSTART.md#ab-s00s-e-openhands-agent-canvas).
 
 `config --project meu-projeto --client cursor` continua imprimindo fragmentos para integração manual (também aceita claude, codex, vscode e gemini). Configuração presente não prova conexão nativa. `npm start` executa `node bin/bbrainx.mjs serve`: serve o painel em **http://127.0.0.1:4317** (porta: `serve --port N`) e **não abre o navegador**. Precisa do build feito pelo `npm run setup`. No macOS, `Start-BBrainX.command` (dois cliques) roda `npm run setup` e `npm run demo`, serve o painel e abre o navegador.
 
@@ -92,12 +103,14 @@ Piso de recuperação (`test/godmode.test.mjs`, 36 consultas deste repositório,
 
 Fonte: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md), base `5acad77`. Repetição na revisão 77e6ddd (1.5.0) com `node scripts/measure-search-tokens.mjs`: 17.778 → 3.666 (−79,4 %), localizado 31/36 → 31/36, com corpo 31/36 → 20/36. O valor muda com o corpus indexado. Tokens são `o200k_base` sobre o payload, não cobrança do provedor. A resposta leva o mesmo JSON em `content` e em `structuredContent`; essa duplicação não foi tratada (tarefa T1: 10.125 tokens no fio contra 4.978 do texto).
 
-## Seis ferramentas, um escopo (nove com `--recruit`)
+## Oito ferramentas, um escopo (onze com `--recruit`)
 
 | MCP | Responsabilidade |
 |---|---|
 | `context_bootstrap` | Montar um pacote com orçamento de tokens, com caminho, linhas e hash de cada trecho. |
 | `context_search` | Buscar no índice; a declaração de um nome vem antes dos usos e dos testes. Um acerto por arquivo e no máximo `budget` tokens (padrão 4000); o que não cabe volta como `caminho:linhas`. |
+| `context_read` | Ler uma janela numerada de arquivo indexado, até 400 linhas e 64 KiB, verificando o hash. |
+| `context_symbol` | Localizar declarações lexicais pelo nome exato, com arquivo, linha, tipo e hash. |
 | `context_index` | Atualizar o índice da pasta registrada. |
 | `session_checkpoint` | Salvar o estado da tarefa: o que foi feito, decisões, arquivos tocados, evidências. |
 | `session_get` | Recuperar o checkpoint, em outro harness ou em outra sessão. |

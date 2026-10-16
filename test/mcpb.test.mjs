@@ -43,9 +43,9 @@ async function catalog({ command, args, env, cwd }) {
 test('mcp reads project, harness, lane, workspace and recruit from the environment when no argument is given; arguments win; empty is absent', async t => {
   const { home, repo } = project(t);
   const byEnv = await catalog({ command: process.execPath, args: [entry, 'mcp'], env: { BBRAINX_HOME: home, BBRAINX_PROJECT: 'p', BBRAINX_RECRUIT: 'true', BBRAINX_HARNESS: 'mcpb', BBRAINX_LANE: '', BBRAINX_WORKSPACE: '' }, cwd: os.tmpdir() });
-  assert.equal(byEnv.tools.length, 9); assert.equal(byEnv.version, VERSION); assert.match(byEnv.instructions, /serves only project "p"/); assert.equal(byEnv.search, true);
+  assert.equal(byEnv.tools.length, 11); assert.equal(byEnv.version, VERSION); assert.match(byEnv.instructions, /serves only project "p"/); assert.equal(byEnv.search, true);
   const off = await catalog({ command: process.execPath, args: [entry, 'mcp'], env: { BBRAINX_HOME: home, BBRAINX_PROJECT: 'p', BBRAINX_RECRUIT: 'false' }, cwd: os.tmpdir() });
-  assert.equal(off.tools.length, 6);
+  assert.equal(off.tools.length, 8);
   const argumentWins = await catalog({ command: process.execPath, args: [entry, 'mcp', '--project', 'p'], env: { BBRAINX_HOME: home, BBRAINX_PROJECT: 'nope' }, cwd: os.tmpdir() });
   assert.equal(argumentWins.search, true);
   const empty = spawnSync(process.execPath, [entry, 'mcp'], { env: { ...process.env, BBRAINX_HOME: home, BBRAINX_PROJECT: '' }, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
@@ -76,7 +76,7 @@ test('the MCPB manifest validates, expands without leftovers and launches the bu
   assert.ok(cfg && !JSON.stringify(cfg).includes('${'), 'every placeholder expanded: ' + JSON.stringify(cfg));
   assert.equal(cfg.command, process.execPath); assert.equal(cfg.args[0], path.join(target, 'bin', 'bbrainx.mjs')); assert.equal(cfg.env.BBRAINX_HARNESS, 'mcpb');
   const served = await catalog({ command: cfg.command, args: cfg.args, env: cfg.env, cwd: os.tmpdir() });
-  assert.equal(served.tools.length, 9); assert.equal(served.version, VERSION); assert.equal(served.search, true);
+  assert.equal(served.tools.length, 11); assert.equal(served.version, VERSION); assert.equal(served.search, true);
   const defaults = await getMcpConfigForManifest({ manifest: parsed, extensionPath: target, systemDirs: {}, userConfig: { project: 'p', home, recruit: false, node: 'node' }, pathSeparator: path.sep, logger });
   assert.equal(defaults.command, 'node'); assert.equal(defaults.env.BBRAINX_RECRUIT, 'false');
   const lock = JSON.parse(fs.readFileSync(path.join(root, 'package-lock.json'), 'utf8'));

@@ -1,3 +1,12 @@
+# BBrainX 2.1.0 — rascunho — WP-B — 16/10/2026
+
+- **Integração AB-S00S opt-in:** `integrate --ab-s00s on|off` adiciona/remove a segunda entrada gerenciada em `.mcp.json`, `.codex/config.toml` e `.vscode/mcp.json`. Mesmo recibo por arquivo, backup privado, controle de hash e rollback. Sem a flag, mantém o comportamento anterior. Caminho por `--ab-s00s-bin` ou `realpath` de `~/.local/bin/ab-s00s`; `off` funciona sem o binário. Entradas alheias não são adotadas.
+- **OpenHands Agent Canvas:** `config --client openhands` imprime JSON de `mcp_config` do Agent Server (`transport: "stdio"`), com `bbrainx` e AB-S00S quando solicitado. Formato conferido na referência local `0c7c225`; sem instalação ou certificação de conexão nativa.
+- **ACI:** `context_read` entrega janela numerada `%6d| `, até 400 linhas/64 KiB, apenas de arquivos indexados, com hash conferido novamente após a varredura. `context_symbol` encontra declarações lexicais por nome exato, com arquivo, linha, tipo e hash; até 50 resultados/200 trechos candidatos. Ambas respeitam projeto/lane e recusam `INDEX_REQUIRED`/`INDEX_STALE`.
+- **Catálogo:** oito ferramentas padrão (antes seis), onze com `--recruit` (antes nove). Asserções e manifesto MCPB atualizados explicitamente; opt-ins SDD/Laya continuam acrescentando uma ferramenta cada. Sem mudança de schema de banco ou dos contratos de checkpoint/memória.
+
+[Uso e limites](QUICKSTART.md#ab-s00s-e-openhands-agent-canvas) · [Evidência e retomada do WP-B](worklog-2026-10-16-wp-b.md). Os números históricos abaixo permanecem vinculados às revisões em que foram medidos.
+
 # BBrainX 2.0.2 — Developer Preview — 16/10/2026
 
 | Medida | Valor |

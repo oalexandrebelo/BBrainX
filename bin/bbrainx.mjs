@@ -9,7 +9,7 @@ import { clientConfig, CLIENTS } from '../src/clients.mjs';
 import { VERSION } from '../src/version.mjs';
 
 // Argument errors are a short JSON line on stderr like every other failure: stdout is reserved for the MCP protocol and results.
-const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{interval:{type:'string'},project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},recruit:{type:'boolean'},'no-recruit':{type:'boolean'},spec:{type:'string'},task:{type:'string'},title:{type:'string'},base:{type:'string'},minutes:{type:'string'},account:{type:'string'},stop:{type:'boolean'},'delete-branch':{type:'boolean'},network:{type:'boolean'},log:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
+const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{interval:{type:'string'},project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},'ab-s00s':{type:'string'},'ab-s00s-bin':{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},recruit:{type:'boolean'},'no-recruit':{type:'boolean'},spec:{type:'string'},task:{type:'string'},title:{type:'string'},base:{type:'string'},minutes:{type:'string'},account:{type:'string'},stop:{type:'boolean'},'delete-branch':{type:'boolean'},network:{type:'boolean'},log:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
 const {values={},args=[]}=parsedArgs;
 // Hosts que não passam argumentos (bundle MCPB: Chat On Steroids, Claude Desktop) configuram por ambiente; argumento explícito vence; vazio é ausente.
 for(const [key,name] of [['project','BBRAINX_PROJECT'],['harness','BBRAINX_HARNESS'],['lane','BBRAINX_LANE'],['workspace','BBRAINX_WORKSPACE']])if(values[key]===undefined&&process.env[name])values[key]=process.env[name];
@@ -69,6 +69,8 @@ Integração e painel por projeto:
   bbrainx discover                           (pastas abertas, projetos registrados e histórico)
   bbrainx integrate --root . [--project ID]   (plano sem alteração de configurações)
   bbrainx integrate --root . --apply         (aplica com backup; preserva trust/credenciais)
+  bbrainx integrate --root . --apply --ab-s00s on|off [--ab-s00s-bin /caminho/bin/ab-s00s.mjs]
+  bbrainx config --project ID --client openhands [--ab-s00s on|off] [--ab-s00s-bin /caminho/bin/ab-s00s.mjs]
   bbrainx integrations rollback --id RECIBO
   bbrainx control --project ID
   bbrainx budget --project ID --amount 50 --currency USD --basis reported --version 0
@@ -79,7 +81,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
   else if(['integrate','integrations','discover','workspace-seen','control','test','test-history','import-context','budget'].includes(command)){const {controlCommand}=await import('../src/control-cli.mjs');print(await controlCommand(command,values,args));}
   else if(command==='config'){
     ensure(values.project,'PROJECT_REQUIRED');
-    console.log(clientConfig(values.client||'claude',{node:stableNodePath(),entry:stableEntryPath(fileURLToPath(import.meta.url)),project:values.project,home:stateHome()}));
+    console.log(clientConfig(values.client||'claude',{node:stableNodePath(),entry:stableEntryPath(fileURLToPath(import.meta.url)),project:values.project,home:stateHome(),abS00s:values['ab-s00s'],abS00sBin:values['ab-s00s-bin']}));
   }
   else if(command==='sdd'){
     ensure(values.project,'PROJECT_REQUIRED');
