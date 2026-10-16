@@ -53,15 +53,12 @@ function candidates(root, limits) {
   verifyRoot(root);
   const base=['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',root];
   const options={encoding:'utf8',timeout:5000,maxBuffer:65536,stdio:['ignore','pipe','pipe'],windowsHide:true,shell:false,env:{...process.env,LC_ALL:'C'}};
-  const probe=spawnSync('git',[...base,'rev-parse','--is-inside-work-tree'],options);
-  ensure(!probe.error,'GIT_UNAVAILABLE');
-  if(probe.status===0&&probe.stdout.trim()==='true'){
-    try{
-      // Caminhos relativos à raiz escolhida; preserva ignores também em subdiretórios.
-      return [...new Set(execFileSync('git',[...base,'ls-files','--cached','--others','--exclude-standard','-z','--','.'],{...options,timeout:30000,maxBuffer:64*1048576}).split('\0').filter(Boolean))];
-    }catch{ensure(false,'GIT_INDEX_READ_FAILED','Não será usado fallback que desconsidere as exclusões Git.');}
-  }
-  ensure(probe.status===128&&/not a git repository/i.test(probe.stderr),'GIT_SCOPE_UNVERIFIED');
+  // Um processo só: ls-files dentro do repositório lista; fora dele sai com 128 "not a git repository".
+  const listed=spawnSync('git',[...base,'ls-files','--cached','--others','--exclude-standard','-z','--','.'],{...options,timeout:30000,maxBuffer:64*1048576});
+  if(listed.error)ensure(false,listed.error.code==='ENOENT'?'GIT_UNAVAILABLE':'GIT_INDEX_READ_FAILED','Não será usado fallback que desconsidere as exclusões Git.');
+  if(listed.status===0)return [...new Set(listed.stdout.split('\0').filter(Boolean))];
+  // Só "não é repositório" autoriza a varredura sem Git; qualquer outra falha (dono duvidoso, índice corrompido) recusa.
+  ensure(listed.status===128&&/not a git repository/i.test(listed.stderr),'GIT_SCOPE_UNVERIFIED');
   const names=[], maxVisited=limits.maxFiles*4;let visited=0;
   function walk(dir,base='',depth=0) {
     ensure(depth<=64,'INDEX_FILE_LIMIT','Árvore com mais de 64 níveis.');
@@ -94,13 +91,49 @@ function replaceFile(store,project,file,content){
 }
 function megabytes(bytes){return (bytes/1048576).toFixed(1)+' MiB';}
 
+/**
+ * Cache da verificação de frescor, por processo (o servidor MCP fica aberto entre buscas). A chave é o caminho
+ * e o teto de bytes; o valor só vale enquanto a assinatura do arquivo (dispositivo, inode, tamanho, mtime e ctime
+ * em nanossegundos) for a mesma. Qualquer escrita muda o ctime, que nenhum processo do usuário consegue
+ * restaurar, então um conteúdo diferente nunca reaproveita o hash antigo. Guarda também recusas (segredo,
+ * binário, UTF-8 inválido) para não reler arquivos que continuam inelegíveis.
+ */
+const scanCache=new Map(), SCAN_CACHE_MAX=200000;
+const signature=st=>st.dev+':'+st.ino+':'+st.size+':'+st.mtimeNs+':'+st.ctimeNs;
+function readForScan(root,relative,maxBytes,verifiedDirs){
+  ensure(typeof relative==='string'&&!path.isAbsolute(relative),'UNSAFE_PATH');
+  const full=path.resolve(root,relative), rel=path.relative(root,full);
+  ensure(rel&&!rel.startsWith('..'+path.sep)&&rel!=='..'&&!path.isAbsolute(rel),'UNSAFE_PATH');
+  // Mesma recusa de links do readSafe, com cada diretório conferido uma vez por varredura.
+  const parts=rel.split(path.sep);let cursor=root;
+  for(let i=0;i<parts.length;i++){
+    cursor=path.join(cursor,parts[i]);
+    if(i<parts.length-1&&verifiedDirs.has(cursor))continue;
+    ensure(!fs.lstatSync(cursor).isSymbolicLink(),'SYMLINK_REJECTED');
+    if(i<parts.length-1)verifiedDirs.add(cursor);
+  }
+  const st=fs.statSync(full,{bigint:true});
+  const key=full+'\0'+maxBytes, sig=signature(st), hit=scanCache.get(key);
+  if(hit&&hit.sig===sig){if(hit.code)ensure(false,hit.code);return hit.file;}
+  let file,code;
+  try{file=readSafe(root,relative,maxBytes);}catch(e){if(!skippable.has(e.code)||e.code==='ENOENT')throw e;code=e.code;}
+  if(scanCache.size>=SCAN_CACHE_MAX)scanCache.clear();
+  // Só a assinatura e o hash: o corpo não fica em memória.
+  scanCache.set(key,{sig,code,file:file&&{hash:file.hash,bytes:file.bytes}});
+  if(code)ensure(false,code);
+  return {hash:file.hash,bytes:file.bytes};
+}
+export function clearScanCache(){scanCache.clear();}
+
 /** Read-only scan with the same eligibility, limits and secret policy as indexing. */
 function scanProject(root,limits){
   const names=[...new Set(candidates(root,limits).filter(included).map(x=>x.replaceAll('\\','/')))].sort();
   const entries=[], skipped=[], skippedByReason={};let totalBytes=0;
+  const verifiedDirs=new Set();
+  ensure(!fs.lstatSync(root).isSymbolicLink(),'SYMLINK_REJECTED');
   for(const relative of names){
     let file;
-    try{file=readSafe(root,relative,limits.maxFileBytes);}
+    try{file=readForScan(root,relative,limits.maxFileBytes,verifiedDirs);}
     catch(e){
       if(!skippable.has(e.code))throw e;
       // Checkout esparso lista caminhos que não estão no disco: conta, mas não infla a resposta.
