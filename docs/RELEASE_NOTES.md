@@ -1,6 +1,6 @@
 # BBrainX 2.4.0 — Developer Preview — 17/10/2026
 
-Duas entregas da análise do estudo REA: documentos na busca e um portão de avaliação maior. Suíte **872/872**.
+Três entregas da análise do estudo REA: documentos na busca, um portão de avaliação maior e recrutamento sem lançamento em dobro. Suíte **875/875**.
 
 | Medida | Valor |
 |---|---|
@@ -10,12 +10,14 @@ Duas entregas da análise do estudo REA: documentos na busca e um portão de ava
 | Perguntas cegas | 79 → **125** (92 em PT), escritas por um analista que não viu o buscador |
 | Placar de referência (busca da 2.3, 125 casos) | 1.º lugar 0,424 · entre os 3 0,592 · entre os 10 0,800 · MRR 0,539 |
 | Custo de partida do motor | 96 → 99 ms |
+| Plano da busca FTS | Ordem do join fixada (`CROSS JOIN`): no Node 22 (SQLite 3.51) o planejador invertia a ordem e ordenava numa B-tree temporária; o Node 24 (SQLite 3.53) já acertava. Placar idêntico nos 125 casos |
+| Recrutamento repetido | `idempotencyKey` / `--key`: a mesma chave devolve o lote original, mesmo depois de uma queda no meio do lançamento; nunca lança em dobro |
 
 | Oportunidade | Critério |
 |---|---|
 | Modelo local opcional (e5-small) na busca | Melhora medida nos 125 casos cegos com p < 0,05, sem regressão nos conjuntos deste repositório |
 | OCR de PDF escaneado | Só se o PDFKit/Vision do macOS cobrir sem dependência pesada |
-| Idempotência em `recruit start` | Repetir a mesma chamada não lança recrutas em dobro |
+| Painel do AB-S00S passa a chave a cada despacho | O juiz do AB-OpenWork recebe exatamente um lote por pedido |
 
 [Pasta de necessidades](FILES.md) · [Avaliação](EVALUATION.md#conjunto-cego-ampliado-240)
 

@@ -50,6 +50,18 @@ Registro (`control-v1/<projeto>/recruits/<id>.json`, ≤ 64 KiB): sem prompt (s�
 
 No MCP, `agents_status` limita a resposta inteira a 512 KiB UTF-8, incluindo JSON-RPC, metadados e as duas representações do resultado. Quando os relatórios não cabem, `truncated:true` e `omittedAgentIds` identificam os removidos; consulte-os com `ids:[ID]`. Os relatórios retornados ficam integrais; `count` e `active` descrevem os itens retornados. Esse teto é do MCP, sem alterar a saída da CLI `recruit status`.
 
+**Repetir sem lançar em dobro (2.4.0).** `idempotencyKey` (`agents_recruit`) ou `--key` (`recruit start`), com até 128 letras, dígitos e `. _ : -`, reserva um lote em `control-v1/<projeto>/recruit-batches/` sob a mesma trava dos registros, antes de qualquer worktree. Cada recruta guarda o lote em `batch`.
+
+| Repetição com a mesma chave | Resultado |
+|---|---|
+| Lote fechado | A resposta original, com `replayed:true` e `complete:true`. Nada é lançado |
+| Lote ainda lançando, ou interrompido depois do primeiro recruta | Só os recrutas que já existem, com `complete:false`. Nada é lançado |
+| Dono da reserva morto antes de lançar qualquer recruta | A reserva é retomada e o lote é lançado uma vez |
+| Início que não lançou ninguém | A reserva é apagada, e a mesma chave pode tentar de novo |
+| Mesma chave, outro pedido (tarefa, membros, modo, base, prazo, rede…) | `RECRUIT_IDEMPOTENCY_CONFLICT` |
+
+Lotes fechados vencem em 7 dias (no máximo 256 por projeto). Sem chave, o comportamento é o de antes.
+
 Estados: `starting` → `running` → `completed` | `failed` (saída ≠ 0, erro declarado pela CLI, prazo ou falha do spawn: `SPAWN_FAILED`) | `stopped` (baixa com `stop`) → `dismissed`. `unknown` = sem batimento há mais de 90 s (supervisor morreu, máquina dormiu): leia o log. O estado final é gravado uma vez, depois de devolver a faixa; um registro `dismissed` nunca é reescrito.
 
 Baixa (`recruit dismiss`, `agents_dismiss`):

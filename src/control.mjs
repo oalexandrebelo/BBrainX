@@ -190,6 +190,44 @@ export function saveRecruit(brain,project,record,{create=false}={}){
     write(dir,record.id,record);return record;
   });
 }
+/**
+ * Lotes de recrutamento por `idempotencyKey`: a mesma chave nunca lança duas vezes. O lote é reservado sob a mesma trava
+ * dos registros antes de qualquer worktree; `takeover(atual)` decide, ainda sob a trava, se uma reserva órfã (dono morto,
+ * nenhum recruta lançado) pode ser retomada. Chave reaproveitada com outro pedido é recusada.
+ */
+const BATCH_TTL_MS=7*86400000, MAX_BATCHES=256;
+const batchId=key=>'b'+hash(key).slice(0,32);
+function batchDirectory(brain,project){brain.project(project);return directory(brain.home,projectKey(project),'recruit-batches');}
+function pruneBatches(dir,at){
+  const kept=[];
+  for(const name of fs.readdirSync(dir).filter(n=>n.endsWith('.json')&&!n.startsWith('.')).slice(0,MAX_BATCHES*2)){
+    let batch;try{batch=read(path.join(dir,name));}catch{continue;}
+    if(batch.status!=='starting'&&at-Date.parse(batch.createdAt)>BATCH_TTL_MS)fs.rmSync(path.join(dir,name),{force:true});else kept.push(batch);
+  }
+  const done=kept.filter(b=>b.status!=='starting').sort((a,b)=>Date.parse(a.createdAt)-Date.parse(b.createdAt));
+  for(let excess=kept.length-MAX_BATCHES+1;excess>0&&done.length;excess--)fs.rmSync(path.join(dir,identifier(done.shift().id)+'.json'),{force:true});
+}
+export function reserveRecruitBatch(brain,project,{key,fingerprint,owner,takeover=()=>false}){
+  const id=batchId(key),dir=batchDirectory(brain,project);
+  return withRecruitLock(recruitDirectory(brain,project),()=>{
+    const current=recruitFile(dir,id);
+    if(current){
+      ensure(current.fingerprint===fingerprint,'RECRUIT_IDEMPOTENCY_CONFLICT','This idempotencyKey was already used for a different request; use a new key.');
+      if(!(current.status==='starting'&&takeover(current)))return {id,reserved:false,batch:current};
+    }else pruneBatches(dir,Date.now());
+    write(dir,id,{id,project,fingerprint,status:'starting',createdAt:current?.createdAt??stamp(),owner});
+    return {id,reserved:true};
+  });
+}
+/** `result` fecha o lote (a repetição devolve esse resultado); null apaga a reserva, para um início que não lançou ninguém. */
+export function settleRecruitBatch(brain,project,id,result){
+  identifier(id);const dir=batchDirectory(brain,project);
+  return withRecruitLock(recruitDirectory(brain,project),()=>{
+    const current=recruitFile(dir,id);if(!current)return null;
+    if(result===null){fs.rmSync(path.join(dir,id+'.json'),{force:true});return null;}
+    const next={...current,status:'done',settledAt:stamp(),result};write(dir,id,next);return next;
+  });
+}
 /** Ler-alterar-gravar sob a trava: `mutate(atual)` devolve o novo registro, ou null para não gravar. Devolve o que ficou no disco. */
 export function updateRecruit(brain,project,id,mutate){
   identifier(id);const dir=recruitDirectory(brain,project);

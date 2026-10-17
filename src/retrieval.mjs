@@ -341,7 +341,8 @@ export function search(store,project,query,limit=12,{byFile=true}={}){
     for(const term of translate(plain))loose.add(quote(term)+' *');
   }
   const pool=Math.min(400,limit*10), found=new Map();let overflow=false;
-  const select=store.stmt("SELECT c.id,c.project,c.path,c.file_hash,c.start_line,c.end_line,c.kind,c.body,c.defs, chunk_search.rank AS rank FROM chunk_search JOIN chunks c ON c.seq=chunk_search.rowid WHERE chunk_search MATCH ? AND c.project=? AND chunk_search.rank MATCH 'bm25("+columnWeights+")' ORDER BY chunk_search.rank LIMIT ?");
+  // CROSS JOIN fixa o FTS como laço externo: sem estatísticas, o SQLite 3.51 (Node 22) invertia a ordem e ordenava numa B-tree temporária.
+  const select=store.stmt("SELECT c.id,c.project,c.path,c.file_hash,c.start_line,c.end_line,c.kind,c.body,c.defs, chunk_search.rank AS rank FROM chunk_search CROSS JOIN chunks c ON c.seq=chunk_search.rowid WHERE chunk_search MATCH ? AND c.project=? AND chunk_search.rank MATCH 'bm25("+columnWeights+")' ORDER BY chunk_search.rank LIMIT ?");
   for(const [clauses,weight] of [[exact,1],[loose,LOOSE_WEIGHT]]){
     if(!clauses.size)continue;
     const rows=select.all([...clauses].join(' OR '),project,pool+1);if(rows.length>pool)overflow=true;

@@ -15,9 +15,9 @@ test('FTS search uses native weighted rank without a temporary sorting B-tree',t
   // Observa as consultas reais; cada preparação e leitura ainda usa o mesmo SQLite, sem substituir resultados.
   const statements=[],prepare=store.stmt.bind(store);store.stmt=sql=>{statements.push(sql);return prepare(sql);};
   assert(search(store,'app','context',2).items.length);
-  const sql=statements.find(x=>x.includes('FROM chunk_search JOIN'));assert(sql);
+  const sql=statements.find(x=>x.includes('FROM chunk_search CROSS JOIN'));assert(sql);
   const plan=store.db.prepare('EXPLAIN QUERY PLAN '+sql).all('"context"','app',21).map(x=>x.detail).join('\n');
-  assert.doesNotMatch(plan,/TEMP B-TREE/);assert.match(sql,/ORDER BY chunk_search\.rank/);
+  assert.doesNotMatch(plan,/TEMP B-TREE/);assert.match(plan.split('\n')[0],/SCAN chunk_search/,'the FTS index drives the join');assert.match(sql,/ORDER BY chunk_search\.rank/);
   const native=store.db.prepare(sql).all('"context"','app',21),legacy=store.db.prepare(legacySelect).all('"context"','app',21);assert.deepEqual(native,legacy);
 });
 test('native FTS rank preserves complete results on tied chunks and every labeled retrieval query',async t=>{

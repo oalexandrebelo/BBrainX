@@ -10,7 +10,7 @@ import { LaneRegistry, gitWorkspace } from './lanes/registry.mjs';
 import { LaneStore } from './lanes/store.mjs';
 import { indexProject } from './retrieval.mjs';
 import { stableNodePath, stableEntryPath, commandVersion } from './host.mjs';
-import { recruitRecords, recruitRecord, saveRecruit, updateRecruit, recruitDirectory, recruitLiveness as liveness, RECRUIT_LEASE_MS } from './control.mjs';
+import { recruitRecords, recruitRecord, saveRecruit, updateRecruit, recruitDirectory, recruitLiveness as liveness, reserveRecruitBatch, settleRecruitBatch, RECRUIT_LEASE_MS } from './control.mjs';
 import { redact } from './redact.mjs';
 
 /**
@@ -319,6 +319,7 @@ function filterOverrides(cwd){
 }
 const git=(cwd,...args)=>execFileSync('git',['-c','core.hooksPath=/dev/null','-c','commit.gpgsign=false','-c','core.fsmonitor=false',...filterOverrides(cwd),'-C',cwd,...args],{encoding:'utf8',env:gitEnv(),timeout:60000,maxBuffer:4*1048576,windowsHide:true,stdio:['ignore','pipe','pipe']}).trimEnd();
 const branchExists=(root,branch)=>{try{git(root,'rev-parse','--verify','--quiet','refs/heads/'+branch);return true;}catch{return false;}};
+const IDEMPOTENCY_KEY=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
 const newRecruitId=()=>'r'+now().replace(/[-:TZ.]/g,'').slice(2,12)+'-'+randomBytes(3).toString('hex');
 export const recruitsRoot=root=>path.join(path.dirname(root),path.basename(root)+'.bbx');
 
@@ -327,8 +328,9 @@ function activeCount(brain,project){
 }
 
 /** Valida tudo sem efeito colateral: a recusa acontece antes de qualquer worktree. */
-export function planRecruits(store,{project,spec,recruits,task,title,mode='implement',base,timeoutMinutes,budgetUsd,account,tools,network=false}){
+export function planRecruits(store,{project,spec,recruits,task,title,mode='implement',base,timeoutMinutes,budgetUsd,account,tools,network=false,idempotencyKey}){
   ensure(typeof network==='boolean','RECRUIT_NETWORK_INVALID','network must be true or false.');
+  ensure(idempotencyKey===undefined||(typeof idempotencyKey==='string'&&IDEMPOTENCY_KEY.test(idempotencyKey)),'RECRUIT_IDEMPOTENCY_KEY_INVALID','idempotencyKey must be 1..128 characters: letters, digits, . _ : -');
   ensure(typeof task==='string'&&task.trim().length>0&&task.length<=LIMITS.taskChars,'RECRUIT_TASK_INVALID','task must be 1..'+LIMITS.taskChars+' characters.');
   ensure((spec===undefined)!==(recruits===undefined),'RECRUIT_SPEC_INVALID','Pass exactly one of spec (text) or recruits (list).');
   ensure(MODES.includes(mode),'RECRUIT_MODE_INVALID','mode must be implement or review.');
@@ -348,7 +350,9 @@ export function planRecruits(store,{project,spec,recruits,task,title,mode='imple
   ensure(missing.length===0,'RECRUIT_HARNESS_UNAVAILABLE',missing.map(s=>s.harness+': '+(s.installed?'not logged in ('+(s.identity||s.detail||'')+')':'not installed')).join('; '));
   const members=[];for(const s of specs)for(let i=0;i<s.count;i++)members.push({harness:s.harness,model:s.model,effort:s.effort});
   const cleanTitle=(title??task.split('\n')[0]).replace(/[\x00-\x1f\x7f]/g,' ').trim().slice(0,120);
-  return {project,root,common:workspace.common,base:{ref,commit:baseCommit},mode,task,title:cleanTitle,timeoutMinutes:minutes,budgetUsd:budgetUsd??null,account:account??null,tools:tools??null,network,members,
+  // A impressão digital usa a ref pedida, não o commit: repetir depois de um commit novo na base continua sendo o mesmo pedido.
+  const fingerprint=idempotencyKey===undefined?null:hash({task,title:cleanTitle,mode,base:ref,timeoutMinutes:minutes,budgetUsd:budgetUsd??null,account:account??null,tools:tools??null,network,members});
+  return {project,root,common:workspace.common,base:{ref,commit:baseCommit},mode,task,title:cleanTitle,timeoutMinutes:minutes,budgetUsd:budgetUsd??null,account:account??null,tools:tools??null,network,members,idempotencyKey:idempotencyKey??null,fingerprint,
     worktreeRoot:recruitsRoot(root),note:'Each recruit works in its own worktree and branch under '+recruitsRoot(root)+'; the checkout at '+root+' is never modified.'};
 }
 
@@ -363,8 +367,18 @@ export function startRecruits(store,plan,{env=process.env,entry,newId=newRecruit
   const stableEntry=stableEntryPath(self,{env,errors:{invalid:'RECRUIT_ENTRY_INVALID',mismatch:'RECRUIT_ENTRY_MISMATCH'}});
   // Antes de pedir vaga, recolhe faixas deste projeto que nenhum processo vivo usa.
   collectLanes(store,{project:plan.project});
+  let batch=null;
+  if(plan.idempotencyKey){
+    const ownerPid=process.pid,owner={pid:ownerPid,start:processStart(ownerPid)??null};
+    // Reserva órfã: o dono morreu antes de lançar qualquer recruta. Com algum recruta lançado, nunca relança.
+    const takeover=current=>processState(current.owner?.pid,{start:current.owner?.start??undefined})==='dead'&&!recruitRecords(brain,plan.project).items.some(r=>r.batch===current.id);
+    const reservation=reserveRecruitBatch(brain,plan.project,{key:plan.idempotencyKey,fingerprint:plan.fingerprint,owner,takeover});
+    if(!reservation.reserved)return replayBatch(brain,plan,reservation.batch);
+    batch=reservation.id;
+  }
   const registry=new LaneRegistry(home,{maxActive:LIMITS.laneCapacity});
   const started=[],failed=[];
+  let result;
   try{
     for(const member of plan.members){
       let attempts=0;
@@ -375,7 +389,7 @@ export function startRecruits(store,plan,{env=process.env,entry,newId=newRecruit
         try{
           if(branchExists(plan.root,branch)||fs.existsSync(worktree)){ensure(++attempts<4,'RECRUIT_ID_COLLISION','Could not allocate a fresh recruit id.');continue;}
           dir=recruitDirectory(brain,plan.project);
-          const record={id,project:plan.project,lane:id,harness:member.harness,model:member.model,effort:member.effort,mode:plan.mode,title:plan.title,taskDigest:hash(plan.task),
+          const record={id,project:plan.project,lane:id,batch,harness:member.harness,model:member.model,effort:member.effort,mode:plan.mode,title:plan.title,taskDigest:hash(plan.task),
             worktree,branch,base:plan.base,timeoutMinutes:plan.timeoutMinutes,budgetUsd:plan.budgetUsd,account:plan.account,tools:plan.tools,network:plan.network===true,
             status:'starting',startedAt:now(),lastSeen:now(),endedAt:null,pid:null,pidStart:null,childPid:null,childStart:null,childGroup:null,exitCode:null,reason:null,sessionId:null,usage:null,costUsd:null,resultSummary:null,commit:null,log:path.join(dir,id+'.log')};
           try{saveRecruit(brain,plan.project,record,{create:true});}
@@ -411,9 +425,23 @@ export function startRecruits(store,plan,{env=process.env,entry,newId=newRecruit
         break;
       }
     }
-  }finally{registry.close();}
+    result={ok:true,started,failed,mode:plan.mode,title:plan.title,worktreeRoot:plan.worktreeRoot,...(batch?{batch}:{}),next:nextStep(plan.project)};
+  }finally{
+    registry.close();
+    // Nenhum lançado: a reserva sai e a mesma chave pode tentar de novo. Algum lançado: o lote fecha com o que de fato saiu.
+    if(batch)settleRecruitBatch(brain,plan.project,batch,started.length?result??{ok:true,started,failed,mode:plan.mode,title:plan.title,worktreeRoot:plan.worktreeRoot,batch,next:nextStep(plan.project)}:null);
+  }
   ensure(started.length>0,'RECRUIT_START_FAILED',failed.map(f=>f.harness+' '+f.model+': '+f.error+(f.detail?' ('+f.detail+')':'')).join('; '));
-  return {ok:true,started,failed,mode:plan.mode,title:plan.title,worktreeRoot:plan.worktreeRoot,next:'Poll agents_status (or `bbrainx recruit status --project '+plan.project+'`). Each recruit commits on its own branch; review and merge yourself.'};
+  return result;
+}
+const nextStep=project=>'Poll agents_status (or `bbrainx recruit status --project '+project+'`). Each recruit commits on its own branch; review and merge yourself.';
+/** Repetição da mesma chave: devolve o lote original. Lote ainda em lançamento (ou interrompido) mostra só o que já existe. */
+function replayBatch(brain,plan,batch){
+  if(batch.status==='done')return {...batch.result,replayed:true,complete:true,batch:batch.id};
+  const started=recruitRecords(brain,plan.project).items.filter(r=>r.batch===batch.id).sort((a,b)=>Date.parse(a.startedAt)-Date.parse(b.startedAt))
+    .map(r=>({id:r.id,harness:r.harness,model:r.model,effort:r.effort,worktree:r.worktree,branch:r.branch,lane:r.lane,supervisorPid:r.pid}));
+  return {ok:true,started,failed:[],mode:plan.mode,title:plan.title,worktreeRoot:plan.worktreeRoot,replayed:true,complete:false,batch:batch.id,
+    next:'This idempotencyKey is still launching or was interrupted; nothing new was launched. '+nextStep(plan.project)};
 }
 
 // ---------------------------------------------------------------------------------------------- comando do harness

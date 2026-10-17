@@ -41,7 +41,7 @@ Pasta de necessidades (Downloads/Projetos; BBRAINX_FILES_ROOT troca):
 
 Recrutar agentes (BYO: usa o Claude Code e o Codex já instalados e logados nesta máquina):
   node bin/bbrainx.mjs recruit doctor
-  node bin/bbrainx.mjs recruit start --project nome --spec "1 codex astra 6 high e 2 opus 5.5 xhigh" --task "o que fazer" [--mode review] [--base ref] [--minutes 60] [--network]
+  node bin/bbrainx.mjs recruit start --project nome --spec "1 codex astra 6 high e 2 opus 5.5 xhigh" --task "o que fazer" [--mode review] [--base ref] [--minutes 60] [--network] [--key ID-de-idempotência]
   node bin/bbrainx.mjs recruit status --project nome [--id ID] [--log]
   node bin/bbrainx.mjs recruit dismiss --project nome --id ID [--stop] [--delete-branch]
   node bin/bbrainx.mjs recruit gc --project nome | --all   (fecha faixas de recrutas sem supervisor vivo)
@@ -167,7 +167,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
         ensure(values.project||(sub==='gc'&&values.all===true),'PROJECT_REQUIRED');
         if(sub==='start'){
           ensure(values.task,'TASK_REQUIRED','Use --task "o que o recruta deve fazer".');
-          const plan=planRecruits(store,{project:values.project,spec:values.spec,task:values.task,title:values.title,mode:values.mode||'implement',base:values.base,timeoutMinutes:values.minutes===undefined?undefined:Number(values.minutes),account:values.account,network:values.network===true});
+          const plan=planRecruits(store,{project:values.project,spec:values.spec,task:values.task,title:values.title,mode:values.mode||'implement',base:values.base,timeoutMinutes:values.minutes===undefined?undefined:Number(values.minutes),account:values.account,network:values.network===true,idempotencyKey:values.key});
           if(!values.apply){print({plan:{...plan,task:undefined,taskChars:plan.task.length},next:'Repita com --apply para lançar.'});}
           else print(startRecruits(store,plan));
         }

@@ -9,7 +9,7 @@ import {cleanup} from './fixtures/cleanup.mjs';
 import {BrainStore} from '../src/store.mjs';
 import {indexProject} from '../src/retrieval.mjs';
 import {LaneRegistry} from '../src/lanes/registry.mjs';
-import {recruitRecords,recruitRecord,saveRecruit,updateRecruit,recruitDirectory} from '../src/control.mjs';
+import {recruitRecords,recruitRecord,saveRecruit,updateRecruit,recruitDirectory,reserveRecruitBatch} from '../src/control.mjs';
 import {gitState,safeDirectory} from '../src/host.mjs';
 import {planRecruits,startRecruits,recruitStatus,dismissRecruit,collectLanes,harnessCommand,accountEnv,codexRateLimits,recruitProcesses,processStart,recruitLog,logTail} from '../src/recruit.mjs';
 
@@ -226,4 +226,47 @@ test('state directories are private, backups are never readable by others, and h
   const head=git(f.root,'rev-parse','HEAD'),previous=process.env.GIT_DIR;process.env.GIT_DIR=path.join(f.base,'nowhere');
   try{assert.equal(gitState(f.root)?.head,head);}
   finally{if(previous===undefined)delete process.env.GIT_DIR;else process.env.GIT_DIR=previous;}
+});
+
+test('the same idempotencyKey launches one batch: a retry replays it, and the key cannot be reused for another request',async t=>{
+  const f=fixture(t),plan=task=>planRecruits(f.store,{project:'p',spec:'2 haiku',task,idempotencyKey:'judge-7'});
+  const first=startRecruits(f.store,plan('quick'));
+  assert.equal(first.started.length,2);assert.match(first.batch,/^b[0-9a-f]{32}$/);
+  const again=startRecruits(f.store,plan('quick'));
+  assert.equal(again.replayed,true);assert.equal(again.complete,true);
+  assert.deepEqual(again.started.map(s=>s.id),first.started.map(s=>s.id));
+  assert.equal(recruitRecords(f.store,'p').items.length,2,'no recruit launched by the retry');
+  assert(recruitRecords(f.store,'p').items.every(r=>r.batch===first.batch));
+  assert.throws(()=>startRecruits(f.store,plan('another task')),{code:'RECRUIT_IDEMPOTENCY_CONFLICT'});
+  assert.throws(()=>planRecruits(f.store,{project:'p',spec:'1 haiku',task:'x',idempotencyKey:'bad key'}),{code:'RECRUIT_IDEMPOTENCY_KEY_INVALID'});
+  await settled(f.store,first.started.map(s=>s.id));
+});
+
+test('a launch interrupted after its first recruit is never relaunched; one that died before any recruit is taken over',async t=>{
+  const f=fixture(t),dead=spawnSync(process.execPath,['-e','']).pid;
+  const crashed=planRecruits(f.store,{project:'p',spec:'2 haiku',task:'quick',idempotencyKey:'crash-1'});
+  const {id:batch}=reserveRecruitBatch(f.store,'p',{key:'crash-1',fingerprint:crashed.fingerprint,owner:{pid:dead,start:null}});
+  // O processo que reservou morreu depois de gravar o primeiro recruta e antes de fechar o lote.
+  const at=new Date().toISOString();
+  saveRecruit(f.store,'p',{id:'r2610170001-abcdef',project:'p',batch,harness:'claude',model:'haiku',mode:'implement',status:'failed',startedAt:at,lastSeen:at,log:''},{create:true});
+  const retry=startRecruits(f.store,crashed);
+  assert.equal(retry.replayed,true);assert.equal(retry.complete,false);
+  assert.deepEqual(retry.started.map(s=>s.id),['r2610170001-abcdef']);
+  assert.equal(recruitRecords(f.store,'p').items.length,1,'the second member is not launched by a retry');
+  const orphan=planRecruits(f.store,{project:'p',spec:'1 haiku',task:'quick',idempotencyKey:'crash-2'});
+  reserveRecruitBatch(f.store,'p',{key:'crash-2',fingerprint:orphan.fingerprint,owner:{pid:dead,start:null}});
+  const taken=startRecruits(f.store,orphan);
+  assert.equal(taken.replayed,undefined);assert.equal(taken.started.length,1);
+  assert.equal(startRecruits(f.store,orphan).replayed,true);
+  await settled(f.store,[taken.started[0].id]);
+});
+
+test('a start that launched nobody releases its key, so the same key can try again',async t=>{
+  const f=fixture(t),taken='r2610171200-aaaaaa',worktree=path.join(f.base,'repo.bbx',taken);
+  git(f.root,'worktree','add','-q','-b','bbx/'+taken,worktree);
+  const plan=planRecruits(f.store,{project:'p',spec:'1 haiku',task:'quick',idempotencyKey:'retry-me'});
+  assert.throws(()=>startRecruits(f.store,plan,{newId:()=>taken}),{code:'RECRUIT_START_FAILED'});
+  const second=startRecruits(f.store,plan);
+  assert.equal(second.replayed,undefined);assert.equal(second.started.length,1);
+  await settled(f.store,[second.started[0].id]);
 });
