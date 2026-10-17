@@ -33,5 +33,5 @@ for file in REVISION BUNDLE_NAME $(awk '{print $2}' "$KIT/SHA256SUMS"); do
 done
 (cd "$KIT" && shasum -a 256 -c SHA256SUMS >/dev/null) || die "SHA-256 do kit não confere; nada foi instalado."
 printf '\033[32m✔\033[0m kit conferido (%s arquivos)\n' "$(wc -l < "$KIT/SHA256SUMS" | tr -d ' ')"
-bash "$KIT/INSTALAR.sh" --switch "$@"
+BBRAINX_KIT_EPHEMERAL=1 bash "$KIT/INSTALAR.sh" --switch "$@"
 say "Pronto. Rode: bbx ch   (confere tudo e abre o manual integrador)"
