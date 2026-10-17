@@ -30,6 +30,33 @@ O BBrainX roda na sua máquina e entrega ao agente de programação o que ele pr
 
 Esta branch propõe a **2.0.0** na única [PR #22](https://github.com/oalexandrebelo/BBrainX/pull/22). Versão declarada não significa atualização já instalada nos dispositivos. Windows fica no backlog por decisão do mantenedor; suas falhas continuam visíveis e não bloqueiam a entrega para Mac. Evidências históricas da 1.5.0: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
 
+## Instalar em uma linha (macOS)
+
+No Terminal:
+
+```sh
+curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.3.0-preview/install.sh | bash
+```
+
+Ou cole no Claude Code, numa sessão aberta na pasta do seu projeto:
+
+```text
+Instale o BBrainX nesta máquina e ligue este projeto: rode
+curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.3.0-preview/install.sh | bash -s -- "$PWD" --apply
+e depois ~/.local/bin/bbx ch --no-open. Mostre o resumo e me diga quais passos são meus.
+```
+
+O instalador baixa o kit da release e confere o SHA-256 de cada arquivo. Depois roda a suíte de testes nesta máquina, instala ao lado da versão anterior e cria os atalhos `bbrainx` e `bbx`. Com `--apply`, grava as configs do projeto (Claude Code, Codex, VS Code, Kilo) com backup e recibo. Não pede senha nem muda configuração global de harness. Em seguida, `bbx ch` abre o [manual integrador](docs/INTEGRADOR.md) com o que falta, em um clique. O Codex roda comandos num sandbox que não grava fora do projeto: para instalar, use o Terminal ou o Claude Code.
+
+| Precisa | Por quê | Como |
+|---|---|---|
+| macOS | O instalador é para macOS (Windows e Linux: ainda não homologados) | — |
+| Node 22.20+ (recomendado 24) com SQLite/FTS5 | Banco e busca | `brew install node@24` ou nodejs.org |
+| Git | Verificar e instalar o código | `xcode-select --install` |
+| Internet | Baixar o kit e as dependências exatas do `package-lock.json` (`npm ci`) | — |
+| Opcional: Claude Code e Codex logados | Recrutar agentes | `claude auth login`, `codex login` |
+| Opcional: VS Code com `code` no PATH | Extensão BBrainX (`--vscode`) | Command Palette → Shell Command |
+
 ## Comece em três comandos
 
 Requisitos: **Node 24 LTS e Git** (Node 22.20 ou mais novo também atende). O foco desta fase é o macOS (arm64). macOS e Linux continuam obrigatórios na CI. Windows é observação de backlog. Confira a revisão da PR e o [contrato de entrega](docs/BBRAINX_2_0.md); relatórios anteriores não certificam esta versão.

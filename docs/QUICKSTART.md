@@ -1,5 +1,9 @@
 # Primeiro uso — macOS antes de tudo
 
+## 0. Instalar em uma linha
+
+`curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.3.0-preview/install.sh | bash` (macOS). Para já ligar um projeto: `… | bash -s -- /caminho/do/projeto --apply`. Depois: `bbx ch`. Requisitos, o texto para colar no harness e o que o instalador faz estão no [README](../README.md#instalar-em-uma-linha-macos). O caminho abaixo, pelo clone, continua valendo para quem desenvolve.
+
 ## 1. Pré-requisitos e instalação reversível
 
 Instale Node 24 LTS pela distribuição oficial ou pelo gerenciador de versões que você já utiliza, e Git. O projeto não instala Homebrew, não solicita senha administrativa e não troca sua versão global silenciosamente. A pasta pode conter espaços; os fragmentos MCP usam caminhos absolutos.
