@@ -6,14 +6,15 @@ import { classify, definitions, isStopword, plainWord, splitIdentifier, stemPref
 import { translate } from './glossary.mjs';
 import { verifyRoot } from './source-root.mjs';
 import { maskDeclarations, literalShare } from './declarations.mjs';
+import { DOCUMENT_EXTENSIONS, DOCUMENT_LIMITS, extractDocument } from './extract.mjs';
 
-const allowed = new Set(['.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
+const allowed = new Set([...DOCUMENT_EXTENSIONS, '.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
 const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
 const secretName = /(?:^\.env(?:\.|$)|credentials|secrets?|id_rsa|id_ed25519|\.pem$|\.key$|\.p12$|package-lock\.json$|yarn\.lock$)/i;
 // Formatos inequívocos de credencial. Falso positivo só tira o arquivo do índice, com o motivo declarado.
 const secretBody = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[a-zA-Z0-9_-]{20,}|gh[pousr]_[a-zA-Z0-9]{20,}|github_pat_[a-zA-Z0-9_]{30,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[abprs]-[0-9A-Za-z-]{20,}|[sr]k_live_[0-9A-Za-z]{20,})\b/;
 // EACCES/EPERM: um arquivo ilegível sai do manifesto com o motivo declarado, nos dois lados (índice e verificação), em vez de derrubar toda busca.
-const skippable = new Set(['ENOENT','ENOTDIR','EACCES','EPERM','SYMLINK_REJECTED','FILE_TOO_LARGE','BINARY_OR_LARGE_FILE','INVALID_UTF8','SECRET_PATTERN_REJECTED']);
+const skippable = new Set(['ENOENT','ENOTDIR','EACCES','EPERM','SYMLINK_REJECTED','FILE_TOO_LARGE','BINARY_OR_LARGE_FILE','INVALID_UTF8','SECRET_PATTERN_REJECTED','DOCUMENT_TEXT_EMPTY','DOCUMENT_UNREADABLE']);
 const CHUNK_LINES = 60;
 
 const defaults = {maxFiles:20000, maxBytes:256*1048576, maxFileBytes:262144};
@@ -37,7 +38,13 @@ export function included(relative) {
   const parts=relative.replaceAll('\\','/').split('/');
   return parts.every(x=>x!=='.'&&x!=='..'&&!deniedPart.test(x)&&!secretName.test(x)&&!x.startsWith('.ci-'))&&allowed.has(path.extname(relative).toLowerCase());
 }
-export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
+// Texto extraído por hash do arquivo: ler de novo (context_read) não reextrai.
+const documentText=new Map();
+/**
+ * Lê um arquivo elegível. PDF, DOCX e XLSX (até 20 MiB) viram texto extraído; o hash é sempre o dos bytes do arquivo,
+ * então a verificação de frescor (`extract:false`) só lê e compara, sem extrair nada.
+ */
+export function readSafe(root, relative, maxBytes=defaults.maxFileBytes, {extract=true}={}) {
   ensure(typeof relative==='string'&&!path.isAbsolute(relative),'UNSAFE_PATH');
   const full=path.resolve(root,relative), rel=path.relative(root,full);
   ensure(rel&&!rel.startsWith('..'+path.sep)&&rel!=='..'&&!path.isAbsolute(rel),'UNSAFE_PATH');
@@ -46,7 +53,17 @@ export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
   ensure(!fs.lstatSync(root).isSymbolicLink(),'SYMLINK_REJECTED');
   let cursor=root;
   for(const component of rel.split(path.sep)){cursor=path.join(cursor,component);ensure(!fs.lstatSync(cursor).isSymbolicLink(),'SYMLINK_REJECTED');}
-  const stat=fs.statSync(full);ensure(stat.isFile()&&stat.size<=maxBytes,'FILE_TOO_LARGE');
+  const extension=path.extname(full).toLowerCase(), document=DOCUMENT_EXTENSIONS.includes(extension), limit=document?Math.max(maxBytes,DOCUMENT_LIMITS.fileBytes):maxBytes;
+  const stat=fs.statSync(full);ensure(stat.isFile()&&stat.size<=limit,'FILE_TOO_LARGE');
+  if(document){
+    const bytes=fs.readFileSync(full);ensure(bytes.length<=limit,'FILE_TOO_LARGE');
+    const digest=hash(bytes);
+    if(!extract)return {body:null,hash:digest,bytes:bytes.length,document:true};
+    let body=documentText.get(digest);
+    if(body===undefined){body=extractDocument(full,extension,bytes);if(documentText.size>=64)documentText.clear();documentText.set(digest,body);}
+    ensure(!secretBody.test(body),'SECRET_PATTERN_REJECTED');
+    return {body,hash:digest,bytes:bytes.length,document:true};
+  }
   const bytes=fs.readFileSync(full);ensure(bytes.length<=maxBytes&&!bytes.includes(0),'BINARY_OR_LARGE_FILE');
   let body;
   try{body=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{ensure(false,'INVALID_UTF8');}
@@ -83,9 +100,23 @@ function removeFile(store,project,file){
   store.stmt('DELETE FROM chunks WHERE project=? AND path=?').run(project,file); // o gatilho limpa o índice FTS
   store.stmt('DELETE FROM files WHERE project=? AND path=?').run(project,file);
 }
+const TEXTLESS=new Set(['DOCUMENT_TEXT_EMPTY','DOCUMENT_UNREADABLE','SECRET_PATTERN_REJECTED']);
+/**
+ * Para indexar: documento sem texto aproveitável (escaneado, ilegível ou com credencial) entra só com o hash do arquivo,
+ * sem nenhum trecho. A varredura de frescor (que não extrai) e o índice continuam concordando; nada do conteúdo é guardado.
+ */
+function readIndexable(root,relative,maxBytes){
+  try{return readSafe(root,relative,maxBytes);}
+  catch(e){
+    if(!TEXTLESS.has(e.code)||!DOCUMENT_EXTENSIONS.includes(path.extname(relative).toLowerCase()))throw e;
+    return {...readSafe(root,relative,maxBytes,{extract:false}),body:'',withoutText:e.code};
+  }
+}
 function replaceFile(store,project,file,content){
   removeFile(store,project,file);
-  const kind=classify(file), extension=path.extname(file).toLowerCase(), lines=content.body.split('\n'), maskedLines=maskDeclarations(content.body,extension).split('\n');
+  if(content.withoutText){store.stmt('INSERT INTO files(project,path,hash,bytes,kind) VALUES(?,?,?,?,?)').run(project,file,content.hash,content.bytes,classify(file));return;}
+  // Texto extraído de PDF/DOCX/XLSX é analisado como texto simples, não como código.
+  const kind=classify(file), raw=path.extname(file).toLowerCase(), extension=DOCUMENT_EXTENSIONS.includes(raw)?'.txt':raw, lines=content.body.split('\n'), maskedLines=maskDeclarations(content.body,extension).split('\n');
   store.stmt('INSERT INTO files(project,path,hash,bytes,kind) VALUES(?,?,?,?,?)').run(project,file,content.hash,content.bytes,kind);
   const insert=store.stmt('INSERT INTO chunks(id,project,path,file_hash,start_line,end_line,kind,body,defs,symbols) VALUES(?,?,?,?,?,?,?,?,?,?)');
   for(let offset=0;offset<lines.length;offset+=CHUNK_LINES){
@@ -120,7 +151,7 @@ function readForScan(root,relative,maxBytes,verifiedDirs){
   const key=full+'\0'+maxBytes, sig=signature(st), hit=scanCache.get(key);
   if(hit&&hit.sig===sig){if(hit.code)ensure(false,hit.code);return hit.file;}
   let file,code;
-  try{file=readSafe(root,relative,maxBytes);}catch(e){if(!skippable.has(e.code)||['ENOENT','ENOTDIR'].includes(e.code))throw e;code=e.code;}
+  try{file=readSafe(root,relative,maxBytes,{extract:false});}catch(e){if(!skippable.has(e.code)||['ENOENT','ENOTDIR'].includes(e.code))throw e;code=e.code;}
   if(scanCache.size>=SCAN_CACHE_MAX)scanCache.clear();
   // Só a assinatura e o hash: o corpo não fica em memória.
   scanCache.set(key,{sig,code,file:file&&{hash:file.hash,bytes:file.bytes}});
@@ -199,7 +230,7 @@ export function indexProject(store, project, override) {
   // Reduções antes de crescimentos; entre os demais mantém a ordem de caminhos, inclusive no índice novo.
   const stale=entries.filter(x=>previous.get(x.path)?.hash!==x.hash).sort((a,b)=>(delta(a)<0?0:1)-(delta(b)<0?0:1)||byPath(a,b));
   const publish=()=>{const snapshot=snapshotOf(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project));store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);return snapshot;};
-  let changed=0,removed=0;
+  let changed=0,removed=0;const withoutText={};
   const prune=()=>{for(const {path:old} of store.stmt('SELECT path FROM files WHERE project=?').all(project))if(!present.has(old)){removeFile(store,project,old);removed++;}};
   for(let at=0;at<stale.length;){
     const firstBatch=at===0,batch=[];let batchBytes=0;
@@ -207,7 +238,7 @@ export function indexProject(store, project, override) {
       const {path:relative}=stale[at++];
       let file=null;
       // O arquivo é lido de novo aqui, fora do lock: vale o conteúdo de agora, mesmo que tenha mudado desde a varredura.
-      try{file=readSafe(root,relative,limits.maxFileBytes);batchBytes+=file.bytes;}catch(e){if(!skippable.has(e.code))throw e;}
+      try{file=readIndexable(root,relative,limits.maxFileBytes);batchBytes+=file.bytes;if(file.withoutText)withoutText[file.withoutText]=(withoutText[file.withoutText]??0)+1;}catch(e){if(!skippable.has(e.code))throw e;}
       batch.push({relative,file});
     }
     store.transaction(()=>{
@@ -228,7 +259,9 @@ export function indexProject(store, project, override) {
     const {files,bytes}=store.stmt('SELECT count(*) AS files,coalesce(sum(bytes),0) AS bytes FROM files WHERE project=?').get(project);
     ensure(bytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto indexado passou de '+megabytes(limits.maxBytes)+'.');
     const snapshot=publish();
-    const result={project,snapshot,files,changed,reused:entries.length-stale.length,removed,bytes,skipped,skippedByReason,limits,scope:'supported-text-files',automaticWatcher:false};
+    // Documentos sem texto ficam no índice (só o hash) e aparecem aqui com o motivo, junto das recusas da varredura.
+    const reasons={...skippedByReason};for(const [code,n] of Object.entries(withoutText))reasons[code]=(reasons[code]??0)+n;
+    const result={project,snapshot,files,changed,reused:entries.length-stale.length,removed,bytes,skipped,skippedByReason:reasons,documentsWithoutText:withoutText,limits,scope:'supported-text-files',automaticWatcher:false};
     store.event(project,'index.completed',{snapshot,files,changed,reused:result.reused,removed}); return result;
   });
 }
@@ -245,7 +278,7 @@ export function refreshFiles(store, project, paths, override) {
     for(const relative of new Set(paths)){
       const known=store.stmt('SELECT hash FROM files WHERE project=? AND path=?').get(project,relative);
       let file=null;
-      if(included(relative))try{file=readSafe(root,relative,limits.maxFileBytes);}catch(e){if(!skippable.has(e.code))throw e;}
+      if(included(relative))try{file=readIndexable(root,relative,limits.maxFileBytes);}catch(e){if(!skippable.has(e.code))throw e;}
       if(!file){if(known){removeFile(store,project,relative);removed.push(relative);}}
       else if(!known||known.hash!==file.hash){replaceFile(store,project,relative,file);changed.push(relative);}
     }
@@ -329,7 +362,7 @@ export function search(store,project,query,limit=12,{byFile=true}={}){
 export function verifyChunk(store, project, chunk){
   ensure(chunk.project===project,'FORBIDDEN');
   const {root}=store.project(project);verifyRoot(root);
-  const file=readSafe(root,chunk.path,resolveLimits().maxFileBytes);
+  const file=readSafe(root,chunk.path,resolveLimits().maxFileBytes,{extract:false});
   ensure(file.hash===chunk.file_hash,'STALE_INDEX','Arquivo alterado após indexação. Execute index novamente.');
   return file;
 }

@@ -3,7 +3,7 @@ import { declarationsIn, maskDeclarations } from './declarations.mjs';
 
 const testPath=/(?:^|\/)(?:__tests__|__mocks__|tests?|specs?|e2e|fixtures?)(?:\/|$)|[._-](?:test|spec|stories)\.[a-z0-9]+$|_test\.(?:go|py|rb)$|(?:^|\/)test_[^/]+\.py$/i;
 const generatedPath=/\.generated\.|\.min\.|\.d\.ts$|(?:^|\/)(?:generated|__generated__|__snapshots__)(?:\/|$)/i;
-const docExtension=new Set(['.md','.txt']), configExtension=new Set(['.json','.yaml','.yml','.toml']);
+const docExtension=new Set(['.md','.txt','.pdf','.docx','.xlsx']), configExtension=new Set(['.json','.yaml','.yml','.toml']);
 
 /** Classe do arquivo pelo caminho. Decide peso de ordenação; nunca decide permissão. */
 export function classify(relative){

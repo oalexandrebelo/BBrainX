@@ -24,6 +24,8 @@ function verifiedFile(store,project,relative){
   const {root}=store.project(project);verifyRoot(root);
   try{file=readSafe(root,relative,resolveLimits().maxFileBytes);}
   catch(e){
+    // Documento sem texto (escaneado, ilegível, com credencial): o motivo real, não um "índice velho" que reindexar não resolve.
+    if(e.name==='BrainError'&&/^(DOCUMENT_|SECRET_PATTERN)/.test(e.code))throw e;
     if(e.name==='BrainError'||['ENOENT','EACCES','EPERM','ENOTDIR','ELOOP'].includes(e.code))ensure(false,'INDEX_STALE','Arquivo indisponível ou alterado. Chame context_index e repita.');
     throw e;
   }

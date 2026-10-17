@@ -79,6 +79,8 @@ entregáveis na pasta da necessidade, nunca em `/tmp`, e mostrar o conteúdo tam
 ambiente. `integrate --apply` grava `--files` nas configs quando a pasta base já existe (depois de `files setup`) ou
 com `--files`.
 
+**PDF, DOCX e XLSX também entram na busca** (2.4.0), de qualquer projeto. O texto é extraído na indexação: PDF pelo PDFKit do próprio macOS (fora dele, pelo extrator simples do BBrainX), DOCX e XLSX de dentro do próprio arquivo. Nada é gravado ao lado dos documentos. A verificação de frescor compara os bytes do arquivo, sem extrair. Documento sem texto (PDF escaneado), ilegível ou com credencial entra só com o hash, sem nenhum trecho, e aparece em `documentsWithoutText` com o motivo. `context_read` lê o texto extraído. Até 20 MiB por arquivo e 1 MiB de texto.
+
 **Busca:** a pasta base é **um** projeto (`projetos`), porque o registro recusa projetos aninhados. Cada `files_write`
 atualiza o índice desse projeto, então `context_search` com `project: "projetos"` encontra o arquivo logo depois de
 gravado.

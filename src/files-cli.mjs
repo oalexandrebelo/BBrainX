@@ -36,7 +36,12 @@ export async function filesCommand(store, sub, values, readStdin) {
   if (sub === 'read') { ensure(values.need && values.path, 'NEED_AND_PATH_REQUIRED'); return readText(root, { need: values.need, path: values.path, start: int(values.start, 'FILES_RANGE_INVALID') ?? 0 }); }
   if (sub === 'propose') return { analysis: analyze(root, home), ...listProposals(home) };
   if (sub === 'proposals') return listProposals(home, { status: values.status ?? 'proposed' });
-  if (sub === 'build') { ensure(values.proposal, 'PROPOSAL_REQUIRED', 'Use --proposal ID (de bbrainx files proposals).'); return buildProposal(root, home, { id: values.proposal, formats: values.formats ? values.formats.split(',').map(s => s.trim()) : undefined }); }
+  if (sub === 'build') {
+    ensure(values.proposal, 'PROPOSAL_REQUIRED', 'Use --proposal ID (de bbrainx files proposals).');
+    const built = await buildProposal(root, home, { id: values.proposal, formats: values.formats ? values.formats.split(',').map(s => s.trim()) : undefined });
+    refresh(store); // PDF/DOCX/XLSX gerados entram na busca do projeto `projetos`
+    return built;
+  }
   if (sub === 'dismiss') { ensure(values.proposal, 'PROPOSAL_REQUIRED'); return dismissProposal(home, { id: values.proposal }); }
   ensure(false, 'FILES_COMMAND_UNKNOWN', 'Use: files root | setup | open | write | list | read | propose | proposals | build | dismiss');
 }

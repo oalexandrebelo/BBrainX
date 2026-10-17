@@ -1,3 +1,24 @@
+# BBrainX 2.4.0 — Developer Preview — 17/10/2026
+
+Duas entregas da análise do estudo REA: documentos na busca e um portão de avaliação maior. Suíte **872/872**.
+
+| Medida | Valor |
+|---|---|
+| PDF, DOCX e XLSX | Pesquisáveis pelo texto extraído; PDF pelo PDFKit do macOS (0,4 s por arquivo, só quando muda), DOCX/XLSX de dentro do arquivo; nada gravado ao lado |
+| Documento sem texto (escaneado), ilegível ou com credencial | Entra só com o hash, sem trecho; motivo em `documentsWithoutText`; o índice continua "em dia" |
+| Entregáveis gerados (`files_build`) | Já aparecem na busca do projeto `projetos` logo depois de gerados |
+| Perguntas cegas | 79 → **125** (92 em PT), escritas por um analista que não viu o buscador |
+| Placar de referência (busca da 2.3, 125 casos) | 1.º lugar 0,424 · entre os 3 0,592 · entre os 10 0,800 · MRR 0,539 |
+| Custo de partida do motor | 96 → 99 ms |
+
+| Oportunidade | Critério |
+|---|---|
+| Modelo local opcional (e5-small) na busca | Melhora medida nos 125 casos cegos com p < 0,05, sem regressão nos conjuntos deste repositório |
+| OCR de PDF escaneado | Só se o PDFKit/Vision do macOS cobrir sem dependência pesada |
+| Idempotência em `recruit start` | Repetir a mesma chamada não lança recrutas em dobro |
+
+[Pasta de necessidades](FILES.md) · [Avaliação](EVALUATION.md#conjunto-cego-ampliado-240)
+
 # BBrainX 2.3.0 — Developer Preview — 16/10/2026
 
 **Manual integrador.** `bbx ch` (ou "bbx ch" no chat do Claude Code, Codex ou VS Code) confere a integração inteira e abre uma página local com as correções em um clique. Suíte **868/868**.

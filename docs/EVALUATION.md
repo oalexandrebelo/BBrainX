@@ -89,6 +89,20 @@ Corpora fixos: este repositório no commit `75bb20f`, plandex `e2d77207`, mem0 p
 
 O teste `test/prose-rank.test.mjs` isola o mecanismo com os mesmos termos em string e em comentário.
 
+### Conjunto cego ampliado (2.4.0)
+
+As perguntas cegas passaram de 79 para **125**: 64 sobre o mem0 e 61 sobre o plandex, 92 delas em português. As 46 novas foram escritas por um analista separado que não abriu o código do BBrainX (nem o buscador, nem o glossário, nem a bancada). Ele leu só os dois repositórios, descreveu comportamentos sem copiar identificadores e apontou um arquivo diferente por pergunta. Seis perguntas que ele escreveu só pelo nome das funções foram conferidas depois, lendo o arquivo-alvo, e batem com o comportamento.
+
+Placar de referência com a busca da 2.3 (corpora fixos: plandex `e2d77207`, mem0 parcial `abb81c88`):
+
+| Conjunto | Casos | 1.º lugar | Entre os 3 | Entre os 10 | MRR |
+|---|---|---|---|---|---|
+| blind-plandex | 61 | 0,410 | 0,623 | 0,820 | 0,540 |
+| blind-mem0 | 64 | 0,438 | 0,563 | 0,781 | 0,538 |
+| Os dois (125) | 125 | 0,424 | 0,592 | 0,800 | 0,539 |
+
+As perguntas novas são mais difíceis que as 79 originais: entre os 3, o mem0 caiu de 0,650 para 0,563 e o plandex de 0,718 para 0,623. Esse é o portão para qualquer mudança de busca ou modelo local: melhora medida nos 125 casos, com teste do sinal, sem regressão nos conjuntos deste repositório.
+
 ### O número depende do corpus
 
 Os casos sobre **este** repositório (`eval-self.cases`, `eval-natural.cases`) são um portão de regressão, não um placar: cada documento novo muda o corpus e, com ele, a posição dos arquivos. O mesmo conjunto de 24 casos deu 79 %, 75 % e 71 % de acerto em 1.º lugar em três revisões seguidas, sem que a busca tivesse mudado. Por isso o relatório de `eval-retrieval.mjs` agora traz o `snapshot` do corpus medido e o intervalo de confiança, e a comparação entre versões é feita em corpus fixado por commit.
