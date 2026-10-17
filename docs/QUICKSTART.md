@@ -2,7 +2,7 @@
 
 ## 0. Instalar em uma linha
 
-`curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.3.0-preview/install.sh | bash` (macOS). Para já ligar um projeto: `… | bash -s -- /caminho/do/projeto --apply`. Depois: `bbx ch`. Requisitos, o texto para colar no harness e o que o instalador faz estão no [README](../README.md#instalar-em-uma-linha-macos). O caminho abaixo, pelo clone, continua valendo para quem desenvolve.
+`curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.4.0-preview/install.sh | bash` (macOS). Para já ligar um projeto: `… | bash -s -- /caminho/do/projeto --apply`. Depois: `bbx ch`. Requisitos, o texto para colar no harness e o que o instalador faz estão no [README](../README.md#instalar-em-uma-linha-macos). O caminho abaixo, pelo clone, continua valendo para quem desenvolve.
 
 ## 1. Pré-requisitos e instalação reversível
 

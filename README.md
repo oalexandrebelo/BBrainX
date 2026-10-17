@@ -35,14 +35,14 @@ Esta branch propõe a **2.0.0** na única [PR #22](https://github.com/oalexandre
 No Terminal:
 
 ```sh
-curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.3.0-preview/install.sh | bash
+curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.4.0-preview/install.sh | bash
 ```
 
 Ou cole no Claude Code, numa sessão aberta na pasta do seu projeto:
 
 ```text
 Instale o BBrainX nesta máquina e ligue este projeto: rode
-curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.3.0-preview/install.sh | bash -s -- "$PWD" --apply
+curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.4.0-preview/install.sh | bash -s -- "$PWD" --apply
 e depois ~/.local/bin/bbx ch --no-open. Mostre o resumo e me diga quais passos são meus.
 ```
 

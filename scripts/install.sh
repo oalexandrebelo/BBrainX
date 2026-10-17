@@ -1,7 +1,7 @@
 #!/bin/bash
 # BBrainX: instalação em uma linha (macOS). Baixa o kit desta release, confere o SHA-256 de cada arquivo e roda o INSTALAR.sh.
 #
-#   curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.3.0-preview/install.sh | bash
+#   curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.4.0-preview/install.sh | bash
 #   curl -fsSL …/install.sh | bash -s -- /caminho/do/projeto --apply     # instala e já liga um projeto
 #
 # Os argumentos vão para o INSTALAR.sh (--apply, --vscode, --project, --skip-tests). Atualização troca a versão em uso
@@ -9,7 +9,7 @@
 # Nada aqui pede senha nem altera configuração global de harness, trust ou aprovações.
 set -euo pipefail
 
-TAG="${BBRAINX_TAG:-v2.3.0-preview}"
+TAG="${BBRAINX_TAG:-v2.4.0-preview}"
 BASE="${BBRAINX_KIT_BASE:-https://github.com/oalexandrebelo/BBrainX/releases/download/$TAG}"
 say(){ printf '\033[1m%s\033[0m\n' "$1"; }
 die(){ printf '\033[31m✘\033[0m %s\n' "$1" >&2; exit 1; }
