@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { cleanup } from './fixtures/cleanup.mjs';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -10,11 +11,11 @@ import { BrainStore } from '../src/store.mjs';
 import { indexProject } from '../src/retrieval.mjs';
 import { SharedAdmission } from '../src/shared-admission.mjs';
 
-function dir(t) { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'bb-closure-')); t.after(() => fs.rmSync(d, {recursive:true, force:true})); return d; }
-function core(t) { const home=dir(t), store=new BrainStore(home), work=path.join(home,'work'); fs.mkdirSync(work); store.register('p',work); t.after(()=>store.close()); return store; }
+function dir(t) { const d = fs.mkdtempSync(path.join(os.tmpdir(), 'bb-closure-')); cleanup(t)(() => fs.rmSync(d, {recursive:true, force:true})); return d; }
+function core(t) { const home=dir(t), store=new BrainStore(home), work=path.join(home,'work'); fs.mkdirSync(work); store.register('p',work); cleanup(t)(()=>store.close()); return store; }
 
 test('F01: warm WAL initialization preserves busy timeout and persisted content', t => {
-  const db = new DatabaseSync(path.join(dir(t), 'journal.sqlite')); t.after(()=>db.close());
+  const db = new DatabaseSync(path.join(dir(t), 'journal.sqlite')); cleanup(t)(()=>db.close());
   db.exec('PRAGMA busy_timeout=83; CREATE TABLE probe(value); INSERT INTO probe VALUES(7)');
   assert.equal(ensureWalMode(db,100).mode,'wal'); assert.equal(ensureWalMode(db,100).attempts,1);
   assert.equal(db.prepare('PRAGMA busy_timeout').get().timeout,83);
@@ -22,7 +23,7 @@ test('F01: warm WAL initialization preserves busy timeout and persisted content'
 });
 test('F01: a real reader blocking journal conversion gives bounded ADMISSION_BUSY, then recovers', t => {
   const file=path.join(dir(t),'blocked.sqlite'), db=new DatabaseSync(file), reader=new DatabaseSync(file);
-  t.after(()=>{reader.close();db.close();});
+  cleanup(t)(()=>{reader.close();db.close();});
   db.exec('CREATE TABLE probe(value); INSERT INTO probe VALUES(1); PRAGMA busy_timeout=97');
   reader.exec('BEGIN DEFERRED'); reader.prepare('SELECT * FROM probe').all();
   const began=performance.now();
@@ -34,11 +35,11 @@ test('F01: a real reader blocking journal conversion gives bounded ADMISSION_BUS
 });
 test('F01: readonly journal conversion does not become a contention retry', t => {
   const file=path.join(dir(t),'readonly.sqlite'); let db=new DatabaseSync(file);db.exec('CREATE TABLE probe(value)');db.close();
-  db=new DatabaseSync(file,{readOnly:true}); t.after(()=>db.close());
+  db=new DatabaseSync(file,{readOnly:true}); cleanup(t)(()=>db.close());
   assert.throws(()=>ensureWalMode(db,100),e=>e.errcode===8);
 });
 test('F01: initializer refuses use inside a transaction without rolling it back', t => {
-  const db=new DatabaseSync(path.join(dir(t),'active.sqlite'));t.after(()=>db.close());
+  const db=new DatabaseSync(path.join(dir(t),'active.sqlite'));cleanup(t)(()=>db.close());
   db.exec('CREATE TABLE probe(value); BEGIN IMMEDIATE');
   assert.throws(()=>ensureWalMode(db,100),/INVALID_WAL_INITIALIZATION/);
   assert.equal(db.isTransaction,true);db.exec('ROLLBACK');
@@ -83,7 +84,7 @@ test('F03: callback that already rolled back retains its original exception',t=>
 });
 test('F03: failed COMMIT on a real reader lock keeps original SQLITE_BUSY and rolls back',t=>{
   const s=core(t);s.db.exec('PRAGMA journal_mode=DELETE; PRAGMA busy_timeout=10');
-  const reader=new DatabaseSync(path.join(s.home,'brain.sqlite'));t.after(()=>reader.close());
+  const reader=new DatabaseSync(path.join(s.home,'brain.sqlite'));cleanup(t)(()=>reader.close());
   reader.exec('BEGIN DEFERRED');reader.prepare('SELECT * FROM meta').all();
   assert.throws(()=>s.transaction(()=>s.db.prepare('INSERT INTO meta VALUES(?,?)').run('uncommitted','v')),e=>(e.errcode&255)===5);
   assert.equal(s.db.isTransaction,false);reader.exec('ROLLBACK');

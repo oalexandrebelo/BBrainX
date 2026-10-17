@@ -1,6 +1,6 @@
 # Integração conservadora de harnesses
 
-O instalador descobre clientes sem executar seus binários, produz um plano público sem conteúdo de configurações e aplica somente a entrada MCP `bbrainx` no projeto autorizado pelo host. Não configura provedores, credenciais, confiança de workspace, aprovação automática ou gateways. O vínculo projeto/raiz/lane deve ser conferido no registro do host pelo chamador, antes do plano. Uma string recebida de ferramenta, texto recuperado ou pedido HTTP não concede essa autoridade.
+O instalador descobre clientes sem executar seus binários, produz um plano público sem conteúdo de configurações e aplica a entrada MCP `bbrainx` (e `ab-s00s` com toggle explícito) no projeto autorizado pelo host. Não configura provedores, credenciais, confiança de workspace, aprovação automática ou gateways. O vínculo projeto/raiz/lane deve ser conferido no registro do host pelo chamador, antes do plano. Uma string recebida de ferramenta, texto recuperado ou pedido HTTP não concede essa autoridade.
 
 ## Comandos do host
 
@@ -12,6 +12,8 @@ node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO
 ```
 
 Sem `--apply`, não escreve configurações. `--apply` permite registrar a raiz no catálogo, aplica e indexa; `--project ID` seleciona ID, recusando vínculo incompatível ou sobreposição. `--lane ID` exige vínculo já existente da lane. `--adopt-existing` é opt-in para migração estritamente validada do gerador anterior. O plano não instala harnesses nem o launcher do plugin. Falha de indexação após aplicação retorna `indexError` e o recibo para recuperação. `discover --root /raiz/do/projeto` combina leases de pastas abertas, catálogo e discovery histórico limitado, sem substituir autorização do catálogo.
+
+`--ab-s00s on|off` gerencia a segunda entrada somente nos destinos Claude/Codex/VS Code; sem a flag, preserva o estado atual. Os recibos novos acrescentam `serverNames` por arquivo quando gerenciam o AB-S00S, sem alterar o formato dos recibos antigos. A propriedade da segunda entrada exige seu próprio registro no recibo, além do hash do arquivo completo. [Comandos, limites e OpenHands](../QUICKSTART.md#ab-s00s-e-openhands-agent-canvas).
 
 O launcher confiável do host pode definir `BBRAINX_NODE` com um caminho estável, por exemplo o alias `opt` de um gerenciador de versões. A CLI exige caminho absoluto existente que resolva por `realpath` para o mesmo executável de `process.execPath`, e conserva o alias no comando gerado. Outro binário, caminho relativo ou ausente é recusado antes de criar estado/configuração. Isso permite adotar o legado com o mesmo caminho estável sem aceitar executáveis arbitrários nem relaxar a comparação dos demais campos.
 
@@ -25,7 +27,7 @@ O [plugin próprio](../../extensions/vscode/README.md) é um VSIX local separado
 
 ```js
 discoverIntegrations({ userHome, platform, env })
-planIntegrations({ root, project, lane, home, node, entry, clients, adoptExisting,
+planIntegrations({ root, project, lane, home, node, entry, clients, adoptExisting, abS00s, abS00sBin,
                    userHome, platform, env })
 applyIntegrationPlan(plan)
 rollbackIntegration({ home, id })

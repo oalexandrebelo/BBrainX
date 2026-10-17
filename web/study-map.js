@@ -20,9 +20,9 @@ export const tools=[
    why:'Dispensa serviço, Docker e conta. Um único processo dá transação de verdade para checkpoint, idempotência e histórico.',
    evidence:'Primeira indexação de 3.662 arquivos em 3 a 4 s (medida da 0.3). Migração de esquema com cópia de segurança coberta por teste.',
    next:'Fatiar a indexação para não bloquear o servidor em repositórios muito grandes.'},
-  {id:'engine',group:'core',name:'Motor de capacidades próprio',kind:'contrato das 6 ferramentas',license:'MIT (original; modelo: Invokta 0.9, MIT)',url:'https://github.com/oalexandrebelo/BBrainX/blob/main/src/capability.mjs',basis:'medido',
+  {id:'engine',group:'core',name:'AB-BBX',kind:'contrato das 6 ferramentas',license:'MIT; avisos de terceiros preservados',url:'https://github.com/oalexandrebelo/BBrainX/blob/main/src/ab-bbx.mjs',basis:'medido',
    what:'Cada capacidade declara entrada, saída, regra de acesso e prazo. O motor valida, autoriza, limita o tempo e devolve erro de código estável.',
-   why:'Decisão do dono: ter o motor em casa. O contrato do Invokta foi o modelo; a implementação é nossa e não instala nenhum pacote dele.',
+   why:'Núcleo próprio desacoplado do projeto consumidor. Validação, autorização, cancelamento e erros têm testes de contrato.',
    evidence:'Pacotes de produção no lockfile: 121 → 25. Prazo (TIMEOUT) distinto de cancelamento. Sete defeitos injetados de propósito, todos pegos pelos testes.',
    next:'Saída tipada por capacidade, no lugar do envelope genérico ok/data/error.'},
   {id:'mcp',group:'core',name:'Servidor MCP próprio, duas eras',kind:'protocolo com os harnesses',license:'MIT (original)',url:'https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning',basis:'spec',
@@ -67,11 +67,6 @@ export const tools=[
    next:'Acrescentar o cliente da linha 2.x para provar também a era sem handshake com código de terceiros.'},
 
   // ── só técnica ──────────────────────────────────────────────────────────
-  {id:'invokta',group:'technique',name:'Invokta',kind:'motor de capacidades',license:'MIT',url:'https://github.com/vinilana/invokta',basis:'leitura',
-   what:'Motor de capacidades tipadas com adaptadores para CLI e MCP.',
-   why:'Era dependência até a 0.3. Virou o modelo do motor próprio: ordem entre validação, acesso e prazo, códigos de erro e nomes portáveis de ferramenta.',
-   evidence:'O aviso completo da licença MIT acompanha o repositório, porque mensagens e regras foram adaptadas. O Invokta não usa o JEV: conferido nas dependências e no código publicado.',
-   next:'Vale acompanhar: composição de capacidades e conectores não foram trazidos.'},
   {id:'laya-contract',group:'technique',name:'Contrato de decisão do Laya',kind:'ideias sem o modelo',license:'Apache-2.0',url:'https://github.com/NandhaKishorM/laya',basis:'leitura',
    what:'Decisão só entre opções fechadas, abstenção explícita e aviso de truncamento.',
    why:'Valem mesmo sem modelo: o pacote declara o que cortou, e qualquer decisão automática precisa poder dizer «não sei».',

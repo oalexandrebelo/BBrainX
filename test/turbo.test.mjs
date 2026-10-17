@@ -347,7 +347,7 @@ test('a version 1 database migrates keeping tasks and memories, and leaves a res
   fs.writeFileSync(path.join(home, V1_BACKUP), 'sobra de uma tentativa anterior'); // cópia velha não pode ser reaproveitada
   const store = new BrainStore(home);
   try {
-    assert.equal(store.db.prepare('PRAGMA user_version').get().user_version, 2);
+    assert.equal(store.db.prepare('PRAGMA user_version').get().user_version, 3);
     assert.equal(store.project('legacy').snapshot, null);
     assert.equal(store.task('legacy', 'T1').version, 3); assert.equal(store.task('legacy', 'T1').content.nextAction, 'Review');
     assert.deepEqual(store.memories('legacy', true).map(x => [x.statement, x.mode]), [['Keep the contract', 'always']]);

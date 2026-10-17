@@ -9,6 +9,9 @@ import { verifyRoot } from './source-root.mjs';
 import { LANE_SCHEMA,LANE_SCHEMA_HASH,gitWorkspace } from './lanes/registry.mjs';
 import { planIntegrations,applyIntegrationPlan,rollbackIntegration,discoverIntegrations } from './integrations.mjs';
 import { workspaceSeen,discoverOpenWorkspaces,controlOverview,saveTestRun,archiveTestRun } from './control.mjs';
+import { filesRoot } from './files.mjs';
+/** --files grava files_* nas configs; sem flag, liga quando a pasta de necessidades já existe (depois de `files setup`). */
+const filesWanted=v=>v['no-files']!==true&&(v.files===true||(()=>{try{return fs.statSync(filesRoot().root).isDirectory();}catch{return false;}})());
 
 export const CONTROL_COMMANDS=['integrate','integrations','discover','workspace-seen','control','test','test-history','import-context','budget'];
 function catalog(home){
@@ -38,6 +41,34 @@ function readLaneBinding(home,project,lane,root,known){
   }finally{db.close();}
 }
 
+/**
+ * Plano de integração de um projeto (sem lane), no mesmo processo que vai aplicá-lo: applyIntegrationPlan só aceita o plano
+ * original. Usado por `integrate` e pelo manual integrador (`bbx ch`), que mostra o diff antes do segundo clique.
+ */
+export function planProjectIntegration(v,home=stateHome()){
+  const root=fs.realpathSync.native(path.resolve(v.root||process.cwd())),known=catalog(home),project=projectId(root,known,v.project);
+  const existing=known.find(x=>x.id===project);ensure(!existing||existing.root===root,'PROJECT_ROOT_CONFLICT');
+  for(const other of known)if(other.id!==project){
+    const a=path.relative(other.root,root),b=path.relative(root,other.root),inside=r=>r===''||(!path.isAbsolute(r)&&r!=='..'&&!r.startsWith('..'+path.sep));
+    ensure(!inside(a)&&!inside(b),'PROJECT_ROOT_OVERLAP');
+  }
+  const entry=stableEntryPath(fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),{errors:{invalid:'INVALID_INTEGRATION_ENTRY',mismatch:'INTEGRATION_ENTRY_MISMATCH'}});
+  const plan=planIntegrations({root,project,home,node:integrationNode(),entry,clients:v.clients?.split(','),abS00s:v['ab-s00s'],abS00sBin:v['ab-s00s-bin'],adoptExisting:v['adopt-existing']===true,recruit:v['no-recruit']!==true,files:filesWanted(v)});
+  return {plan,project,root,home};
+}
+/** Registra, aplica e indexa. Plano bloqueado é recusado inteiro. */
+export async function applyProjectIntegration({plan,project,root,home}){
+  ensure(!plan.files.some(x=>x.status==='blocked'),'INTEGRATION_PLAN_BLOCKED');
+  const brain=new BrainStore(home);
+  try{
+    brain.register(project,root);
+    const receipt=applyIntegrationPlan(plan);
+    const {indexProject}=await import('./retrieval.mjs');let index;
+    try{index=indexProject(brain,project);}catch(e){process.exitCode=1;return {project,root,plan,receipt,indexError:e.code||'INDEX_FAILED',next:'Configuração aplicada; índice incompleto. Corrija a indexação ou use integrations rollback com o recibo.'};}
+    return {project,root,lane:null,plan,receipt,index:{files:index.files,snapshot:index.snapshot},next:'Recarregue as conexões MCP no harness. Trust e aprovação continuam sob controle do cliente.'};
+  }finally{brain.close();}
+}
+
 export async function controlCommand(command,v,args){
   const home=stateHome();
   if(command==='workspace-seen')return workspaceSeen(home,{root:v.root,harness:v.harness,session:v.session});
@@ -50,35 +81,22 @@ export async function controlCommand(command,v,args){
     return {open:discoverOpenWorkspaces(home),registered:catalog(home),history:discoverHarnessContexts({root:v.root}),clients:discoverIntegrations()};
   }
   if(command==='integrate'){
+    if(!v.lane){const prepared=planProjectIntegration(v,home);return v.apply?applyProjectIntegration(prepared):prepared.plan;}
     const node=integrationNode();
     const root=fs.realpathSync.native(path.resolve(v.root||process.cwd())),known=catalog(home),project=projectId(root,known,v.project);
-    let laneStore,binding;
+    let laneStore;
     try{
-      if(v.lane){
-        binding=readLaneBinding(home,project,v.lane,root,known);
-      }else{
-        const existing=known.find(x=>x.id===project);ensure(!existing||existing.root===root,'PROJECT_ROOT_CONFLICT');
-        for(const other of known)if(other.id!==project){
-          const a=path.relative(other.root,root),b=path.relative(root,other.root),inside=r=>r===''||(!path.isAbsolute(r)&&r!=='..'&&!r.startsWith('..'+path.sep));
-          ensure(!inside(a)&&!inside(b),'PROJECT_ROOT_OVERLAP');
-        }
-      }
+      const binding=readLaneBinding(home,project,v.lane,root,known);
       const entry=stableEntryPath(fileURLToPath(new URL('../bin/bbrainx.mjs',import.meta.url)),{errors:{invalid:'INVALID_INTEGRATION_ENTRY',mismatch:'INTEGRATION_ENTRY_MISMATCH'}});
-      const plan=planIntegrations({root,project,lane:v.lane,home,node,entry,clients:v.clients?.split(','),adoptExisting:v['adopt-existing']===true});
+      const plan=planIntegrations({root,project,lane:v.lane,home,node,entry,clients:v.clients?.split(','),abS00s:v['ab-s00s'],abS00sBin:v['ab-s00s-bin'],adoptExisting:v['adopt-existing']===true,recruit:v['no-recruit']!==true,files:filesWanted(v)});
       if(!v.apply)return plan;
       ensure(!plan.files.some(x=>x.status==='blocked'),'INTEGRATION_PLAN_BLOCKED');
-      if(v.lane){
-        const {LaneStore}=await import('./lanes/store.mjs');laneStore=new LaneStore(home,project,v.lane);
-        ensure(laneStore.binding.root===root&&laneStore.binding.epoch===binding.epoch,'WORKSPACE_BINDING_CHANGED');
-      }
-      const brain=laneStore||new BrainStore(home);
-      try{
-        if(!laneStore)brain.register(project,root);
-        const receipt=applyIntegrationPlan(plan);
-        const {indexProject}=await import('./retrieval.mjs');let index;
-        try{index=indexProject(brain,project);}catch(e){process.exitCode=1;return {project,root,plan,receipt,indexError:e.code||'INDEX_FAILED',next:'Configuração aplicada; índice incompleto. Corrija a indexação ou use integrations rollback com o recibo.'};}
-        return {project,root,lane:v.lane??null,plan,receipt,index:{files:index.files,snapshot:index.snapshot},next:'Recarregue as conexões MCP no harness. Trust e aprovação continuam sob controle do cliente.'};
-      }finally{if(!laneStore)brain.close();}
+      const {LaneStore}=await import('./lanes/store.mjs');laneStore=new LaneStore(home,project,v.lane);
+      ensure(laneStore.binding.root===root&&laneStore.binding.epoch===binding.epoch,'WORKSPACE_BINDING_CHANGED');
+      const receipt=applyIntegrationPlan(plan);
+      const {indexProject}=await import('./retrieval.mjs');let index;
+      try{index=indexProject(laneStore,project);}catch(e){process.exitCode=1;return {project,root,plan,receipt,indexError:e.code||'INDEX_FAILED',next:'Configuração aplicada; índice incompleto. Corrija a indexação ou use integrations rollback com o recibo.'};}
+      return {project,root,lane:v.lane,plan,receipt,index:{files:index.files,snapshot:index.snapshot},next:'Recarregue as conexões MCP no harness. Trust e aprovação continuam sob controle do cliente.'};
     }finally{laneStore?.close();}
   }
   const brain=new BrainStore(home);

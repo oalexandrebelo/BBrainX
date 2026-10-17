@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { BrainStore } from '../src/store.mjs';
-import { indexProject, refreshFiles, readSafe, search, verifyChunk } from '../src/retrieval.mjs';
+import { indexProject, refreshFiles, readSafe, search, verifyChunk, included, inspectIndex, requireFreshIndex } from '../src/retrieval.mjs';
 
 function fixture(t) {
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'bb-retrieval-safety-'));
@@ -81,4 +82,31 @@ test('bootstrap cannot refresh past the host byte ceiling or publish a context e
     assert.throws(()=>compileContext(store,{project:'project',query:'AUTHORIZED_MARKER',budget:1000}),{code:'INDEX_BYTE_LIMIT'});
     assert.equal(store.project('project').snapshot,snapshot);assert.equal(store.events('project').length,events);
   } finally {if(previous===undefined)delete process.env.BBRAINX_MAX_BYTES;else process.env.BBRAINX_MAX_BYTES=previous;}
+});
+
+for(const git of [false,true])test(`secret path components are excluded with Git/non-Git parity (git=${git})`,t=>{
+  const {root,store}=fixture(t);
+  if(git)execFileSync('git',['init','-q',root]);
+  const blocked=['secrets/config.json','nested/credentials/service-account.json','.env/settings.json','nested/.env.local/settings.json'];
+  for(const relative of blocked){
+    fs.mkdirSync(path.dirname(path.join(root,relative)),{recursive:true});fs.writeFileSync(path.join(root,relative),'SYNTHETIC_PRIVATE_MARKER');
+    assert.equal(included(relative),false,relative);assert.equal(included(relative.replaceAll('/','\\')),false,relative);
+  }
+  const indexed=indexProject(store,'project');assert.equal(indexed.files,1);assert.equal(inspectIndex(store,'project').status,'current');
+  assert.deepEqual(search(store,'project','SYNTHETIC_PRIVATE_MARKER').items,[]);
+  assert.deepEqual(store.stmt('SELECT path FROM files').all().map(x=>x.path),['a.md']);
+});
+test('a tracked parent replaced by a file becomes stale and recovers through refresh and reindex with a warm scan cache',t=>{
+  const {root,store}=fixture(t);execFileSync('git',['init','-q',root]);
+  fs.mkdirSync(path.join(root,'dir'));fs.writeFileSync(path.join(root,'dir/child.ts'),'export const originalChild = 1;');
+  execFileSync('git',['-C',root,'add','dir/child.ts']);indexProject(store,'project');assert.equal(inspectIndex(store,'project').status,'current');
+  const chunk=search(store,'project','originalChild').items[0];
+  fs.rmSync(path.join(root,'dir'),{recursive:true});fs.writeFileSync(path.join(root,'dir'),'parent is now a file');
+  assert.equal(inspectIndex(store,'project').changes.removed,1);assert.throws(()=>requireFreshIndex(store,'project'),{code:'INDEX_STALE'});
+  assert.throws(()=>verifyChunk(store,'project',chunk),{code:'ENOTDIR'});
+  assert.deepEqual(refreshFiles(store,'project',['dir/child.ts']).removed,['dir/child.ts']);
+  assert.equal(indexProject(store,'project').files,1);assert.equal(inspectIndex(store,'project').status,'current');
+  fs.unlinkSync(path.join(root,'dir'));fs.mkdirSync(path.join(root,'dir'));fs.writeFileSync(path.join(root,'dir/child.ts'),'export const restoredChild = 2;');
+  assert.equal(inspectIndex(store,'project').changes.added,1);indexProject(store,'project');
+  assert.equal(search(store,'project','restoredChild').items[0].path,'dir/child.ts');assert.equal(inspectIndex(store,'project').status,'current');
 });

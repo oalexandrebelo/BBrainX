@@ -2,13 +2,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { parseTree, getNodeValue, modify, applyEdits } from 'jsonc-parser';
-import { parse as parseToml } from 'smol-toml';
+import { renderConfig } from './integration-config.mjs';
+import { abS00sServer } from './ab-s00s-config.mjs';
 import { ensure, hash, identifier } from './primitives.mjs';
 
 const MAX_BYTES=1024*1024, contexts=new WeakMap();
 export const INTEGRATION_CLIENTS=Object.freeze(['codex','claude','vscode','kilo','antigravity']);
-const object=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 const exists=target=>{try{return fs.lstatSync(target);}catch(e){if(e.code==='ENOENT')return null;throw e;}};
 function absolute(value){ensure(typeof value==='string'&&value.length>0&&value.length<=4096&&path.isAbsolute(value)&&!/[\x00-\x1f\x7f]/.test(value),'ABSOLUTE_CONFIG_PATH_REQUIRED');return path.resolve(value);}
 // /tmp and /var are OS symlinks on macOS. Canonicalize the trusted anchor, then reject
@@ -79,99 +78,15 @@ function location(root,client){
   const present=candidates.filter(candidate=>exists(path.join(root,candidate)));
   ensure(present.length<=1,'INTEGRATION_AMBIGUOUS_KILO_CONFIG');return path.join(root,present[0]||path.join('.kilo','kilo.json'));
 }
-function owned(home,target,sha){
+function owned(home,target,sha,serverName='bbrainx'){
   const records=path.join(home,'integrations');if(!exists(records))return false;
   safePath(home,records);const names=fs.readdirSync(records).filter(name=>/^[a-f0-9-]{36}$/.test(name));
   ensure(names.length<=512,'INTEGRATION_RECEIPT_LIMIT');
   for(const name of names){const receiptPath=path.join(records,name,'receipt.json');
     if(!exists(receiptPath))continue;
     const file=readFile(home,receiptPath);let receipt;try{receipt=JSON.parse(file.bytes.toString('utf8'));}catch{continue;}
-    if(receipt.status==='applied'&&receipt.files?.some(file=>file.target===target&&file.afterSha256===sha))return true;
+    if(receipt.status==='applied'&&receipt.files?.some(file=>file.target===target&&file.afterSha256===sha&&(file.serverNames??[file.serverName??'bbrainx']).includes(serverName)))return true;
   }return false;
-}
-
-// Parsers validate before edits. JSONC edits and TOML managed blocks retain unrelated bytes.
-function legacyServer(client,current,server){
-  if(!object(current))return false;
-  const legacy=client==='kilo'?{...server,command:server.command.slice(0,-4)}:{...server,args:server.args.slice(0,-4)};
-  if(client==='claude'&&current.type==='stdio')legacy.type='stdio';
-  if(client==='codex')for(const key of ['enabled','required','startup_timeout_sec','tool_timeout_sec'])if(Object.hasOwn(current,key)){
-    if(key==='enabled'&&current[key]!==true||key==='required'&&current[key]!==false)return false;
-    if(key.endsWith('_sec')&&!(Number.isFinite(current[key])&&current[key]>=1&&current[key]<=3600))return false;
-    legacy[key]=current[key];
-  }
-  return hash(current)===hash(legacy);
-}
-function withoutLegacyToml(text,current){
-  let ownTable=false,envTable=false,found=0;const kept=[];
-  for(const line of text.match(/[^\n]*\n|[^\n]+$/g)||[]){
-    const raw=line.replace(/\r?\n$/,'');
-    if(/^\s*\[/.test(raw)){
-      ownTable=/^\s*\[mcp_servers\.(?:bbrainx|"bbrainx"|'bbrainx')(?:\.env)?\]\s*$/.test(raw);
-      if(ownTable){envTable=/\.env\]/.test(raw);found++;continue;}
-    }
-    if(ownTable&&raw.trim()&&!/^\s*#/.test(raw)){
-      // Old generators used a single assignment per line. Inline/multiline tables,
-      // nested extra sections and comment-bearing assignments need manual review.
-      const assignment=/^\s*(command|args|enabled|required|startup_timeout_sec|tool_timeout_sec|BBRAINX_HOME)\s*=\s*(.+?)\s*$/.exec(raw);
-      ensure(assignment&&envTable===(assignment[1]==='BBRAINX_HOME'),'INTEGRATION_LEGACY_TOML_AMBIGUOUS');
-      let value;try{value=JSON.parse(assignment[2]);}catch{ensure(false,'INTEGRATION_LEGACY_TOML_AMBIGUOUS');}
-      const expected=envTable?current.env.BBRAINX_HOME:current[assignment[1]];
-      ensure(expected!==undefined&&hash(value)===hash(expected),'INTEGRATION_LEGACY_TOML_AMBIGUOUS');
-      continue;
-    }
-    kept.push(line);
-  }
-  ensure(found===2,'INTEGRATION_LEGACY_TOML_AMBIGUOUS');return kept.join('');
-}
-function renderConfig(client,bytes,server,canUpdate,adoptExisting){
-  const text=bytes?bytes.toString('utf8'):'';
-  ensure(!bytes||Buffer.from(text).equals(bytes),'INTEGRATION_CONFIG_ENCODING');
-  if(client==='codex'){
-    let config;try{config=parseToml(text);}catch{ensure(false,'INTEGRATION_TOML_INVALID');}
-    ensure(config.mcp_servers===undefined||object(config.mcp_servers),'INTEGRATION_CONFIG_SHAPE');
-    const desired={command:server.command,args:server.args,env:server.env},current=config.mcp_servers?.bbrainx;
-    if(object(current))for(const key of ['enabled','required','startup_timeout_sec','tool_timeout_sec'])if(Object.hasOwn(current,key))desired[key]=current[key];
-    if(current!==undefined&&hash(current)===hash(desired))return {bytes,adoption:false};
-    const adopting=!canUpdate&&current!==undefined&&adoptExisting&&legacyServer(client,current,desired);
-    if(adopting)for(const key of ['enabled','required','startup_timeout_sec','tool_timeout_sec'])if(Object.hasOwn(current,key))desired[key]=current[key];
-    const begin='# BEGIN BBRAINX INTEGRATION',end='# END BBRAINX INTEGRATION';
-    const start=text.indexOf(begin),finish=text.indexOf(end);
-    let remainder=text;
-    if(start!==-1||finish!==-1){
-      ensure(start!==-1&&finish>start&&text.indexOf(begin,start+begin.length)===-1&&text.indexOf(end,finish+end.length)===-1,'INTEGRATION_MANAGED_BLOCK_INVALID');
-      ensure((start===0||text[start-1]==='\n')&&(text[finish+end.length]==='\n'||text[finish+end.length]==='\r'||finish+end.length===text.length),'INTEGRATION_MANAGED_BLOCK_INVALID');
-      ensure(canUpdate,'INTEGRATION_SERVER_COLLISION');
-      remainder=text.slice(0,start)+text.slice(finish+end.length).replace(/^\r?\n/,'');
-      let outside;try{outside=parseToml(remainder);}catch{ensure(false,'INTEGRATION_MANAGED_BLOCK_INVALID');}
-      ensure(outside.mcp_servers?.bbrainx===undefined,'INTEGRATION_SERVER_COLLISION');
-    }else if(adopting){
-      remainder=withoutLegacyToml(text,current);let outside;try{outside=parseToml(remainder);}catch{ensure(false,'INTEGRATION_LEGACY_TOML_AMBIGUOUS');}
-      const expected={...config,mcp_servers:{...config.mcp_servers}};delete expected.mcp_servers.bbrainx;
-      if(!Object.keys(expected.mcp_servers).length&&!outside.mcp_servers)delete expected.mcp_servers;
-      ensure(hash(outside)===hash(expected),'INTEGRATION_LEGACY_TOML_AMBIGUOUS');
-    }else ensure(current===undefined,'INTEGRATION_SERVER_COLLISION');
-    const eol=text.includes('\r\n')?'\r\n':'\n';
-    const block=[begin,'[mcp_servers.bbrainx]','command = '+JSON.stringify(server.command),'args = '+JSON.stringify(server.args),
-      ...['enabled','required','startup_timeout_sec','tool_timeout_sec'].filter(key=>Object.hasOwn(desired,key)).map(key=>key+' = '+JSON.stringify(desired[key])),
-      '','[mcp_servers.bbrainx.env]','BBRAINX_HOME = '+JSON.stringify(server.env.BBRAINX_HOME),end,''].join(eol);
-    const after=remainder+(remainder&&!remainder.endsWith('\n')?eol:'')+block;
-    try{parseToml(after);}catch{ensure(false,'INTEGRATION_TOML_INVALID');}return {bytes:Buffer.from(after),adoption:adopting};
-  }
-  const source=text||'{}',errors=[],tree=parseTree(source,errors,{allowTrailingComma:true,disallowComments:false});
-  ensure(tree?.type==='object'&&errors.length===0,'INTEGRATION_JSON_INVALID');
-  // Duplicate object keys make collision/ownership ambiguous. Do not repair them.
-  const pending=[tree];while(pending.length){const item=pending.pop();if(item.type==='object'){
-    const keys=new Set();for(const property of item.children||[]){const key=property.children[0].value;ensure(!keys.has(key),'INTEGRATION_DUPLICATE_JSON_KEY');keys.add(key);}
-  }pending.push(...(item.children||[]));}
-  const config=getNodeValue(tree),key=client==='kilo'?'mcp':client==='vscode'?'servers':'mcpServers';
-  ensure(config[key]===undefined||object(config[key]),'INTEGRATION_CONFIG_SHAPE');
-  const current=config[key]?.bbrainx;
-  if(current!==undefined&&hash(current)===hash(server))return {bytes,adoption:false};
-  ensure(current===undefined||canUpdate||(adoptExisting&&legacyServer(client,current,server)),'INTEGRATION_SERVER_COLLISION');
-  const desired=client==='claude'&&current?.type==='stdio'?{type:'stdio',...server}:server;
-  const edited=applyEdits(source,modify(source,[key,'bbrainx'],desired,{formattingOptions:{insertSpaces:true,tabSize:2,eol:text.includes('\r\n')?'\r\n':'\n'}}));
-  return {bytes:Buffer.from(edited+(edited.endsWith('\n')?'':'\n')),adoption:!canUpdate&&current!==undefined&&adoptExisting};
 }
 
 /** root/project/lane are authorized and checked against the host registry by the caller. */
@@ -182,16 +97,21 @@ export function planIntegrations(options){
   const node=absolute(options.node),entry=absolute(options.entry),state=stateAnchor(options.home),home=state.target;
   const discovery=discoverIntegrations(options),requested=options.clients??discovery.clients.filter(client=>client.detected).map(client=>client.id);
   ensure(Array.isArray(requested)&&requested.every(client=>INTEGRATION_CLIENTS.includes(client)),'UNKNOWN_INTEGRATION_CLIENT');
-  const clients=[...new Set(requested)],files=[],drafts=[];
+  const clients=[...new Set(requested)],files=[],drafts=[],companion=abS00sServer({...options,node,home});
   for(const client of clients){
     const detected=discovery.clients.find(item=>item.id===client).detected;
     if(client==='antigravity'){files.push({client,detected,target:null,scope:'manual',status:'manual-required',reason:'ANTIGRAVITY_IDE_WORKSPACE_NOT_VERIFIED',serverName:'bbrainx'});continue;}
     let target;
     try{
-      target=location(root,client);const before=readFile(root,target),args=[entry,'mcp','--project',project,...(lane?['--lane',lane]:[]),'--workspace',root,'--harness',client];
-      const env={BBRAINX_HOME:home},server=client==='kilo'?{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}:{...(client==='vscode'?{type:'stdio'}:{}),command:node,args,env};
-      const canUpdate=before.sha!==null&&owned(home,target,before.sha),rendered=renderConfig(client,before.bytes,server,canUpdate,options.adoptExisting===true),after=rendered.bytes,afterSha256=hash(after);
+      target=location(root,client);const before=readFile(root,target),args=[entry,'mcp','--project',project,...(lane?['--lane',lane]:[]),...(options.recruit===true?['--recruit']:[]),...(options.files===true?['--files']:[]),'--workspace',root,'--harness',client];
+      const env={BBRAINX_HOME:home,...(options.recruit===true?{}:{BBRAINX_RECRUIT:'false'})},server=client==='kilo'?{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}:{...(client==='vscode'?{type:'stdio'}:{}),command:node,args,env};
+      const canUpdate=before.sha!==null&&owned(home,target,before.sha),rendered=renderConfig(client,before.bytes,server,canUpdate,options.adoptExisting===true);
+      const companionOwned=before.sha!==null&&owned(home,target,before.sha,'ab-s00s'),supportsCompanion=['codex','claude','vscode'].includes(client);
+      const after=companion!==undefined&&supportsCompanion
+        ?renderConfig(client,rendered.bytes,companion&&client==='vscode'?{type:'stdio',...companion}:companion,companionOwned,false,'ab-s00s').bytes:rendered.bytes;
+      ensure(after.length<=MAX_BYTES,'INTEGRATION_FILE_TOO_LARGE');const afterSha256=hash(after);
       const file={client,detected,target,scope:'project',status:before.sha===afterSha256?'unchanged':before.bytes?'update':'create',beforeSha256:before.sha,afterSha256,serverName:'bbrainx'};
+      if(supportsCompanion&&(companionOwned||companion))file.serverNames=['bbrainx',...(companion===null?[]:['ab-s00s'])];
       if(rendered.adoption)file.adoption='exact-legacy-generator';
       files.push(file);drafts.push({file,before,after});
     }catch(e){files.push({client,detected,target:target||null,scope:'project',status:'blocked',reason:e.code||'INTEGRATION_CONFIG_INVALID',serverName:'bbrainx'});}
@@ -205,9 +125,30 @@ function compare(root,draft){const current=readFile(root,draft.file.target);ensu
 function replace(anchor,target,bytes,mode=0o600){
   safePath(anchor,target);fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});safePath(anchor,target);
   const temp=path.join(path.dirname(target),'.bbrainx-'+randomUUID()+'.tmp');
-  try{const fd=fs.openSync(temp,'wx',mode);try{fs.writeFileSync(fd,bytes);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temp,target);}finally{if(exists(temp))fs.unlinkSync(temp);}
+  try{const fd=fs.openSync(temp,'wx',mode);try{fs.writeFileSync(fd,bytes);fs.fchmodSync(fd,mode);fs.fsyncSync(fd);}finally{fs.closeSync(fd);}fs.renameSync(temp,target);}finally{if(exists(temp))fs.unlinkSync(temp);}
 }
 function receiptReport(receipt){return {schemaVersion:1,id:receipt.id,status:receipt.status,project:receipt.project,root:receipt.root,files:receipt.files.map(({client,target,beforeSha256,afterSha256})=>({client,target,beforeSha256,afterSha256}))};}
+
+/** Diferenças linha a linha de cada arquivo do plano, para mostrar antes de aplicar. Só do plano original deste processo. */
+export function planDiff(plan,{maxLines=4000}={}){
+  const ctx=contexts.get(plan);ensure(ctx&&hash(plan)===ctx.publicSha,'INTEGRATION_PLAN_UNTRUSTED');
+  return ctx.drafts.filter(draft=>draft.file.status!=='unchanged').map(({file,before,after})=>({client:file.client,target:file.target,status:file.status,
+    diff:lineDiff(before.bytes?before.bytes.toString('utf8'):'',after.toString('utf8'),maxLines)}));
+}
+/** Diff mínimo (LCS) em linhas, com 2 linhas de contexto; arquivo grande demais devolve só o resumo. */
+export function lineDiff(a,b,maxLines=4000){
+  const x=a===''?[]:a.replace(/\n$/,'').split('\n'),y=b===''?[]:b.replace(/\n$/,'').split('\n');
+  if(x.length*y.length>maxLines*maxLines)return [{op:'note',text:x.length+' → '+y.length+' linhas (grande demais para mostrar)'}];
+  const n=x.length,m=y.length,table=Array.from({length:n+1},()=>new Uint32Array(m+1));
+  for(let i=n-1;i>=0;i--)for(let j=m-1;j>=0;j--)table[i][j]=x[i]===y[j]?table[i+1][j+1]+1:Math.max(table[i+1][j],table[i][j+1]);
+  const ops=[];let i=0,j=0;
+  while(i<n||j<m){if(i<n&&j<m&&x[i]===y[j]){ops.push({op:' ',text:x[i]});i++;j++;}else if(j<m&&(i===n||table[i][j+1]>=table[i+1][j])){ops.push({op:'+',text:y[j]});j++;}else{ops.push({op:'-',text:x[i]});i++;}}
+  const keep=new Set();ops.forEach((o,k)=>{if(o.op!==' ')for(let d=-2;d<=2;d++)keep.add(k+d);});
+  const out=[];let skipped=0;
+  ops.forEach((o,k)=>{if(keep.has(k)){if(skipped){out.push({op:'note',text:skipped+' linha(s) iguais'});skipped=0;}out.push(o);}else skipped++;});
+  if(skipped)out.push({op:'note',text:skipped+' linha(s) iguais'});
+  return out;
+}
 
 /** Accepts only the original in-process plan; serialized or altered plans cannot write files. */
 export function applyIntegrationPlan(plan){

@@ -8,7 +8,7 @@ Medições: 4 de outubro de 2026, MacBook M5 Pro, 24 GB, macOS 26, Node 24. Cada
 |---|---|---|
 | **Núcleo** | 6 | Roda sempre. Sem modelo, sem rede, sem conta. |
 | **Perfil ativável** | 3 | Existe e funciona, mas só entra por comando seu. |
-| **Só técnica** | 14 | A ideia entrou, reescrita aqui. O projeto não é instalado. |
+| **Só técnica** | 13 | A ideia entrou, reescrita aqui. O projeto não é instalado. |
 | **Referência** | 6 | Consultado. Não é copiado para este repositório. |
 | **Fora** | 8 | Avaliado e recusado, com o motivo e o que mudaria o veredito. |
 
@@ -30,19 +30,19 @@ Roda sempre. Sem modelo, sem rede, sem conta.
 
 Fonte: <https://sqlite.org/fts5.html>
 
-### Motor de capacidades próprio
+### AB-BBX
 
-*contrato das 6 ferramentas · licença: MIT (original; modelo: Invokta 0.9, MIT) · evidência: medido neste projeto*
+*contrato das 6 ferramentas · licença: MIT; avisos de terceiros preservados · evidência: medido neste projeto*
 
 **O que é.** Cada capacidade declara entrada, saída, regra de acesso e prazo. O motor valida, autoriza, limita o tempo e devolve erro de código estável.
 
-**Por que está aqui.** Decisão do dono: ter o motor em casa. O contrato do Invokta foi o modelo; a implementação é nossa e não instala nenhum pacote dele.
+**Por que está aqui.** Núcleo próprio desacoplado do projeto consumidor. Validação, autorização, cancelamento e erros têm testes de contrato.
 
 **Evidência.** Pacotes de produção no lockfile: 121 → 25. Prazo (TIMEOUT) distinto de cancelamento. Sete defeitos injetados de propósito, todos pegos pelos testes.
 
 **Próximo passo.** Saída tipada por capacidade, no lugar do envelope genérico ok/data/error.
 
-Fonte: <https://github.com/oalexandrebelo/BBrainX/blob/main/src/capability.mjs>
+Fonte: <https://github.com/oalexandrebelo/BBrainX/blob/main/src/ab-bbx.mjs>
 
 ### Servidor MCP próprio, duas eras
 
@@ -155,20 +155,6 @@ Fonte: <https://github.com/modelcontextprotocol/typescript-sdk>
 ## Só técnica
 
 A ideia entrou, reescrita aqui. O projeto não é instalado.
-
-### Invokta
-
-*motor de capacidades · licença: MIT · evidência: leitura do código do upstream, sem executar*
-
-**O que é.** Motor de capacidades tipadas com adaptadores para CLI e MCP.
-
-**Por que está aqui.** Era dependência até a 0.3. Virou o modelo do motor próprio: ordem entre validação, acesso e prazo, códigos de erro e nomes portáveis de ferramenta.
-
-**Evidência.** O aviso completo da licença MIT acompanha o repositório, porque mensagens e regras foram adaptadas. O Invokta não usa o JEV: conferido nas dependências e no código publicado.
-
-**Próximo passo.** Vale acompanhar: composição de capacidades e conectores não foram trazidos.
-
-Fonte: <https://github.com/vinilana/invokta>
 
 ### Contrato de decisão do Laya
 

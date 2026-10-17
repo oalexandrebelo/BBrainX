@@ -1,6 +1,6 @@
 {
   "name": "bbrainx",
-  "version": "1.5.0",
+  "version": "2.4.0",
   "private": true,
   "type": "module",
   "description": "Local-first context, memory and verified handoffs across coding harnesses.",
@@ -24,6 +24,7 @@
     "project:status": "node scripts/project-status.mjs",
     "sources": "node scripts/sources.mjs",
     "package:source": "node scripts/package.mjs",
+    "package:mcpb": "node scripts/package-mcpb.mjs",
     "study:doc": "node scripts/study-doc.mjs",
     "laya:bench": "node scripts/laya-bench.mjs"
   },
@@ -37,6 +38,7 @@
     "zod": "4.5.4"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "^2.1.2",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@playwright/test": "^1.55.0",
     "vite": "8.3.2"

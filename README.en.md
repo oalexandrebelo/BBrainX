@@ -4,22 +4,34 @@
 
 <p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: see the run and the tested revision" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Quickstart (pt-BR)</a> · <a href="docs/STUDY_MAP.md">Study map</a> · <a href="docs/DOSSIER.md">Research dossier</a> · <a href="docs/SECURITY_MODEL.md">Security</a> · <a href="docs/EVALUATION.md">Evaluation</a> · <a href="README.md">Português</a></p>
 
+## BBrainX 2.0 · AB-BBX
+
+2.0.1 adds an MCPB bundle (`npm run package:mcpb`) for hosts that install MCP servers from a bundle, such as Chat On Steroids and Claude Desktop: the host's form sets `BBRAINX_PROJECT`, `BBRAINX_HOME` and `BBRAINX_RECRUIT`; `config --client cos` prints the executable form.
+
+Version 2.0 targets general project work, prioritizing Mac mini and MacBook Pro M5. Public search/context verify worktree hashes and refuse stale indices with `INDEX_STALE`; run `context_index` and retry. `index-status --project ID` provides a read-only diagnosis. The local panel reports search/context/checkpoint counts per session without storing queries. [Release contract and repository review](docs/BBRAINX_2_0.md).
+
+BBrainX was built to accelerate real project work and shared to make verified continuity portable across coding agents. AB-BBX is its own capability execution core (`src/ab-bbx.mjs`), with a compatible legacy entrypoint. Run `node bin/bbrainx.mjs watch --project ID` in a separate process to periodically reconcile an index; add `--lane ID` for a registered workspace lane. This does not install a service or alter harness configuration. [Operating contract and limitations](docs/AB_BBX.md).
+
+### Recruit agents (BYO: your CLIs, your logins)
+
+In a session connected to BBrainX, tell your harness **"recruit 1 codex astra 6 high and 2 opus 5.5 xhigh to fix X"**. BBrainX launches the Claude Code and Codex CLIs already installed and logged in on this machine, one per recruit, each in its own git worktree, branch and BBrainX lane; your checkout is never modified. No new subscription, no token read. `integrate --apply` grants it to the server with `--recruit` (nine tools); without the flag, six. `bbrainx recruit doctor` shows the CLIs, their login and Codex usage windows. Measured on 2026-10-13 with both real CLIs: two recruits, two commits, clean checkout. [docs/RECRUIT.md](docs/RECRUIT.md) (pt-BR).
+
 ## What it is
 
 BBrainX runs on your machine and gives a coding agent what it needs to continue a task: the right excerpts of the repository, the checkpoint of the previous session and the memories you approved. It speaks MCP. The core uses no model, account, Docker or Python and makes no outbound network calls.
 
-| Client | State in 1.5.0 |
+| Client | State in 2.0 |
 |---|---|
-| Claude Code | **Verified.** `claude -p --mcp-config` called `context_search` |
-| Codex | **Verified.** `codex exec` called `context_search` |
+| Claude Code | **Verified.** `claude -p --mcp-config` called `context_search`; as a recruit (haiku) it worked in its own worktree and committed |
+| Codex | **Verified.** `codex exec` called `context_search`; as a recruit (gpt-6-astra) it called `context_bootstrap`, `context_search`, `session_checkpoint` and `session_get` on its lane |
 | VS Code | **Partly verified.** The generated `.vscode/mcp.json` was exercised by an MCP SDK client the way VS Code launches it. Starting it from the VS Code UI is manual |
 | Cursor, Gemini CLI | **Not verified.** Only prints the configuration fragments (`config --client cursor` and `--client gemini`) |
 
-**1.5.0 is a developer preview.** The automated suite has **735 tests** and passed 735/735 on Node 24.21.0 and Node 22.22.2 (macOS arm64) at the published revision. What was not measured is stated as not measured. Most of the documentation is in Brazilian Portuguese. Numbers and next steps: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md) (pt-BR).
+This branch proposes **2.0.0** in the single [PR #22](https://github.com/oalexandrebelo/BBrainX/pull/22). It does not claim installation on the maintainer’s devices. Windows is an observed, nonblocking backlog target. Historical 1.5 evidence remains in [the dated report](docs/HOMOLOGACAO_2026-10-10.md).
 
 ## Start in three commands
 
-Requirements: **Node 24 LTS and Git** (Node 22.20 or newer also works). This phase focuses on macOS (arm64). Linux and Windows are in the CI matrix; the last published report (`docs/validation/ci-report.json`) is from revision 912aa25, with 96 tests per platform, and does not cover 1.5.0.
+Requirements: **Node 24 LTS and Git** (Node 22.20 or newer also works). This phase focuses on macOS (arm64). macOS and Linux are required CI targets. Windows results remain visible but do not block the Mac release. Verify the PR head rather than treating historical reports as current certification.
 
 ```sh
 git clone https://github.com/oalexandrebelo/BBrainX.git && cd BBrainX
@@ -159,7 +171,7 @@ Project by Alexandre Belo (**AB**), built with AI assistance and evidence-driven
 
 To take the next contribution, start with the [engineering context](docs/engineering/CONTINUITY.md), run `npm run project:status` and pick an item from the [queue with acceptance criteria](docs/engineering/ROADMAP.md). The [experiment ledger](docs/engineering/PERFORMANCE.md) separates measured gains, costs and discarded attempts.
 
-Original BBrainX code is MIT. The engine contract follows Invokta, whose full MIT notice is in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The Laya profile and Remotion keep their own terms and are not part of the core. Names, marks, libraries and references keep their rights.
+Original BBrainX code is MIT. AB-BBX is the project-owned capability engine. Historical attributions and full notices are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The Laya profile and Remotion keep their own terms and are not part of the core. Names, marks, libraries and references keep their rights.
 
 <!-- verified-preview -->
 ## Interface

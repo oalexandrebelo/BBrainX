@@ -13,6 +13,8 @@ test('painel local mostra identidade real do projeto e estados desconhecidos sem
  const payload=await response.json();expect(payload.project.id).toBe('demo');
  await expect(page.locator('.control-project-meta')).toContainText('demo-project');
  await expect(page.getByText('Nenhuma atividade instrumentada neste projeto.')).toBeVisible();
+ await expect(page.locator('.control-recruits')).toContainText('Nenhum agente recrutado neste projeto.');
+ expect(Array.isArray(payload.recruits)).toBe(true);expect(payload.recruits.length).toBe(0);
  await expect(page.getByText('Nenhum relatório de testes importado. Progresso e falhas são desconhecidos.')).toBeVisible();
  await expect(page.locator('.control-kpis')).toContainText('Desconhecido');
  await expect(page.locator('.control-command')).toContainText('bbrainx integrate --root');
@@ -43,4 +45,12 @@ test('resposta atrasada do projeto anterior não substitui o projeto selecionado
  releaseFirst();
  await page.waitForTimeout(150);
  await expect(page.locator('.control-project-meta')).toContainText('demo-second');
+});
+
+
+test('painel apresenta contadores produzidos por uma busca real, sem conteúdo da consulta',async({page})=>{
+ await openControl(page);
+ await page.getByLabel('Projeto',{exact:true}).selectOption('demo-second');
+ await expect(page.locator('.control-capabilities')).toHaveText('Busca: 1 · Contexto: 0 · Checkpoints: 0');
+ await expect(page.locator('.control-list')).not.toContainText('Fixture local de texto');
 });

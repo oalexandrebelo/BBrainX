@@ -271,5 +271,159 @@
   "expect": [
    "app/server/model/plan/stop.go"
   ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde se encontra um trecho único dentro de um arquivo comparando prefixo e sufixo do bloco antigo, tolerando erros no meio?",
+  "expect": [
+   "app/server/syntax/unique_replacement.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como linhas em branco extras adicionadas no começo ou no fim pelo modelo são removidas para casar com o arquivo original?",
+  "expect": [
+   "app/server/utils/whitespace.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde a sequência que fecharia um bloco de dados literais em XML é substituída por um marcador temporário e depois restaurada?",
+  "expect": [
+   "app/server/utils/xml.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where does the server work out its own public address, depending on whether it runs locally, in a managed container cloud, or with a configured value?",
+  "expect": [
+   "app/server/host/ip.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o número de tokens de um texto é estimado, tanto de forma exata com tokenizador quanto de forma rápida pelo tamanho em bytes?",
+  "expect": [
+   "app/shared/tokens.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o servidor sobe o proxy de modelos auxiliar apenas uma vez e espera ele ficar saudável com limite de tempo?",
+  "expect": [
+   "app/server/model/litellm.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde se calcula quais arquivos precisam mudar para voltar a um estado anterior do plano e quais mudanças colidiriam com edições do usuário no disco?",
+  "expect": [
+   "app/cli/lib/rewind.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a CLI descobre quais editores de código estão instalados no PATH e prioriza o configurado nas variáveis de ambiente?",
+  "expect": [
+   "app/cli/lib/editor.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where does the CLI make sure a spawned child process and all of its descendants can be terminated together?",
+  "expect": [
+   "app/cli/lib/apply_proc.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde a CLI consulta online a versão mais recente com tempo limite curto e permite pular essa verificação por variável de ambiente?",
+  "expect": [
+   "app/cli/upgrade.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where is the logic that throttles terminal redraws so rapid streaming updates don't cause flicker?",
+  "expect": [
+   "app/cli/stream_tui/debouncer.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde arquivos de configuração antigos do projeto são migrados para o formato novo organizado por conta de usuário?",
+  "expect": [
+   "app/cli/lib/legacy_files.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde as credenciais OAuth da assinatura são consideradas vencidas com uma hora de antecedência para serem renovadas?",
+  "expect": [
+   "app/cli/lib/claude_max.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como a CLI lida com conflitos ao restaurar alterações guardadas temporariamente no git, inclusive forçando a sobrescrita?",
+  "expect": [
+   "app/cli/lib/git.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde fica o mapeamento de linguagem de programação para o símbolo de início e fim de comentário?",
+  "expect": [
+   "app/server/syntax/comments.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where are line-based differences between an original and an updated file turned into a list of replacements with positions?",
+  "expect": [
+   "app/server/diff/diff.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde as operações sobre o repositório git de um plano são enfileiradas e executadas em lotes, uma por vez por plano?",
+  "expect": [
+   "app/server/db/queue.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o servidor cancela a geração em andamento e salva a resposta parcial quando o usuário interrompe um plano?",
+  "expect": [
+   "app/server/model/plan/stop.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o usuário é avisado de que atualizações de contexto colidem com mudanças pendentes e perguntado se quer reconstruir?",
+  "expect": [
+   "app/cli/lib/context_conflict.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o PIN de verificação de login é enviado por e-mail em produção e apenas mostrado no log e copiado para a área de transferência em desenvolvimento?",
+  "expect": [
+   "app/server/email/verification.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o acesso ao banco garante rollback automático quando uma função dentro de uma transação retorna erro ou entra em pânico?",
+  "expect": [
+   "app/server/db/transactions.go"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde a CLI sobe pelos diretórios pais procurando outros projetos já inicializados para o usuário atual?",
+  "expect": [
+   "app/cli/fs/projects.go"
+  ]
  }
 ]

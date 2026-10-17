@@ -7,9 +7,10 @@
  * Antigravity e Kilo conferidos em 07/10/2026: antigravity.google/docs/mcp e
  * kilo.ai/docs/automate/mcp/using-in-kilo-code (timeout em milissegundos).
  */
+import { abS00sServer, openhandsConfig } from './ab-s00s-config.mjs';
 import { ensure, hash } from './primitives.mjs';
 
-export const CLIENTS=Object.freeze(['claude','codex','cursor','vscode','gemini','antigravity','kilo']);
+export const CLIENTS=Object.freeze(['claude','codex','cursor','vscode','gemini','antigravity','kilo','cos','openhands']);
 const shell=value=>/^[A-Za-z0-9_\/.:=@+-]+$/.test(value)?value:"'"+value.replaceAll("'","'\\''")+"'";
 
 /**
@@ -36,10 +37,12 @@ function codexRegistration({node,args,home,project}){
     '[mcp_servers.'+name+'.env]','BBRAINX_HOME = '+JSON.stringify(home)].join('\n');
 }
 
-export function clientConfig(client,{node,entry,project,home}){
+export function clientConfig(client,{node,entry,project,home,...options}){
   for(const value of [node,entry,project,home])ensure(typeof value==='string'&&value.length>0&&!/[\u0000-\u001f\u007f]/.test(value),'INVALID_CONFIG_VALUE');
   const args=[entry,'mcp','--project',project], env={BBRAINX_HOME:home}, server={command:node,args,env};
   const json=value=>JSON.stringify(value,null,2);
+  if(client==='openhands')return openhandsConfig(server,abS00sServer({...options,node,project,home}));
+  ensure(options.abS00s===undefined&&options.abS00sBin===undefined,'AB_S00S_CLIENT_UNSUPPORTED','Use config --client openhands ou integrate para configurar o AB-S00S.');
   if(client==='claude')return '# Claude Code — rode na pasta do projeto (escopo local, só seu); para versionar com a equipe, cole o JSON em .mcp.json\nclaude mcp add bbrainx --env BBRAINX_HOME='+shell(home)+' -- '+[node,...args].map(shell).join(' ')+'\n\n'+json({mcpServers:{bbrainx:server}});
   if(client==='codex')return codexRegistration({node,args,home,project});
   if(client==='cursor')return '# Cursor — cole em .cursor/mcp.json (projeto) ou ~/.cursor/mcp.json\n'+json({mcpServers:{bbrainx:{type:'stdio',...server}}});
@@ -49,5 +52,9 @@ export function clientConfig(client,{node,entry,project,home}){
     '# `agy mcp add` grava nesse mesmo arquivo. O cliente descobre o servidor em todas as janelas, mas ele serve só o projeto indicado em --project; o nome leva o projeto.',
     '# O arquivo de workspace .agents/mcp_config.json não foi descoberto pelo Antigravity IDE 2.5.5 (docs/MAC_MINI_HARNESSES.md).'].join('\n')+'\n'+json({mcpServers:{[projectServerName(project)]:server}});
   if(client==='kilo')return '# Kilo Code — cole em .kilo/kilo.json do projeto; timeout de 60000 ms (60 segundos)\n'+json({mcp:{bbrainx:{type:'local',command:[node,...args],environment:env,enabled:true,timeout:60000}}});
+  if(client==='cos')return ['# Chat On Steroids — Plugins → + → Custom executable (sem shell: executável, argumentos e variáveis exatamente assim).',
+    '# Alternativa com formulário: Plugins → + → MCPB file com o bundle bbrainx-<versão>.mcpb da release (npm run package:mcpb).',
+    '# O processo roda com as permissões do seu usuário, fora da pasta aprovada do CoS; o modo somente leitura do CoS recusa plugins.',
+    'command: '+node,'args: '+json([...args,'--harness','cos','--recruit']),'env: '+json(env)].join('\n');
   throw Object.assign(new Error('Cliente desconhecido. Use: '+CLIENTS.join(', ')+'.'),{code:'UNKNOWN_CLIENT'});
 }

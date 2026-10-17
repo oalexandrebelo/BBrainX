@@ -1,3 +1,176 @@
+# BBrainX 2.4.0 — Developer Preview — 17/10/2026
+
+Três entregas da análise do estudo REA: documentos na busca, um portão de avaliação maior e recrutamento sem lançamento em dobro. Suíte **875/875**.
+
+| Medida | Valor |
+|---|---|
+| PDF, DOCX e XLSX | Pesquisáveis pelo texto extraído; PDF pelo PDFKit do macOS (0,4 s por arquivo, só quando muda), DOCX/XLSX de dentro do arquivo; nada gravado ao lado |
+| Documento sem texto (escaneado), ilegível ou com credencial | Entra só com o hash, sem trecho; motivo em `documentsWithoutText`; o índice continua "em dia" |
+| Entregáveis gerados (`files_build`) | Já aparecem na busca do projeto `projetos` logo depois de gerados |
+| Perguntas cegas | 79 → **125** (92 em PT), escritas por um analista que não viu o buscador |
+| Placar de referência (busca da 2.3, 125 casos) | 1.º lugar 0,424 · entre os 3 0,592 · entre os 10 0,800 · MRR 0,539 |
+| Custo de partida do motor | 96 → 99 ms |
+| Plano da busca FTS | Ordem do join fixada (`CROSS JOIN`): no Node 22 (SQLite 3.51) o planejador invertia a ordem e ordenava numa B-tree temporária; o Node 24 (SQLite 3.53) já acertava. Placar idêntico nos 125 casos |
+| Recrutamento repetido | `idempotencyKey` / `--key`: a mesma chave devolve o lote original, mesmo depois de uma queda no meio do lançamento; nunca lança em dobro |
+
+| Oportunidade | Critério |
+|---|---|
+| Modelo local opcional (e5-small) na busca | Melhora medida nos 125 casos cegos com p < 0,05, sem regressão nos conjuntos deste repositório |
+| OCR de PDF escaneado | Só se o PDFKit/Vision do macOS cobrir sem dependência pesada |
+| Painel do AB-S00S passa a chave a cada despacho | O juiz do AB-OpenWork recebe exatamente um lote por pedido |
+
+[Pasta de necessidades](FILES.md) · [Avaliação](EVALUATION.md#conjunto-cego-ampliado-240)
+
+# BBrainX 2.3.0 — Developer Preview — 16/10/2026
+
+**Manual integrador.** `bbx ch` (ou "bbx ch" no chat do Claude Code, Codex ou VS Code) confere a integração inteira e abre uma página local com as correções em um clique. Suíte **868/868**.
+
+| Medida | Valor |
+|---|---|
+| Casos | máquina (Node, atalho `bbx`, pasta de necessidades), harnesses (Claude Code e Codex logados, VS Code e extensão), cada projeto (configs de Claude Code/Codex/VS Code/Kilo, entrada alheia, Antigravity, confiança no Codex, conexões registradas, sessões com configuração anterior) |
+| Tempo da checagem completa | < 1 s com 9 projetos (só leitura; nenhum servidor é iniciado para conferir) |
+| Gravação | prévia com diff linha a linha → segundo clique; plano refeito e conferido (`CHECK_PLAN_CHANGED` se algo mudou); recibo com Desfazer |
+| Página | só `127.0.0.1`, token no fragmento do link, Host e Origin conferidos, CSP com nonce, lista fechada de ações, fecha após 30 min sem uso |
+| Senhas | nunca pedidas, vistas ou guardadas; login abre o fluxo oficial da CLI no Terminal |
+| Ferramenta MCP | `bbx_check` sempre presente (9 ferramentas padrão; 12 com `--recruit`) |
+
+Também: a suíte não depende mais de existir `Downloads/Projetos` na máquina (teste do `integrate` isolado).
+
+| Oportunidade | Critério |
+|---|---|
+| Casos da web (ChatGPT/Claude via AB-S00S) | Mesmo modelo de prévia e passo guiado |
+| Contas e cotas | Só o que a CLI expõe |
+
+[Manual integrador](INTEGRADOR.md)
+
+# BBrainX 2.2.0 — Developer Preview — 16/10/2026
+
+Pasta de necessidades: o que os modelos geram fica gravado direto no computador, em `Downloads/Projetos/AAAA-MM-DD-nome`, pela web (AB-S00S, toggle Arquivos) e pelos harnesses locais (`--files`). Suíte **861/861**.
+
+| Medida | Valor |
+|---|---|
+| Pasta base | macOS `~/Downloads/Projetos` · Windows pasta Downloads real do registro (também se movida para outro disco) · Linux `XDG_DOWNLOAD_DIR` · `BBRAINX_FILES_ROOT` troca |
+| Gravação | só texto (18 extensões), até 1 MiB; nunca sobrescreve (`nome-2` … `nome-99`); criação exclusiva sem seguir symlink |
+| Web | partes de até 192 KiB guardadas fora da pasta do usuário até a última; envio abandonado apagado em 24 h |
+| Entregáveis | uma vez por dia, a versão mais recente vira proposta: `.md` → PDF + DOCX, `.txt` → PDF, `.csv` → XLSX (números com o formato da coluna); gera só com aprovação, sem dependências |
+| Ferramentas MCP | `files_open`, `files_write`, `files_list`, `files_read`, `files_proposals`, `files_build`, `files_dismiss` (só com `--files`) |
+| Busca | a pasta é o projeto `projetos`; cada gravação reindexa; `context_search` acha o arquivo logo depois de gravado |
+
+**Ranking:** trecho de código dominado por texto em strings (prompts, dicionários, i18n) perde até metade do peso acima de 30% de literais.
+
+| Conjunto | Entre os 3 | MRR |
+|---|---|---|
+| eval-natural (36) | 0,583 → **0,667** | 0,474 → **0,546** |
+| blind-plandex (39) | 0,718 = | 0,589 → **0,621** |
+| blind-mem0 (40) | 0,650 = | 0,605 → **0,626** |
+| eval-self (24) | 0,917 = | 0,833 = |
+
+Perguntas cegas, caso a caso: 16 melhoraram e 3 pioraram (p ≈ 0,004). Busca quente sem custo extra; a primeira busca custa +0,9 ms (mediana).
+
+| Oportunidade | Critério |
+|---|---|
+| Binários vindos da web (imagens) | Hoje só texto; base64 com teto e tipo conferido |
+| DOCX com listas numeradas nativas | Hoje marcador e recuo; `numbering.xml` quando um caso pedir |
+| AB-S00S no Windows e no Linux | O núcleo `files` é multiplataforma; a tela e o túnel seguem homologados só no macOS |
+
+[Pasta de necessidades](FILES.md) · [Medição do ranking](EVALUATION.md#peso-de-literais-220)
+
+# BBrainX 2.1.2 — Developer Preview — 16/10/2026
+
+Revisão profunda da 2.1.1 em quatro áreas: 39 achados (10 P1), todos corrigidos, cada um com teste de regressão. Suíte **841/841**.
+
+| Medida (estado isolado, projetos reais, mediana de 50 buscas) | 2.1.1 | 2.1.2 |
+|---|---|---|
+| Busca + recorte, DoneFitt (2.588 arquivos) | 32,8 ms · p95 54,8 | **20,1 ms · p95 27,5** |
+| Busca + recorte, AB-Gestor (635 arquivos) | 22,4 ms · p95 44,1 | **20,4 ms · p95 30,7** |
+| Acertos servidos por consulta no orçamento de 4.000 tokens (DoneFitt) | 4,4 | **5,4** |
+| Pior uso do orçamento em 120 consultas reais (256 a 16.000 tokens) | primeiro acerto podia furar o teto | **≤ 100,0%** |
+| Indexação completa, DoneFitt | 2,4 s | 2,7 s (máscara de strings/comentários) |
+| Registros de recruta visíveis com 90 recrutas | 64 | **90** |
+
+| Área | O que mudou |
+|---|---|
+| Recrutas: baixa | Só remove a worktree com supervisor e CLI confirmadamente encerrados (identidade por início do processo; PID reaproveitado nunca recebe sinal). Trabalho não commitado vira commit no ramo. A faixa fecha antes de qualquer remoção |
+| Recrutas: processos | CLI em grupo próprio: prazo, parada e fim encerram os descendentes; drenagem dos pipes limitada a 5 s. Falha assíncrona do spawn vira `SPAWN_FAILED` com a vaga devolvida |
+| Recrutas: estado | Registro reservado com exclusividade antes de worktree, ramo e faixa; colisão de ID troca o ID sem tocar no que existia. Trava entre processos; `dismissed` nunca é reescrito; estado final gravado uma vez |
+| Recrutas: coleta | `recruit gc` percorre as faixas ativas, confere supervisor e CLI, fecha faixas de criação interrompida e sem registro, devolve erros. `recruit gc --all` funciona |
+| Recrutas: ambiente | Só os marcadores da sessão saem (`CLAUDE_CODE_USE_BEDROCK`, `CLAUDE_CODE_MAX_TURNS` ficam); `NODE_OPTIONS`, `DYLD_*`, `LD_*` e `PATH` relativo saem; servidor do recruta com `BBRAINX_RECRUIT=false`; rede do Codex sempre explícita |
+| Git do host | Sem hooks, sem `core.fsmonitor`, filtros `clean`/`smudge`/`process` neutralizados; `GIT_*` herdado não muda o repositório lido nem os carimbos |
+| Logs e respostas | Credenciais redigidas (chaves conhecidas, `Authorization`, `x-api-key`, URL com senha); log com teto de 32 MiB; cauda lida do fim do arquivo |
+| Índice | Pastas `secrets/`, `credentials/`, `.env/` excluídas também em repositórios Git; cota de bytes conferida em cada lote; `ENOTDIR` recuperável; declarações em strings e comentários ignoradas; nomes de uma letra encontrados; rank FTS nativo |
+| Busca | Teto de tokens vale para o primeiro corpo e para os ponteiros; recorte em tempo linear |
+| Integrações e MCP | Bloco TOML gerenciado nunca apaga servidor alheio; `--no-recruit` vence o ambiente e fica gravado; `agents_status` ≤ 512 KiB com `omittedAgentIds`; tamanho final e permissões preservados na instalação e no rollback; `arguments:null` recusado; prazo conferido após exceção síncrona; `lockedClosure` resolve aninhados primeiro |
+| Estado e backups | Pastas de estado só do dono (0700); `backup` nunca fica legível por outros durante a escrita |
+
+**Schema 3.** Abrir o banco com a 2.1.2 cria `brain.v2-backup.sqlite`, adiciona o índice `(project,status,id)` de memórias e reconstrói o índice derivado: cada projeto pede `context_index` (ou `bbrainx index --project ID`) uma vez. Voltar para a 2.1.1 exige restaurar o backup v2 (ou o backup do instalador); a 2.1.1 recusa o schema 3 com `MIGRATION_REQUIRED`.
+
+| Oportunidade | Critério |
+|---|---|
+| Reindexação automática dos projetos registrados após a migração | Sem bloquear servidores MCP abertos; uma vez por projeto |
+| `ps` ausente (contêineres mínimos, Windows) | Hoje a baixa recusa processo vivo não identificável; identidade nativa por plataforma |
+| LFS em worktree de recruta | Filtros neutralizados entregam ponteiros; autorização explícita para `git lfs` |
+
+[Integrações e MCP](worklog-2026-10-16-integrations-mcp-review.md) · [Índice e busca](worklog-2026-10-16-retrieval-review.md) · [Recrutas](RECRUIT.md)
+
+# BBrainX 2.1.1 — Developer Preview — 16/10/2026
+
+
+Faixas (lanes) deixam de travar o recrutamento entre projetos.
+
+| Antes | Agora |
+|---|---|
+| A faixa de um recruta só fechava na baixa manual (`recruit dismiss`); recruta concluído seguia ocupando vaga | O supervisor fecha a faixa quando a CLI termina (concluído, falhou, parado); worktree e ramo ficam para diff e merge |
+| Capacidade contada sobre **todas** as faixas da máquina; cada chamador passava um limite diferente (2, 8, 12) | Capacidade **por projeto** (padrão 12); teto da máquina 64 só como proteção |
+| Limite fixo no código | `BBRAINX_LANE_CAPACITY` de 1 a 32 |
+| Supervisor morto (queda, reboot) prendia a vaga para sempre | `bbrainx recruit gc --project ID` ou `--all` fecha faixas de recrutas sem supervisor vivo; o recrutamento roda essa coleta no próprio projeto antes de pedir vaga |
+
+Medido no Mac mini em 16/10: 9 faixas ativas, nenhuma com processo vivo (7 `ab-s00s`, 1 `bbrainx-dev`, 1 `services`), travavam o recrutamento de outro projeto.
+
+# BBrainX 2.1.0 — Developer Preview — 16/10/2026
+
+- **Integração AB-S00S opt-in:** `integrate --ab-s00s on|off` adiciona/remove a segunda entrada gerenciada em `.mcp.json`, `.codex/config.toml` e `.vscode/mcp.json`. Mesmo recibo por arquivo, backup privado, controle de hash e rollback. Sem a flag, mantém o comportamento anterior. Caminho por `--ab-s00s-bin` ou `realpath` de `~/.local/bin/ab-s00s`; `off` funciona sem o binário. Entradas alheias não são adotadas.
+- **OpenHands Agent Canvas:** `config --client openhands` imprime JSON de `mcp_config` do Agent Server (`transport: "stdio"`), com `bbrainx` e AB-S00S quando solicitado. Formato conferido na referência local `0c7c225`; sem instalação ou certificação de conexão nativa.
+- **ACI:** `context_read` entrega janela numerada `%6d| `, até 400 linhas/64 KiB, apenas de arquivos indexados, com hash conferido novamente após a varredura. `context_symbol` encontra declarações lexicais por nome exato, com arquivo, linha, tipo e hash; até 50 resultados/200 trechos candidatos. Ambas respeitam projeto/lane e recusam `INDEX_REQUIRED`/`INDEX_STALE`.
+- **Catálogo:** oito ferramentas padrão (antes seis), onze com `--recruit` (antes nove). Asserções e manifesto MCPB atualizados explicitamente; opt-ins SDD/Laya continuam acrescentando uma ferramenta cada. Sem mudança de schema de banco ou dos contratos de checkpoint/memória.
+
+[Uso e limites](QUICKSTART.md#ab-s00s-e-openhands-agent-canvas) · [Evidência e retomada do WP-B](worklog-2026-10-16-wp-b.md). Os números históricos abaixo permanecem vinculados às revisões em que foram medidos.
+
+# BBrainX 2.0.2 — Developer Preview — 16/10/2026
+
+| Medida | Valor |
+|---|---|
+| Recrutas por chamada | 10 (era 6); por entrada 10 (era 4); ativos por projeto 12 (era 8) |
+| `--network` / `network: true` | recruta Codex de implementação com rede e `listen` local (sandbox recusava com EPERM); revisão segue sem rede |
+
+# BBrainX 2.0.1 — Developer Preview — 15/10/2026
+
+Hosts que instalam servidores MCP por bundle (Chat On Steroids, Claude Desktop) passam a ter o BBrainX com formulário de configuração.
+
+| Medida | Valor |
+|---|---|
+| Bundle MCPB (`npm run package:mcpb`) | manifest 0.3, servidor `node`, 4 pacotes de execução travados pelo lockfile (zod, gpt-tokenizer, jsonc-parser, smol-toml); painel fora |
+| Configuração sem argumentos | `BBRAINX_PROJECT`, `BBRAINX_HOME`, `BBRAINX_RECRUIT`, `BBRAINX_HARNESS`, `BBRAINX_LANE`, `BBRAINX_WORKSPACE` (argumento explícito vence; vazio é ausente) |
+| `config --client cos` | executável, argumentos e ambiente para o Chat On Steroids (Plugins → Custom executable) |
+| Testes | `test/mcpb.test.mjs`: o bundle lança pelo comando que o host expande e responde 9 ferramentas; `--client cos`; fallback por ambiente |
+
+Oportunidades: catálogo do Chat On Steroids apontando para o bundle da release (fork `chat-on-steroids-bbx`, `docs/bbrainx-integration.md`); escrita do checkpoint no Compact & Resume do CoS; ponte LAN para o celular.
+
+# BBrainX 2.0.0 — Developer Preview — 13/10/2026
+
+| Medida | Valor |
+|---|---|
+| Recrutamento BYO (Claude Code + Codex reais, tarefa real) | 2 recrutas, 2 commits em branches próprias, checkout principal limpo; Codex fez 4 chamadas ao BBrainX da lane |
+| Custo observado no recruta Claude (haiku, low, 3 turnos) | US$ 0,032 informado pela CLI |
+| Tokens do recruta Codex (gpt-6-astra, low) | 137.177 entrada (117.760 em cache) · 653 saída |
+| Verificação de frescor por busca (M4, árvores reais) | 2.588 arquivos: 0,52 s por processo CLI · 633 arquivos: 0,19 s |
+| Testes automatizados | 758/758 no Node 24.21.0 (macOS arm64) |
+| Ferramentas MCP | 6 por padrão · 9 com `--recruit` (`agents_recruit`, `agents_status`, `agents_dismiss`) |
+| Limites de uso do Codex via `app-server` | janela, percentual, reset, plano e créditos, sem ler `auth.json` |
+
+Mudanças: AB-BBX como núcleo próprio; `INDEX_STALE` quando a worktree diverge do índice; `index-status` e `watch`; checkpoint com notas de 2.000 caracteres; contadores por capacidade no painel; recrutamento de agentes nas CLIs já logadas (modelo BYO do Orca); `EACCES`/`EPERM` saem do manifesto em vez de derrubar a busca.
+
+Oportunidades: painel de contas com vários `CLAUDE_CONFIG_DIR`/`CODEX_HOME`; limites do Claude Code por statusline opt-in; acompanhamento ao vivo dos recrutas; fila acima de 8 ativos; custo da varredura em repositórios grandes (processo dedicado ou invalidação incremental); Windows (15 falhas de CI, backlog). Detalhes em [RECRUIT.md](RECRUIT.md) e [BBRAINX_2_0.md](BBRAINX_2_0.md).
+
 # BBrainX 1.5.0 — Developer Preview — 10/10/2026
 
 | Medida | Valor |

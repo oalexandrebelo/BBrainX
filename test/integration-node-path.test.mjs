@@ -19,7 +19,7 @@ function fixture(t){
   fs.mkdirSync(root);fs.writeFileSync(path.join(root,'README.md'),'# Project\n');
   t.after(()=>fs.rmSync(directory,{recursive:true,force:true}));
   const run=(node,args=[])=>spawnSync(process.execPath,[entry,'integrate','--root',root,'--project','sample','--clients','claude',...args],{
-    cwd:root,env:{...process.env,BBRAINX_HOME:home,BBRAINX_ENTRY:entry,BBRAINX_NODE:node},encoding:'utf8',timeout:15000
+    cwd:root,env:{...process.env,BBRAINX_HOME:home,BBRAINX_ENTRY:entry,BBRAINX_NODE:node,BBRAINX_FILES_ROOT:path.join(home,'sem-pasta-de-necessidades')},encoding:'utf8',timeout:15000
   });
   return {directory,root,home,run};
 }
@@ -38,7 +38,7 @@ test('CLI retains a validated stable Node alias and adopts only its exact legacy
   const preview=f.run(alias,['--adopt-existing']);assert.equal(preview.status,0,preview.stderr);assert.equal(JSON.parse(preview.stdout).files[0].adoption,'exact-legacy-generator');
   assert.equal(fs.readFileSync(target,'utf8'),before);assert.equal(fs.existsSync(f.home),false);
   const applied=f.run(alias,['--adopt-existing','--apply']);assert.equal(applied.status,0,applied.stderr);
-  const server=JSON.parse(fs.readFileSync(target,'utf8')).mcpServers.bbrainx;assert.equal(server.command,alias);assert.deepEqual(server.args,[entry,'mcp','--project','sample','--workspace',f.root,'--harness','claude']);
+  const server=JSON.parse(fs.readFileSync(target,'utf8')).mcpServers.bbrainx;assert.equal(server.command,alias);assert.deepEqual(server.args,[entry,'mcp','--project','sample','--recruit','--workspace',f.root,'--harness','claude'],'integrate grants recruitment by default (host grant written into the config)');
   const repeated=f.run(alias);assert.equal(repeated.status,0,repeated.stderr);assert.equal(JSON.parse(repeated.stdout).files[0].status,'unchanged');
 });
 

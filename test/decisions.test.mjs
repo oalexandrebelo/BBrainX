@@ -28,9 +28,9 @@ const invoke=(engine,project='a',state='task',qs=questions,signal)=>engine.invok
 
 test('optional capability is absent by default, validates schema and checks grants before starting',async t=>{
   const {store,decisions,broker}=fixture(t),plain=makeEngine(store,['a']);
-  assert.equal(toolCatalog(plain).tools.length,6);
+  assert.equal(toolCatalog(plain).tools.length,9);
   await assert.rejects(invoke(plain),e=>e.code==='CAPABILITY_NOT_FOUND');
-  const engine=makeEngine(store,['a'],{decisions});assert.equal(toolCatalog(engine).tools.length,7);
+  const engine=makeEngine(store,['a'],{decisions});assert.equal(toolCatalog(engine).tools.length,10);
   await assert.rejects(invoke(engine,'b'),e=>e.code==='FORBIDDEN');
   await assert.rejects(invoke(engine,'a','x'.repeat(4001)),e=>e.code==='INPUT_INVALID');
   await assert.rejects(invoke(engine,'a','x',{q:{type:'choice',instructions:'?',criteria:{only:'one'}}}),e=>e.code==='INPUT_INVALID');

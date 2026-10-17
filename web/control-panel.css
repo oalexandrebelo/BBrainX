@@ -47,6 +47,8 @@
 .control-list small,.control-lanes small{color:#83979d;font-size:9px;line-height:1.5}
 .control-tag.state-failed,.control-tag.state-timed_out{color:#ffc6b5;border-color:#765149}
 .control-tag.state-stale,.control-tag.state-cancelled{color:#d2c69d;border-color:#665e44}
+.control-tag.state-unknown,.control-tag.state-stopped{color:#d2c69d;border-color:#665e44}
+.control-tag.state-completed,.control-tag.state-running{color:#b8e6c9;border-color:#3f6b52}
 .control-lanes{margin-top:18px;padding-top:14px;border-top:1px solid #26343a}
 .control-lanes h3{margin:0 0 4px;color:#9cb1b7;font:9px ui-monospace,monospace;letter-spacing:1px;text-transform:uppercase}
 .control-memory{margin:12px 0 0;padding-top:12px;border-top:1px solid #26343a;color:#a4b8bc;font-size:10px}

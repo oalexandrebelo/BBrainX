@@ -288,5 +288,173 @@
   "expect": [
    "mem0-ts/src/client/mem0.ts"
   ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde a pontuação bruta de relevância por palavras-chave é convertida para uma escala de 0 a 1, com parâmetros que dependem do tamanho da consulta?",
+  "expect": [
+   "mem0/utils/scoring.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como as palavras são reduzidas à forma base (plural, conjugação) antes da busca textual por termos?",
+  "expect": [
+   "mem0/utils/lemmatization.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where does the code automatically download a missing language-processing model when the NLP library is installed but the model isn't?",
+  "expect": [
+   "mem0/utils/spacy_models.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde se decide de onde vêm as credenciais da nuvem do Google (JSON em memória, caminho de arquivo, variável de ambiente ou padrão do ambiente)?",
+  "expect": [
+   "mem0/utils/gcp_auth.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o histórico local de mensagens de uma sessão devolve apenas as últimas N em ordem cronológica?",
+  "expect": [
+   "mem0/memory/storage.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde a taxa de amostragem dos eventos anônimos de uso é lida de uma variável de ambiente e validada com valor padrão em caso de erro?",
+  "expect": [
+   "mem0/memory/telemetry.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where is the anonymous per-installation user identifier generated and saved in a config file in the home directory?",
+  "expect": [
+   "mem0/memory/setup.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como um código de status HTTP de resposta da API vira um tipo de erro específico, com sugestão de correção para o usuário?",
+  "expect": [
+   "mem0/exceptions.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde os erros de requisição ao serviço hospedado capturam o cabeçalho de espera e os limites de taxa quando a resposta é 429?",
+  "expect": [
+   "mem0/client/utils.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o sistema reconhece modelos de raciocínio e remove parâmetros como temperatura que eles não aceitam?",
+  "expect": [
+   "mem0/llms/base.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde a nota de relevância dada por um LLM a cada documento é extraída do texto de resposta e limitada ao intervalo entre zero e um?",
+  "expect": [
+   "mem0/reranker/llm_reranker.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where does the local vector index loader restrict deserialization to a whitelist of basic types to prevent arbitrary code execution?",
+  "expect": [
+   "mem0/vector_stores/faiss.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where is a user-provided memory expiry date validated as a strict calendar date, and how do we decide a stored memory is already past its expiry?",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/expiration.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde chaves em snake_case de um payload são convertidas para camelCase, mantendo intactos os campos de identificação de usuário, agente e execução?",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/casing.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where does the TypeScript SDK show a friendly install hint when an optional dependency for a provider is missing?",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/load_peer.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o caminho padrão do banco SQLite local no diretório do usuário é definido e a pasta pai é criada automaticamente?",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/sqlite.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como o texto devolvido por um LLM é limpo de cercas de código markdown e blocos de pensamento antes de ser interpretado?",
+  "expect": [
+   "mem0/memory/utils.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde a busca por similaridade em memória (sem banco externo) calcula o cosseno entre o vetor da consulta e os vetores guardados em TypeScript?",
+  "expect": [
+   "mem0-ts/src/oss/src/vector_stores/memory.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Where does the local embedding client check whether the configured model is already available on the local server and pull it if not?",
+  "expect": [
+   "mem0/embeddings/ollama.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde uma string de conexão do Postgres tem o modo de SSL adicionado ou substituído, seja no formato URI ou no formato de pares chave=valor?",
+  "expect": [
+   "mem0/vector_stores/pgvector.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Qual a implementação em TypeScript do ranqueamento por frequência de termos e tamanho de documento usado na busca lexical?",
+  "expect": [
+   "mem0-ts/src/oss/src/utils/bm25.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde são extraídas entidades nomeadas e frases nominais de um texto para impulsionar o ranqueamento de resultados da busca?",
+  "expect": [
+   "mem0/utils/entity_extraction.py"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Onde o registro de alterações das memórias é gravado numa tabela de um Postgres hospedado em nuvem, em vez de SQLite local?",
+  "expect": [
+   "mem0-ts/src/oss/src/storage/SupabaseHistoryManager.ts"
+  ]
+ },
+ {
+  "kind": "natural",
+  "query": "Como um nome de provedor em texto vira uma instância concreta de LLM, embedder ou banco vetorial via carregamento dinâmico de classe?",
+  "expect": [
+   "mem0/utils/factory.py"
+  ]
  }
 ]

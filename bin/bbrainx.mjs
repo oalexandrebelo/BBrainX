@@ -9,8 +9,15 @@ import { clientConfig, CLIENTS } from '../src/clients.mjs';
 import { VERSION } from '../src/version.mjs';
 
 // Argument errors are a short JSON line on stderr like every other failure: stdout is reserved for the MCP protocol and results.
-const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
+const parsedArgs=(()=>{try{const parsed=parseArgs({allowPositionals:true,options:{interval:{type:'string'},project:{type:'string'},root:{type:'string'},query:{type:'string'},budget:{type:'string'},task:{type:'string'},file:{type:'string'},version:{type:'string'},key:{type:'string'},port:{type:'string'},id:{type:'string'},status:{type:'string'},statement:{type:'string'},source:{type:'string'},client:{type:'string'},'ab-s00s':{type:'string'},'ab-s00s-bin':{type:'string'},mode:{type:'string'},state:{type:'string'},workspace:{type:'string'},lane:{type:'string'},harness:{type:'string'},session:{type:'string'},clients:{type:'string'},timeout:{type:'string'},apply:{type:'boolean'},'adopt-existing':{type:'boolean'},'confirm-workspace':{type:'string'},amount:{type:'string'},currency:{type:'string'},basis:{type:'string'},strict:{type:'boolean'},laya:{type:'boolean'},sdd:{type:'boolean'},recruit:{type:'boolean'},'no-recruit':{type:'boolean'},spec:{type:'string'},task:{type:'string'},title:{type:'string'},base:{type:'string'},minutes:{type:'string'},account:{type:'string'},stop:{type:'boolean'},'delete-branch':{type:'boolean'},network:{type:'boolean'},'no-open':{type:'boolean'},json:{type:'boolean'},serve:{type:'boolean'},files:{type:'boolean'},'no-files':{type:'boolean'},name:{type:'string'},need:{type:'string'},path:{type:'string'},part:{type:'string'},'upload-id':{type:'string'},final:{type:'boolean'},proposal:{type:'string'},formats:{type:'string'},start:{type:'string'},all:{type:'boolean'},log:{type:'boolean'},help:{type:'boolean'}}});return {values:parsed.values,args:parsed.positionals};}catch(e){return {error:Object.assign(new Error(String(e.message).split('. ')[0]),{code:e.code})};}})();
 const {values={},args=[]}=parsedArgs;
+// Hosts que não passam argumentos (bundle MCPB: Chat On Steroids, Claude Desktop) configuram por ambiente; argumento explícito vence; vazio é ausente.
+for(const [key,name] of [['project','BBRAINX_PROJECT'],['harness','BBRAINX_HARNESS'],['lane','BBRAINX_LANE'],['workspace','BBRAINX_WORKSPACE']])if(values[key]===undefined&&process.env[name])values[key]=process.env[name];
+if(args[0]==='mcp'&&values['no-recruit']===true)values.recruit=false;
+else if(values.recruit===undefined&&/^(1|true|yes|on)$/i.test(process.env.BBRAINX_RECRUIT||''))values.recruit=true;
+// Pasta de necessidades (files_*): mesma regra do recrutamento, explícito vence o ambiente.
+if(args[0]==='mcp'&&values['no-files']===true)values.files=false;
+else if(values.files===undefined&&/^(1|true|yes|on)$/i.test(process.env.BBRAINX_FILES||''))values.files=true;
 const command=args[0]||'help';let store;
 const print=value=>console.log(JSON.stringify(value,null,2));
 try{
@@ -23,8 +30,27 @@ Começar (registra a pasta, indexa e mostra como ligar ao seu harness):
   node bin/bbrainx.mjs doctor
   node bin/bbrainx.mjs config --project nome --client ${CLIENTS.join('|')}
 
+Manual integrador (confere tudo e abre a página com as correções em um clique):
+  bbx ch   (ou: node bin/bbrainx.mjs ch [--project ID] [--no-open] [--json])
+
+Pasta de necessidades (Downloads/Projetos; BBRAINX_FILES_ROOT troca):
+  node bin/bbrainx.mjs files setup | root | open --name "proposta cliente x" | list [--need N] | read --need N --path P
+  echo "# Título" | node bin/bbrainx.mjs files write --need 2026-10-16-proposta-cliente-x --path proposta.md
+  node bin/bbrainx.mjs files propose | proposals | build --proposal ID [--formats pdf,docx] | dismiss --proposal ID
+  (o servidor MCP só expõe files_* quando iniciado com --files)
+
+Recrutar agentes (BYO: usa o Claude Code e o Codex já instalados e logados nesta máquina):
+  node bin/bbrainx.mjs recruit doctor
+  node bin/bbrainx.mjs recruit start --project nome --spec "1 codex astra 6 high e 2 opus 5.5 xhigh" --task "o que fazer" [--mode review] [--base ref] [--minutes 60] [--network] [--key ID-de-idempotência]
+  node bin/bbrainx.mjs recruit status --project nome [--id ID] [--log]
+  node bin/bbrainx.mjs recruit dismiss --project nome --id ID [--stop] [--delete-branch]
+  node bin/bbrainx.mjs recruit gc --project nome | --all   (fecha faixas de recrutas sem supervisor vivo)
+  (o servidor MCP só recruta quando iniciado com --recruit; integrate --apply grava isso, salvo com --no-recruit)
+
 Contexto e busca:
-  node bin/bbrainx.mjs index --project nome
+  node bin/bbrainx.mjs index-status --project nome [--lane ID]
+  node bin/bbrainx.mjs watch --project nome [--lane ID] [--interval 30000]
+  node bin/bbrainx.mjs index --project nome [--lane ID]
   node bin/bbrainx.mjs search --project nome --query "onde a sessão é validada" [--budget 4000]
   node bin/bbrainx.mjs context --project nome --query "validação de sessão" --budget 4000 [--task T1] [--strict]
 
@@ -57,6 +83,8 @@ Integração e painel por projeto:
   bbrainx discover                           (pastas abertas, projetos registrados e histórico)
   bbrainx integrate --root . [--project ID]   (plano sem alteração de configurações)
   bbrainx integrate --root . --apply         (aplica com backup; preserva trust/credenciais)
+  bbrainx integrate --root . --apply --ab-s00s on|off [--ab-s00s-bin /caminho/bin/ab-s00s.mjs]
+  bbrainx config --project ID --client openhands [--ab-s00s on|off] [--ab-s00s-bin /caminho/bin/ab-s00s.mjs]
   bbrainx integrations rollback --id RECIBO
   bbrainx control --project ID
   bbrainx budget --project ID --amount 50 --currency USD --basis reported --version 0
@@ -67,7 +95,7 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
   else if(['integrate','integrations','discover','workspace-seen','control','test','test-history','import-context','budget'].includes(command)){const {controlCommand}=await import('../src/control-cli.mjs');print(await controlCommand(command,values,args));}
   else if(command==='config'){
     ensure(values.project,'PROJECT_REQUIRED');
-    console.log(clientConfig(values.client||'claude',{node:stableNodePath(),entry:stableEntryPath(fileURLToPath(import.meta.url)),project:values.project,home:stateHome()}));
+    console.log(clientConfig(values.client||'claude',{node:stableNodePath(),entry:stableEntryPath(fileURLToPath(import.meta.url)),project:values.project,home:stateHome(),abS00s:values['ab-s00s'],abS00sBin:values['ab-s00s-bin']}));
   }
   else if(command==='sdd'){
     ensure(values.project,'PROJECT_REQUIRED');
@@ -108,9 +136,48 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
     else throw new Error('Use: laya status | install | ask | decide | remove');
   }
   else {
-    if(command==='mcp'&&values.lane){const {LaneStore}=await import('../src/lanes/store.mjs');store=new LaneStore(stateHome(),values.project,values.lane);}
+    if(['mcp','index','index-status','search','context','watch'].includes(command)&&values.lane){const {LaneStore}=await import('../src/lanes/store.mjs');store=new LaneStore(stateHome(),values.project,values.lane);}
     else {const {BrainStore}=await import('../src/store.mjs');store=new BrainStore();}
     if(command==='init'){ensure(values.root&&values.project,'ROOT_AND_PROJECT_REQUIRED');print(store.register(values.project,values.root));}
+    else if(command==='ch'||command==='check'){
+      // Manual integrador: confere, imprime o resumo e abre a página com as ações (bbx ch). --serve: só a página, link em JSON na 1.ª linha.
+      const {runChecks,formatSummary}=await import('../src/check.mjs');
+      let openPage=true;
+      if(!values.serve){
+        const report=await runChecks(store,{projects:values.project?[values.project]:undefined});
+        if(values.json){print(report);openPage=false;}else{console.log(formatSummary(report));if(values['no-open'])openPage=false;}
+      }
+      if(openPage){
+        const {startCheckServer,openBrowser}=await import('../src/check-server.mjs');
+        const page=await startCheckServer(store,{idleMs:30*60000});
+        if(values.serve)console.log(JSON.stringify({url:page.url,port:page.port}));
+        else{console.log('\nManual integrador: '+page.url+'\n(fecha sozinho depois de 30 min sem uso; Ctrl+C fecha agora)');openBrowser(page.url);}
+        await new Promise(resolve=>{const stop=()=>page.close().then(resolve);process.once('SIGINT',stop);process.once('SIGTERM',stop);const poll=setInterval(()=>{if(page.closed()){clearInterval(poll);resolve();}},1000);});
+      }
+    }
+    else if(command==='files'){
+      const {filesCommand}=await import('../src/files-cli.mjs');
+      const readStdin=async()=>{const chunks=[];for await(const chunk of process.stdin)chunks.push(chunk);return Buffer.concat(chunks).toString('utf8');};
+      print(await filesCommand(store,args[1],values,readStdin));
+    }
+    else if(command==='recruit'){
+      const sub=args[1],{recruitDoctor,planRecruits,startRecruits,runRecruit,recruitStatus,dismissRecruit}=await import('../src/recruit.mjs');
+      if(sub==='doctor')print(await recruitDoctor({account:values.account}));
+      else{
+        ensure(values.project||(sub==='gc'&&values.all===true),'PROJECT_REQUIRED');
+        if(sub==='start'){
+          ensure(values.task,'TASK_REQUIRED','Use --task "o que o recruta deve fazer".');
+          const plan=planRecruits(store,{project:values.project,spec:values.spec,task:values.task,title:values.title,mode:values.mode||'implement',base:values.base,timeoutMinutes:values.minutes===undefined?undefined:Number(values.minutes),account:values.account,network:values.network===true,idempotencyKey:values.key});
+          if(!values.apply){print({plan:{...plan,task:undefined,taskChars:plan.task.length},next:'Repita com --apply para lançar.'});}
+          else print(startRecruits(store,plan));
+        }
+        else if(sub==='run'){ensure(values.id,'ID_REQUIRED');const result=await runRecruit(store,{project:values.project,id:values.id});if(result.status!=='completed')process.exitCode=1;print({id:result.id,status:result.status,reason:result.reason,exitCode:result.exitCode});}
+        else if(sub==='status'){const result=recruitStatus(store,values.project,{...(values.id?{ids:[values.id]}:{}),includeLog:values.log===true});print(result);}
+        else if(sub==='gc'){const {collectLanes}=await import('../src/recruit.mjs');ensure(values.project||values.all,'PROJECT_REQUIRED','Use --project ID ou --all.');print(collectLanes(store,{project:values.project,all:values.all===true}));}
+        else if(sub==='dismiss'){ensure(values.id,'ID_REQUIRED');print(dismissRecruit(store,values.project,values.id,{stop:values.stop===true,deleteBranch:values['delete-branch']===true}));}
+        else throw new Error('Use: recruit doctor | start | status | gc | dismiss');
+      }
+    }
     else if(command==='up'){
       // Um passo só: registra (ou reencontra) a pasta, indexa e mostra como ligar cada harness.
       const root=fs.realpathSync.native(path.resolve(values.root||process.cwd())), known=store.projects().find(item=>{
@@ -128,9 +195,18 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       for(const [name,content]of Object.entries(fixture))if(!fs.existsSync(path.join(root,name)))fs.writeFileSync(path.join(root,name),content);
       store.register('demo',root);const {indexProject}=await import('../src/retrieval.mjs');print(indexProject(store,'demo'));
     }
+    else if(command==='watch'){
+      ensure(values.project,'PROJECT_REQUIRED');
+      const {watchIndex}=await import('../src/index-watch.mjs');
+      const stop=new AbortController(), end=()=>stop.abort();
+      process.once('SIGINT',end);process.once('SIGTERM',end);
+      try{await watchIndex(store,values.project,{intervalMs:Number(values.interval||30000),signal:stop.signal,onCycle:print});}
+      finally{process.removeListener('SIGINT',end);process.removeListener('SIGTERM',end);}
+    }
+    else if(command==='index-status'){const {inspectIndex}=await import('../src/retrieval.mjs');const result=inspectIndex(store,values.project);print(result);if(result.status!=='current')process.exitCode=2;}
     else if(command==='index'){const {indexProject}=await import('../src/retrieval.mjs');print(indexProject(store,values.project));}
-    else if(command==='search'){const {search}=await import('../src/retrieval.mjs'),{fitSearch}=await import('../src/context.mjs');print(fitSearch(search(store,values.project,values.query),values.budget===undefined?undefined:Number(values.budget)));}
-    else if(command==='context'){const {compileContext}=await import('../src/context.mjs');print(compileContext(store,{project:values.project,query:values.query,budget:Number(values.budget||4000),...(values.task?{task:values.task}:{}),onStale:values.strict?'fail':'refresh'}));}
+    else if(command==='search'){const {search,requireFreshIndex}=await import('../src/retrieval.mjs'),{fitSearch}=await import('../src/context.mjs');const freshness=requireFreshIndex(store,values.project);print({...fitSearch(search(store,values.project,values.query),values.budget===undefined?undefined:Number(values.budget)),freshness});}
+    else if(command==='context'){const {requireFreshIndex}=await import('../src/retrieval.mjs');const freshness=requireFreshIndex(store,values.project);const {compileContext}=await import('../src/context.mjs');print({...compileContext(store,{project:values.project,query:values.query,budget:Number(values.budget||4000),...(values.task?{task:values.task}:{}),onStale:values.strict?'fail':'refresh'}),freshness});}
     else if(command==='checkpoint'){ensure(values.file,'FILE_REQUIRED');const {saveCheckpoint}=await import('../src/session.mjs');print(saveCheckpoint(store,{project:values.project,task:values.task,content:JSON.parse(fs.readFileSync(values.file,'utf8')),expectedVersion:Number(values.version||0),idempotencyKey:values.key||newId()}));}
     else if(command==='memory')print(store.memories(values.project));
     else if(command==='propose')print(store.proposeMemory(values.project,values.statement,values.source,values.mode));
@@ -140,19 +216,19 @@ Execução de testes exige comando explícito e não é sandbox de SO. Mais: doc
       ensure(values.project,'PROJECT_REQUIRED');const {root}=store.project(values.project);
       // Em harness com registro global de servidores, este processo aparece em sessões de outros repositórios: as instruções dizem a quem ele serve.
       const scope=' This server serves only project "'+values.project+'" (root: '+root+'). Pass project "'+values.project+'" in every call, and do not use these tools for work on another repository.';
-      const {makeEngine,INSTRUCTIONS}=await import('../src/engine.mjs'),{serveMcpStdio}=await import('../src/mcp.mjs');
+      const {makeEngine,INSTRUCTIONS,RECRUIT_INSTRUCTIONS,FILES_INSTRUCTIONS,CHECK_INSTRUCTIONS}=await import('../src/engine.mjs'),{serveMcpStdio}=await import('../src/mcp.mjs');
       // A saída padrão é do protocolo; o rastro opcional vai para a saída de erro, sem argumentos nem resultados.
       if(values.workspace){const {assertWorkspaceBinding}=await import('../src/workspace.mjs');assertWorkspaceBinding(store,{project:values.project,workspace:values.workspace,lane:values.lane});}
       const onEvent=process.env.BBRAINX_TRACE==='1'?event=>console.error(JSON.stringify(event)):undefined;
       const {LocalDecisions}=await import('../src/decisions.mjs'),decisions=values.laya?new LocalDecisions({home:store.authority?.home||store.home}):null;
       const sdd=values.sdd?(await import('../src/sdd.mjs')).alignSdd:undefined;
-      let engine=makeEngine(store,[values.project],{onEvent,decisions,sdd});
+      let engine=makeEngine(store,[values.project],{onEvent,decisions,sdd,recruit:values.recruit===true,files:values.files===true});
       if(values.lane){const {bindLaneEngine}=await import('../src/lanes/store.mjs');engine=bindLaneEngine(engine,store);}
       const {observeEngine}=await import('../src/control.mjs');
       const observer=observeEngine(engine,store.authority||store,{project:values.project,harness:values.harness||'unknown',workspace:root,lane:values.lane||null});
       if(observer.recordingError)console.error(JSON.stringify({observation:'unavailable',code:observer.recordingError}));
       const {serverBrand}=await import('../src/brand.mjs');
-      try{await serveMcpStdio(observer.engine,{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS+scope,isFailure:output=>output?.ok===false,serverMetadata:serverBrand(values.project),onConnect:()=>observer.connected()});}
+      try{await serveMcpStdio(observer.engine,{principal:{id:'local-mcp-host'},maxLineBytes:1048576,instructions:INSTRUCTIONS+scope+CHECK_INSTRUCTIONS+(values.recruit===true?RECRUIT_INSTRUCTIONS:'')+(values.files===true?FILES_INSTRUCTIONS:''),isFailure:output=>output?.ok===false,serverMetadata:serverBrand(values.project),onConnect:()=>observer.connected()});}
       finally{decisions?.close();observer.close();}
     }
     else if(command==='serve'){

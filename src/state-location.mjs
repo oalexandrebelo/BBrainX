@@ -37,12 +37,21 @@ function lexicalReason(directory, mounts, platform) {
   if (platform === 'win32' && /^\\\\(?![?.]\\)/.test(resolved)) return 'sistema de arquivos remoto (caminho UNC ' + resolved.split('\\').slice(0, 4).join('\\') + ')';
   const hit = resolved.split(flavour.sep).find(part => SYNC_SEGMENTS.has(part.toLowerCase()) || SYNC_PREFIX.test(part));
   if (hit) return 'pasta de sincronização (' + hit + ')';
+  return mountReason(resolved, mounts, flavour);
+}
+function mountReason(resolved, mounts, flavour) {
   let best = null;
   for (const mount of mounts()) {
     const base = mount.point.endsWith(flavour.sep) ? mount.point : mount.point + flavour.sep;
     if ((resolved === mount.point || (resolved + flavour.sep).startsWith(base)) && (!best || mount.point.length > best.point.length)) best = mount;
   }
   return best && REMOTE_FILESYSTEMS.has(best.type.replace(/^fuse\./, '')) ? 'sistema de arquivos remoto (' + best.type + ' em ' + best.point + ')' : null;
+}
+/** Só volume de rede ou UNC (pasta sincronizada é aceita): para pastas de usuário como Downloads, onde não há banco WAL. */
+export function remoteFilesystemReason(directory, { mounts = processMounts, platform = process.platform } = {}) {
+  const flavour = platform === 'win32' ? path.win32 : path.posix, resolved = flavour.resolve(platform === process.platform ? resolveExisting(directory) : directory);
+  if (platform === 'win32' && /^\\\\(?![?.]\\)/.test(resolved)) return 'sistema de arquivos remoto (caminho UNC)';
+  return mountReason(resolved, mounts, flavour);
 }
 /**
  * null se o diretório parece local; senão a razão. Confere o caminho digitado e, no host real, também o resolvido por realpath

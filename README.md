@@ -4,22 +4,62 @@
 
 <p align="center"><a href="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml"><img alt="CI: consulte a execução e a revisão testada" src="https://github.com/oalexandrebelo/BBrainX/actions/workflows/verify.yml/badge.svg"/></a> · <a href="docs/QUICKSTART.md">Começar</a> · <a href="docs/STUDY_MAP.md">Mapa do estudo</a> · <a href="docs/DOSSIER.md">Dossiê</a> · <a href="docs/SECURITY_MODEL.md">Segurança</a> · <a href="docs/EVALUATION.md">Avaliação</a> · <a href="README.en.md">English</a></p>
 
+## BBrainX 2.0 · AB-BBX
+
+O BBrainX nasceu para acelerar e otimizar projetos reais e foi compartilhado para permitir continuidade entre ferramentas e agentes. **AB-BBX** é a camada própria de execução de capacidades: validação, autorização, cancelamento, prazos e contratos MCP. A entrada pública é `src/ab-bbx.mjs`; o caminho anterior conserva compatibilidade. Não há dependência de um motor externo de ações no runtime.
+
+A versão 2.0 atende projetos distintos, com prioridade para Mac mini e MacBook Pro M5. Busca e contexto verificam o corpus antes de responder: `INDEX_STALE` pede reindexação explícita, incluindo arquivos novos que a busca antiga não encontraria. `index-status --project ID` diagnostica sem alterar o índice. O painel mostra buscas, contextos e checkpoints por sessão, sem registrar consultas. Execute `node bin/bbrainx.mjs watch --project ID` em um processo separado; use `--lane ID` para uma lane já registrada. A cada ciclo, o processo reconcilia arquivos novos, alterações, remoções e regras Git. Não instala serviço nem modifica hooks. O intervalo padrão é 30 segundos **após** o término da varredura; não é uma garantia de atraso máximo.
+
+[Contrato da 2.0, revisão dos repositórios e aceite nos Macs](docs/BBRAINX_2_0.md) · [Operação AB-BBX](docs/AB_BBX.md). Busca lexical e checkpoints são ferramentas de desenvolvimento; não integram o runtime do aplicativo nem certificam seu lançamento.
+
+### Recrutar agentes (BYO: suas CLIs, seus logins)
+
+Numa sessão ligada ao BBrainX, diga ao harness **"recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para corrigir X"**. O BBrainX lança o Claude Code e o Codex que já estão instalados e logados nesta máquina, um por recruta, cada um em worktree, branch e lane próprios; o checkout principal não é tocado. Nenhuma assinatura nova, nenhum token lido. `integrate --apply` concede isso ao servidor com `--recruit` (onze ferramentas); sem o flag, oito. `bbrainx recruit doctor` mostra as CLIs, o login e os limites de uso do Codex. Medido em 13/10/2026 com as duas CLIs reais: dois recrutas, dois commits, checkout limpo. [docs/RECRUIT.md](docs/RECRUIT.md).
+
 ## O que é
 
 O BBrainX roda na sua máquina e entrega ao agente de programação o que ele precisa para continuar uma tarefa: os trechos certos do repositório, o checkpoint da sessão anterior e as memórias que você aprovou. Fala MCP. Não usa modelo, conta, Docker nem Python no núcleo e não faz chamadas de rede de saída.
 
-| Cliente | Estado na 1.5.0 |
+| Cliente | Estado na 2.0 |
 |---|---|
-| Claude Code | **Verificado.** `claude -p --mcp-config` chamou `context_search` |
-| Codex | **Verificado.** `codex exec` chamou `context_search` |
+| Claude Code | **Verificado.** `claude -p --mcp-config` chamou `context_search`; como recruta (haiku), trabalhou em worktree própria e commitou |
+| Codex | **Verificado.** `codex exec` chamou `context_search`; como recruta (gpt-6-astra), chamou `context_bootstrap`, `context_search`, `session_checkpoint` e `session_get` na lane dele |
 | VS Code | **Verificado em parte.** O `.vscode/mcp.json` gerado foi exercitado por um cliente do SDK MCP, do jeito que o VS Code o inicia. O início pela interface do VS Code é manual |
+| OpenHands Agent Canvas | **Formato conferido na referência local.** `config --client openhands` imprime `mcp_config` stdio; conexão nativa não homologada |
 | Cursor, Gemini CLI | **Não verificado.** Só imprime os fragmentos de configuração (`config --client cursor` e `--client gemini`) |
 
-A versão **1.5.0 é uma prévia de desenvolvimento** (Developer Preview). A suíte automatizada tem **735 testes** e passou 735/735 no Node 24.21.0 e no Node 22.22.2 (macOS arm64) na revisão publicada. O que não foi medido está dito como não medido. Números e próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
+Esta branch propõe a **2.0.0** na única [PR #22](https://github.com/oalexandrebelo/BBrainX/pull/22). Versão declarada não significa atualização já instalada nos dispositivos. Windows fica no backlog por decisão do mantenedor; suas falhas continuam visíveis e não bloqueiam a entrega para Mac. Evidências históricas da 1.5.0: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md).
+
+## Instalar em uma linha (macOS)
+
+No Terminal:
+
+```sh
+curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.4.0-preview/install.sh | bash
+```
+
+Ou cole no Claude Code, numa sessão aberta na pasta do seu projeto:
+
+```text
+Instale o BBrainX nesta máquina e ligue este projeto: rode
+curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.4.0-preview/install.sh | bash -s -- "$PWD" --apply
+e depois ~/.local/bin/bbx ch --no-open. Mostre o resumo e me diga quais passos são meus.
+```
+
+O instalador baixa o kit da release e confere o SHA-256 de cada arquivo. Depois roda a suíte de testes nesta máquina, instala ao lado da versão anterior e cria os atalhos `bbrainx` e `bbx`. Com `--apply`, grava as configs do projeto (Claude Code, Codex, VS Code, Kilo) com backup e recibo. Não pede senha nem muda configuração global de harness. Em seguida, `bbx ch` abre o [manual integrador](docs/INTEGRADOR.md) com o que falta, em um clique. O Codex roda comandos num sandbox que não grava fora do projeto: para instalar, use o Terminal ou o Claude Code.
+
+| Precisa | Por quê | Como |
+|---|---|---|
+| macOS | O instalador é para macOS (Windows e Linux: ainda não homologados) | — |
+| Node 22.20+ (recomendado 24) com SQLite/FTS5 | Banco e busca | `brew install node@24` ou nodejs.org |
+| Git | Verificar e instalar o código | `xcode-select --install` |
+| Internet | Baixar o kit e as dependências exatas do `package-lock.json` (`npm ci`) | — |
+| Opcional: Claude Code e Codex logados | Recrutar agentes | `claude auth login`, `codex login` |
+| Opcional: VS Code com `code` no PATH | Extensão BBrainX (`--vscode`) | Command Palette → Shell Command |
 
 ## Comece em três comandos
 
-Requisitos: **Node 24 LTS e Git** (Node 22.20 ou mais novo também atende). O foco desta fase é o macOS (arm64). Linux e Windows estão na matriz da CI; o último relatório publicado (`docs/validation/ci-report.json`) é da revisão 912aa25, com 96 testes por plataforma, e não cobre a 1.5.0.
+Requisitos: **Node 24 LTS e Git** (Node 22.20 ou mais novo também atende). O foco desta fase é o macOS (arm64). macOS e Linux continuam obrigatórios na CI. Windows é observação de backlog. Confira a revisão da PR e o [contrato de entrega](docs/BBRAINX_2_0.md); relatórios anteriores não certificam esta versão.
 
 ```sh
 git clone https://github.com/oalexandrebelo/BBrainX.git && cd BBrainX
@@ -39,6 +79,16 @@ node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto --apply
 ```
 
 Sem `--apply`, `integrate` mostra destinos, hashes e pendências. Com `--apply`, registra a raiz, aplica a entrada MCP do projeto com backups privados e indexa os arquivos; preserva credenciais, provedores, trust e aprovações. Descobre Codex, Claude Code, VS Code, Kilo e Antigravity IDE por metadados locais, sem executar clientes. Codex/Claude/VS Code/Kilo têm configuração automática; Antigravity IDE exige etapa manual e não recebe cadastro global de todos os projetos. `--clients codex,claude,vscode,kilo` permite selecionar os destinos, inclusive preparar cliente ainda não instalado. Instalações antigas só podem ser migradas com `--adopt-existing` quando coincidem exatamente com o gerador anterior. Rollback: `node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO`; uma edição posterior impede sobrescrita. [Contrato do instalador](docs/integrations/INSTALLER.md).
+
+Para adicionar o AB-S00S como segundo servidor nas configurações de Claude Code, Codex e VS Code:
+
+```sh
+node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto --clients claude,codex,vscode --apply --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs
+node bin/bbrainx.mjs integrate --root /caminho/do/seu/projeto --clients claude,codex,vscode --apply --ab-s00s off
+node bin/bbrainx.mjs config --project meu-projeto --client openhands --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs
+```
+
+`on` inclui `ab-s00s` no mesmo recibo e backup de `bbrainx`; `off` remove somente a entrada gerenciada e funciona mesmo após desinstalar o AB-S00S. Sem `--ab-s00s`, a entrada existente é preservada. Sem `--ab-s00s-bin`, resolve `~/.local/bin/ab-s00s` por `realpath`. Nenhum desses comandos instala ou inicia o AB-S00S. OpenHands recebe JSON puro de `mcp_config`, com `transport: "stdio"`; mescle-o nas configurações do Agent Server. [Passos e limites](docs/QUICKSTART.md#ab-s00s-e-openhands-agent-canvas).
 
 `config --project meu-projeto --client cursor` continua imprimindo fragmentos para integração manual (também aceita claude, codex, vscode e gemini). Configuração presente não prova conexão nativa. `npm start` executa `node bin/bbrainx.mjs serve`: serve o painel em **http://127.0.0.1:4317** (porta: `serve --port N`) e **não abre o navegador**. Precisa do build feito pelo `npm run setup`. No macOS, `Start-BBrainX.command` (dois cliques) roda `npm run setup` e `npm run demo`, serve o painel e abre o navegador.
 
@@ -80,12 +130,14 @@ Piso de recuperação (`test/godmode.test.mjs`, 36 consultas deste repositório,
 
 Fonte: [docs/engineering/PERFORMANCE.md](docs/engineering/PERFORMANCE.md), base `5acad77`. Repetição na revisão 77e6ddd (1.5.0) com `node scripts/measure-search-tokens.mjs`: 17.778 → 3.666 (−79,4 %), localizado 31/36 → 31/36, com corpo 31/36 → 20/36. O valor muda com o corpus indexado. Tokens são `o200k_base` sobre o payload, não cobrança do provedor. A resposta leva o mesmo JSON em `content` e em `structuredContent`; essa duplicação não foi tratada (tarefa T1: 10.125 tokens no fio contra 4.978 do texto).
 
-## Seis ferramentas, um escopo
+## Oito ferramentas, um escopo (onze com `--recruit`)
 
 | MCP | Responsabilidade |
 |---|---|
 | `context_bootstrap` | Montar um pacote com orçamento de tokens, com caminho, linhas e hash de cada trecho. |
 | `context_search` | Buscar no índice; a declaração de um nome vem antes dos usos e dos testes. Um acerto por arquivo e no máximo `budget` tokens (padrão 4000); o que não cabe volta como `caminho:linhas`. |
+| `context_read` | Ler uma janela numerada de arquivo indexado, até 400 linhas e 64 KiB, verificando o hash. |
+| `context_symbol` | Localizar declarações lexicais pelo nome exato, com arquivo, linha, tipo e hash. |
 | `context_index` | Atualizar o índice da pasta registrada. |
 | `session_checkpoint` | Salvar o estado da tarefa: o que foi feito, decisões, arquivos tocados, evidências. |
 | `session_get` | Recuperar o checkpoint, em outro harness ou em outra sessão. |
@@ -143,7 +195,7 @@ npm run build
 npm run test:e2e    # painel no navegador
 ```
 
-Na 1.5.0: 735/735 testes no Node 24.21.0 e no Node 22.22.2 (macOS arm64); Playwright 24/24 (painel), 6/6 (uso) e 3/3 (controle); controles negativos do MCP 7/7 detectados (`node scripts/mcp-negative.mjs`). O workflow de CI (`.github/workflows/verify.yml`) define macOS, Linux e Windows, mas **a 1.5.0 não tem relatório de CI publicado**: o de `docs/validation/ci-report.json` é da revisão 912aa25. Os controles negativos injetam defeitos em checkout isolado e exigem que sejam detectados. Isso não implica cobertura por mutação de todos os testes. Próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades).
+Na 2.0.1: bundle MCPB para hosts como o Chat On Steroids (`npm run package:mcpb`; configuração por `BBRAINX_PROJECT`/`BBRAINX_HOME`/`BBRAINX_RECRUIT`) e `config --client cos`. Na 2.0.0: 758/758 testes no Node 24.21.0 (macOS arm64, Mac mini M4) e Playwright 24/24, 6/6 e 4/4; recrutamento exercitado com as duas CLIs reais ([docs/RECRUIT.md](docs/RECRUIT.md)). Na 1.5.0: 735/735 testes no Node 24.21.0 e no Node 22.22.2 (macOS arm64); Playwright 24/24 (painel), 6/6 (uso) e 3/3 (controle); controles negativos do MCP 7/7 detectados (`node scripts/mcp-negative.mjs`). O workflow de CI (`.github/workflows/verify.yml`) define macOS, Linux e Windows, mas **a 1.5.0 não tem relatório de CI publicado**: o de `docs/validation/ci-report.json` é da revisão 912aa25. Os controles negativos injetam defeitos em checkout isolado e exigem que sejam detectados. Isso não implica cobertura por mutação de todos os testes. Próximos passos: [docs/HOMOLOGACAO_2026-10-10.md](docs/HOMOLOGACAO_2026-10-10.md#oportunidades).
 
 O que não existe: observador contínuo de arquivos, análise semântica por servidor de linguagem, sincronização entre máquinas, criptografia própria, autenticação multiusuário, captura de tela e execução de shell. O prazo de uma chamada não interrompe trabalho síncrono, como a indexação. Não use o banco ativo em iCloud ou em disco de rede. Revogar uma memória impede o uso futuro, mas não apaga cópias históricas nem backups. Veja o [modelo de segurança](docs/SECURITY_MODEL.md).
 
@@ -159,7 +211,7 @@ Projeto de Alexandre Belo (**AB**), desenvolvido com assistência de IA e revis�
 
 Para assumir a próxima contribuição, comece pelo [contexto de engenharia](docs/engineering/CONTINUITY.md), execute `npm run project:status` e escolha um item da [fila com critérios de aceite](docs/engineering/ROADMAP.md). O [livro de experimentos](docs/engineering/PERFORMANCE.md) distingue ganhos medidos, custos e tentativas descartadas.
 
-O código original do BBrainX é MIT. O contrato do motor segue o modelo do Invokta, cujo aviso MIT completo está em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). O perfil Laya e o Remotion mantêm seus próprios termos e não fazem parte do núcleo. Nomes, marcas, bibliotecas e referências mantêm seus direitos.
+O código original do BBrainX é MIT. O motor de capacidades AB-BBX é próprio. As atribuições históricas e os avisos completos estão em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). O perfil Laya e o Remotion mantêm seus próprios termos e não fazem parte do núcleo. Nomes, marcas, bibliotecas e referências mantêm seus direitos.
 
 <!-- verified-preview -->
 ## Interface

@@ -1,6 +1,12 @@
 # Ponto de retomada da engenharia
 
-Entrega atual: **1.5.0 Developer Preview** (tag `v1.5.0-preview`); números e oportunidades em [HOMOLOGACAO_2026-10-10.md](../HOMOLOGACAO_2026-10-10.md).
+BBrainX **2.1.2** (16/10/2026): revisão profunda da 2.1.1 em quatro áreas, 39 achados corrigidos com regressões, suíte **841/841**. Recrutas (baixa por identidade de processo, grupo próprio, registro reservado, coleta por faixas), integrações/MCP ([worklog](../worklog-2026-10-16-integrations-mcp-review.md)), índice e busca com schema 3 ([worklog](../worklog-2026-10-16-retrieval-review.md)). [Notas](../RELEASE_NOTES.md). Próxima ação: kit 2.1.2, instalação no Mac mini com `--switch` e `bbrainx index` nos projetos registrados (schema 3 exige reindexação).
+
+WP-B em revisão (16/10/2026), base `8b394b909f9f`, branch `bbx/r2610160601-998a5f`: toggle AB-S00S, fragmento OpenHands e ACI. [Worklog com comandos, aceite e pendências](../worklog-2026-10-16-wp-b.md). Próxima ação: supervisor revisar a árvore/evidências e commitar nesta branch; o sandbox do recruta não pode criar o `index.lock` externo da worktree. Este registro não promove a revisão remota nem substitui os gates de entrega.
+
+BBrainX **2.0.0 Developer Preview**: PR #22 (AB-BBX, watcher/lane, `INDEX_STALE`, checkpoint 2.000, métricas por capacidade) mais o recrutamento BYO de agentes nas CLIs já logadas (`agents_recruit`, `agents_status`, `agents_dismiss`; [RECRUIT.md](../RECRUIT.md)). Mac mini e MacBook Pro M5 prioritários; Windows no backlog por decisão do mantenedor em 12/10/2026. [Contrato, fontes fixadas, custos e aceite](../BBRAINX_2_0.md). Conferir SHA e checks da PR antes de promover.
+
+Entrega publicada anteriormente: **1.5.0 Developer Preview** (tag `v1.5.0-preview`); números e oportunidades em [HOMOLOGACAO_2026-10-10.md](../HOMOLOGACAO_2026-10-10.md).
 
 Entrega anterior (histórico): backend SDD `2de3540`, painel/documentação `f48cdccea3bd856ea7364d06376c56da920c02ac`, [PR #17](https://github.com/oalexandrebelo/BBrainX/pull/17), branch `feat/sdd-alignment-2026-10-08`. A [CI de f48cdcc](https://github.com/oalexandrebelo/BBrainX/actions/runs/37740626008) passou os nove jobs de validação. A PR está empilhada sobre a [PR #16](https://github.com/oalexandrebelo/BBrainX/pull/16) Laya, cuja [CI de 971390a](https://github.com/oalexandrebelo/BBrainX/actions/runs/37738784634) também passou. Conferir a ponta remota antes de integrar; commits posteriores de documentação têm CI própria.
 
@@ -27,7 +33,7 @@ Quem for otimizar começa pelo [norte de otimização](OPTIMIZATION_NORTH.md), q
 - EV-12 começou em 08/10/2026 sobre `3bb09b0ea68763cc5dd708446ed9d8a4fab5b3bb`, branch `feat/continuous-evolution-2026-10-07`, checkout `release-audit`. Foi entregue na branch `feat/project-control-plane-2026-10-08`, commits `e36e712` e `abbdd0d`; a evidência local está nos documentos ligados acima. Antes de retomar, conferir HEAD/diff, ponta remota e evidência da revisão que efetivamente será integrada.
 - Base histórica da PR #14: `38904c38f1d27b84afaeb56fed702d233ad4e25f`, [PR #13](https://github.com/oalexandrebelo/BBrainX/pull/13), sobre a [consolidação #12](https://github.com/oalexandrebelo/BBrainX/pull/12). As PRs #6–#11 já são ancestrais de #12. Verificar se foram incorporadas antes de abrir outra branch; não reaplicar ZIPs antigos nem ramificar automaticamente da base histórica.
 - Evidência histórica da PR #13: [run 37675622182](https://github.com/oalexandrebelo/BBrainX/actions/runs/37675622182), 289 testes distintos em cada SO e no Node mínimo. Isso descreve aquela revisão, não a evolução seguinte.
-- Versão declarada: 1.5.0 developer preview; Node mínimo 22.20, Node 24 recomendado. A tag publicada anteriormente não representa automaticamente os novos commits.
+- Versão proposta nesta branch: 2.0.0; Node mínimo 22.20, Node 24 recomendado. A tag publicada anteriormente não representa automaticamente os novos commits.
 - Repositório consultado em 07/10/2026: **público**. O registro histórico de que era privado está desatualizado. Consultar o GitHub antes de qualquer decisão de publicação ou de compartilhar informação confidencial.
 - Registre o estado de trabalho com `npm run project:status`. O comando informa HEAD, branch, alterações, lockfile e se o relatório local corresponde à revisão limpa. Não consulta o remoto e não autentica o relatório: CI e revisão humana continuam necessárias para promover uma versão.
 

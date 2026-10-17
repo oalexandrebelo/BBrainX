@@ -5,13 +5,16 @@ import { ensure, hash, text } from './primitives.mjs';
 import { classify, definitions, isStopword, plainWord, splitIdentifier, stemPrefix, symbolTerms } from './analyze.mjs';
 import { translate } from './glossary.mjs';
 import { verifyRoot } from './source-root.mjs';
+import { maskDeclarations, literalShare } from './declarations.mjs';
+import { DOCUMENT_EXTENSIONS, DOCUMENT_LIMITS, extractDocument } from './extract.mjs';
 
-const allowed = new Set(['.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
+const allowed = new Set([...DOCUMENT_EXTENSIONS, '.md','.txt','.ts','.tsx','.js','.jsx','.mjs','.cjs','.py','.rs','.go','.java','.rb','.css','.html','.json','.yaml','.yml','.toml','.sql','.sh','.swift','.kt']);
 const deniedPart = /^(?:\.git|node_modules|vendor|dist|build|coverage|artifacts|\.next|\.venv|venv|\.bbrainx|\.obsidian)$/i;
 const secretName = /(?:^\.env(?:\.|$)|credentials|secrets?|id_rsa|id_ed25519|\.pem$|\.key$|\.p12$|package-lock\.json$|yarn\.lock$)/i;
 // Formatos inequívocos de credencial. Falso positivo só tira o arquivo do índice, com o motivo declarado.
 const secretBody = /-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:sk-[a-zA-Z0-9_-]{20,}|gh[pousr]_[a-zA-Z0-9]{20,}|github_pat_[a-zA-Z0-9_]{30,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|xox[abprs]-[0-9A-Za-z-]{20,}|[sr]k_live_[0-9A-Za-z]{20,})\b/;
-const skippable = new Set(['ENOENT','SYMLINK_REJECTED','FILE_TOO_LARGE','BINARY_OR_LARGE_FILE','INVALID_UTF8','SECRET_PATTERN_REJECTED']);
+// EACCES/EPERM: um arquivo ilegível sai do manifesto com o motivo declarado, nos dois lados (índice e verificação), em vez de derrubar toda busca.
+const skippable = new Set(['ENOENT','ENOTDIR','EACCES','EPERM','SYMLINK_REJECTED','FILE_TOO_LARGE','BINARY_OR_LARGE_FILE','INVALID_UTF8','SECRET_PATTERN_REJECTED','DOCUMENT_TEXT_EMPTY','DOCUMENT_UNREADABLE']);
 const CHUNK_LINES = 60;
 
 const defaults = {maxFiles:20000, maxBytes:256*1048576, maxFileBytes:262144};
@@ -28,11 +31,20 @@ export function resolveLimits(override = {}, env = process.env) {
   return limits;
 }
 
+// GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE ou GIT_CONFIG_* herdados mudariam o repositório lido (um GIT_DIR inválido viraria
+// "not a git repository" e a varredura de pastas, sem as exclusões do Git). Só o repositório da raiz registrada vale.
+function gitScopeEnv(){const env={LC_ALL:'C'};for(const [name,value] of Object.entries(process.env))if(!name.startsWith('GIT_')&&name!=='LC_ALL')env[name]=value;return env;}
 export function included(relative) {
   const parts=relative.replaceAll('\\','/').split('/');
-  return parts.every(x=>x!=='.'&&x!=='..'&&!deniedPart.test(x)&&!x.startsWith('.ci-'))&&!secretName.test(parts.at(-1))&&allowed.has(path.extname(relative).toLowerCase());
+  return parts.every(x=>x!=='.'&&x!=='..'&&!deniedPart.test(x)&&!secretName.test(x)&&!x.startsWith('.ci-'))&&allowed.has(path.extname(relative).toLowerCase());
 }
-export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
+// Texto extraído por hash do arquivo: ler de novo (context_read) não reextrai.
+const documentText=new Map();
+/**
+ * Lê um arquivo elegível. PDF, DOCX e XLSX (até 20 MiB) viram texto extraído; o hash é sempre o dos bytes do arquivo,
+ * então a verificação de frescor (`extract:false`) só lê e compara, sem extrair nada.
+ */
+export function readSafe(root, relative, maxBytes=defaults.maxFileBytes, {extract=true}={}) {
   ensure(typeof relative==='string'&&!path.isAbsolute(relative),'UNSAFE_PATH');
   const full=path.resolve(root,relative), rel=path.relative(root,full);
   ensure(rel&&!rel.startsWith('..'+path.sep)&&rel!=='..'&&!path.isAbsolute(rel),'UNSAFE_PATH');
@@ -41,7 +53,17 @@ export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
   ensure(!fs.lstatSync(root).isSymbolicLink(),'SYMLINK_REJECTED');
   let cursor=root;
   for(const component of rel.split(path.sep)){cursor=path.join(cursor,component);ensure(!fs.lstatSync(cursor).isSymbolicLink(),'SYMLINK_REJECTED');}
-  const stat=fs.statSync(full);ensure(stat.isFile()&&stat.size<=maxBytes,'FILE_TOO_LARGE');
+  const extension=path.extname(full).toLowerCase(), document=DOCUMENT_EXTENSIONS.includes(extension), limit=document?Math.max(maxBytes,DOCUMENT_LIMITS.fileBytes):maxBytes;
+  const stat=fs.statSync(full);ensure(stat.isFile()&&stat.size<=limit,'FILE_TOO_LARGE');
+  if(document){
+    const bytes=fs.readFileSync(full);ensure(bytes.length<=limit,'FILE_TOO_LARGE');
+    const digest=hash(bytes);
+    if(!extract)return {body:null,hash:digest,bytes:bytes.length,document:true};
+    let body=documentText.get(digest);
+    if(body===undefined){body=extractDocument(full,extension,bytes);if(documentText.size>=64)documentText.clear();documentText.set(digest,body);}
+    ensure(!secretBody.test(body),'SECRET_PATTERN_REJECTED');
+    return {body,hash:digest,bytes:bytes.length,document:true};
+  }
   const bytes=fs.readFileSync(full);ensure(bytes.length<=maxBytes&&!bytes.includes(0),'BINARY_OR_LARGE_FILE');
   let body;
   try{body=new TextDecoder('utf-8',{fatal:true}).decode(bytes);}catch{ensure(false,'INVALID_UTF8');}
@@ -51,16 +73,13 @@ export function readSafe(root, relative, maxBytes=defaults.maxFileBytes) {
 function candidates(root, limits) {
   verifyRoot(root);
   const base=['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',root];
-  const options={encoding:'utf8',timeout:5000,maxBuffer:65536,stdio:['ignore','pipe','pipe'],windowsHide:true,shell:false,env:{...process.env,LC_ALL:'C'}};
-  const probe=spawnSync('git',[...base,'rev-parse','--is-inside-work-tree'],options);
-  ensure(!probe.error,'GIT_UNAVAILABLE');
-  if(probe.status===0&&probe.stdout.trim()==='true'){
-    try{
-      // Caminhos relativos à raiz escolhida; preserva ignores também em subdiretórios.
-      return [...new Set(execFileSync('git',[...base,'ls-files','--cached','--others','--exclude-standard','-z','--','.'],{...options,timeout:30000,maxBuffer:64*1048576}).split('\0').filter(Boolean))];
-    }catch{ensure(false,'GIT_INDEX_READ_FAILED','Não será usado fallback que desconsidere as exclusões Git.');}
-  }
-  ensure(probe.status===128&&/not a git repository/i.test(probe.stderr),'GIT_SCOPE_UNVERIFIED');
+  const options={encoding:'utf8',timeout:5000,maxBuffer:65536,stdio:['ignore','pipe','pipe'],windowsHide:true,shell:false,env:gitScopeEnv()};
+  // Um processo só: ls-files dentro do repositório lista; fora dele sai com 128 "not a git repository".
+  const listed=spawnSync('git',[...base,'ls-files','--cached','--others','--exclude-standard','-z','--','.'],{...options,timeout:30000,maxBuffer:64*1048576});
+  if(listed.error)ensure(false,listed.error.code==='ENOENT'?'GIT_UNAVAILABLE':'GIT_INDEX_READ_FAILED','Não será usado fallback que desconsidere as exclusões Git.');
+  if(listed.status===0)return [...new Set(listed.stdout.split('\0').filter(Boolean))];
+  // Só "não é repositório" autoriza a varredura sem Git; qualquer outra falha (dono duvidoso, índice corrompido) recusa.
+  ensure(listed.status===128&&/not a git repository/i.test(listed.stderr),'GIT_SCOPE_UNVERIFIED');
   const names=[], maxVisited=limits.maxFiles*4;let visited=0;
   function walk(dir,base='',depth=0) {
     ensure(depth<=64,'INDEX_FILE_LIMIT','Árvore com mais de 64 níveis.');
@@ -81,36 +100,75 @@ function removeFile(store,project,file){
   store.stmt('DELETE FROM chunks WHERE project=? AND path=?').run(project,file); // o gatilho limpa o índice FTS
   store.stmt('DELETE FROM files WHERE project=? AND path=?').run(project,file);
 }
+const TEXTLESS=new Set(['DOCUMENT_TEXT_EMPTY','DOCUMENT_UNREADABLE','SECRET_PATTERN_REJECTED']);
+/**
+ * Para indexar: documento sem texto aproveitável (escaneado, ilegível ou com credencial) entra só com o hash do arquivo,
+ * sem nenhum trecho. A varredura de frescor (que não extrai) e o índice continuam concordando; nada do conteúdo é guardado.
+ */
+function readIndexable(root,relative,maxBytes){
+  try{return readSafe(root,relative,maxBytes);}
+  catch(e){
+    if(!TEXTLESS.has(e.code)||!DOCUMENT_EXTENSIONS.includes(path.extname(relative).toLowerCase()))throw e;
+    return {...readSafe(root,relative,maxBytes,{extract:false}),body:'',withoutText:e.code};
+  }
+}
 function replaceFile(store,project,file,content){
   removeFile(store,project,file);
-  const kind=classify(file), extension=path.extname(file).toLowerCase(), lines=content.body.split('\n');
+  if(content.withoutText){store.stmt('INSERT INTO files(project,path,hash,bytes,kind) VALUES(?,?,?,?,?)').run(project,file,content.hash,content.bytes,classify(file));return;}
+  // Texto extraído de PDF/DOCX/XLSX é analisado como texto simples, não como código.
+  const kind=classify(file), raw=path.extname(file).toLowerCase(), extension=DOCUMENT_EXTENSIONS.includes(raw)?'.txt':raw, lines=content.body.split('\n'), maskedLines=maskDeclarations(content.body,extension).split('\n');
   store.stmt('INSERT INTO files(project,path,hash,bytes,kind) VALUES(?,?,?,?,?)').run(project,file,content.hash,content.bytes,kind);
   const insert=store.stmt('INSERT INTO chunks(id,project,path,file_hash,start_line,end_line,kind,body,defs,symbols) VALUES(?,?,?,?,?,?,?,?,?,?)');
   for(let offset=0;offset<lines.length;offset+=CHUNK_LINES){
     const body=lines.slice(offset,offset+CHUNK_LINES).join('\n');
-    insert.run(hash({project,path:file,hash:content.hash,offset}),project,file,content.hash,offset+1,Math.min(offset+CHUNK_LINES,lines.length),kind,body,definitions(body,extension),symbolTerms(body));
+    insert.run(hash({project,path:file,hash:content.hash,offset}),project,file,content.hash,offset+1,Math.min(offset+CHUNK_LINES,lines.length),kind,body,definitions(body,extension,maskedLines.slice(offset,offset+CHUNK_LINES).join('\n')),symbolTerms(body));
   }
 }
 function megabytes(bytes){return (bytes/1048576).toFixed(1)+' MiB';}
 
-// Escrita do índice em lotes curtos: o lock de escrita do banco é segurado só durante os INSERTs de um lote, nunca durante leitura de arquivos.
-const INDEX_BATCH_FILES=250, INDEX_BATCH_BYTES=4*1048576;
 /**
- * Reconcilia o índice com a worktree. Um arquivo por vez: a memória não cresce com o repositório.
- * Arquivo inalterado (mesmo hash) mantém seus trechos. Nada é executado; nada sai da máquina.
- * Duas fases: (1) varredura sem lock de escrita (lê e confere cada arquivo, aplica os tetos; só guarda caminho e hash), de modo que
- * recusas não alteram nada; (2) gravação dos arquivos que mudaram em lotes curtos. Cada lote publica o snapshot calculado sobre o
- * manifesto realmente indexado, então todo estado confirmado tem snapshot coerente com seus arquivos; a remoção dos que sumiram e o
- * snapshot final saem numa última transação. Falha no meio deixa um índice coerente que a próxima chamada completa.
+ * Cache da verificação de frescor, por processo (o servidor MCP fica aberto entre buscas). A chave é o caminho
+ * e o teto de bytes; o valor só vale enquanto a assinatura do arquivo (dispositivo, inode, tamanho, mtime e ctime
+ * em nanossegundos) for a mesma. Qualquer escrita muda o ctime, que nenhum processo do usuário consegue
+ * restaurar, então um conteúdo diferente nunca reaproveita o hash antigo. Guarda também recusas (segredo,
+ * binário, UTF-8 inválido) para não reler arquivos que continuam inelegíveis.
  */
-export function indexProject(store, project, override) {
-  const limits=resolveLimits(override), {root}=store.project(project);
+const scanCache=new Map(), SCAN_CACHE_MAX=200000;
+const signature=st=>st.dev+':'+st.ino+':'+st.size+':'+st.mtimeNs+':'+st.ctimeNs;
+function readForScan(root,relative,maxBytes,verifiedDirs){
+  ensure(typeof relative==='string'&&!path.isAbsolute(relative),'UNSAFE_PATH');
+  const full=path.resolve(root,relative), rel=path.relative(root,full);
+  ensure(rel&&!rel.startsWith('..'+path.sep)&&rel!=='..'&&!path.isAbsolute(rel),'UNSAFE_PATH');
+  // Mesma recusa de links do readSafe, com cada diretório conferido uma vez por varredura.
+  const parts=rel.split(path.sep);let cursor=root;
+  for(let i=0;i<parts.length;i++){
+    cursor=path.join(cursor,parts[i]);
+    if(i<parts.length-1&&verifiedDirs.has(cursor))continue;
+    ensure(!fs.lstatSync(cursor).isSymbolicLink(),'SYMLINK_REJECTED');
+    if(i<parts.length-1)verifiedDirs.add(cursor);
+  }
+  const st=fs.statSync(full,{bigint:true});
+  const key=full+'\0'+maxBytes, sig=signature(st), hit=scanCache.get(key);
+  if(hit&&hit.sig===sig){if(hit.code)ensure(false,hit.code);return hit.file;}
+  let file,code;
+  try{file=readSafe(root,relative,maxBytes,{extract:false});}catch(e){if(!skippable.has(e.code)||['ENOENT','ENOTDIR'].includes(e.code))throw e;code=e.code;}
+  if(scanCache.size>=SCAN_CACHE_MAX)scanCache.clear();
+  // Só a assinatura e o hash: o corpo não fica em memória.
+  scanCache.set(key,{sig,code,file:file&&{hash:file.hash,bytes:file.bytes}});
+  if(code)ensure(false,code);
+  return {hash:file.hash,bytes:file.bytes};
+}
+export function clearScanCache(){scanCache.clear();}
+
+/** Read-only scan with the same eligibility, limits and secret policy as indexing. */
+function scanProject(root,limits){
   const names=[...new Set(candidates(root,limits).filter(included).map(x=>x.replaceAll('\\','/')))].sort();
-  const previous=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
   const entries=[], skipped=[], skippedByReason={};let totalBytes=0;
+  const verifiedDirs=new Set();
+  ensure(!fs.lstatSync(root).isSymbolicLink(),'SYMLINK_REJECTED');
   for(const relative of names){
     let file;
-    try{file=readSafe(root,relative,limits.maxFileBytes);}
+    try{file=readForScan(root,relative,limits.maxFileBytes,verifiedDirs);}
     catch(e){
       if(!skippable.has(e.code))throw e;
       // Checkout esparso lista caminhos que não estão no disco: conta, mas não infla a resposta.
@@ -120,34 +178,90 @@ export function indexProject(store, project, override) {
     ensure(entries.length<limits.maxFiles,'INDEX_FILE_LIMIT','Mais de '+limits.maxFiles+' arquivos elegíveis. Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxFiles+'.');
     totalBytes+=file.bytes;
     ensure(totalBytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto elegível passou de '+megabytes(limits.maxBytes)+' (em '+relative+'). Registre uma raiz menor, ignore diretórios pelo Git ou aumente '+variables.maxBytes+'.');
-    entries.push({path:relative,hash:file.hash});
+    entries.push({path:relative,hash:file.hash,bytes:file.bytes});
   }
-  const present=new Set(entries.map(x=>x.path)), stale=entries.filter(x=>previous.get(x.path)!==x.hash);
+  return {entries,skipped,skippedByReason,totalBytes};
+}
+
+/** A scan is an observation interval, never an atomic filesystem snapshot. */
+export function inspectIndex(store,project,override){
+  const started=performance.now(), meta=store.project(project), limits=resolveLimits(override);
+  const {entries,skippedByReason,totalBytes}=scanProject(meta.root,limits);
+  const current=new Map(entries.map(x=>[x.path,x.hash]));
+  const indexed=new Map(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project).map(x=>[x.path,x.hash]));
+  let added=0,changed=0,removed=0;const paths=[];
+  const record=(file,kind)=>{if(paths.length<25)paths.push({path:file,kind});};
+  for(const [file,digest] of current){
+    if(!indexed.has(file)){added++;record(file,'added');}
+    else if(indexed.get(file)!==digest){changed++;record(file,'changed');}
+  }
+  for(const file of indexed.keys())if(!current.has(file)){removed++;record(file,'removed');}
+  const observedSnapshot=snapshotOf(entries);
+  return {project,root:meta.root,lane:store.binding?.id??null,
+    status:!meta.snapshot?'missing':meta.snapshot===observedSnapshot&&added+changed+removed===0?'current':'stale',
+    indexedSnapshot:meta.snapshot,observedSnapshot,files:entries.length,bytes:totalBytes,
+    changes:{added,changed,removed,paths,truncated:added+changed+removed>paths.length},
+    skippedByReason,observedAt:new Date().toISOString(),durationMs:Math.round(performance.now()-started),
+    consistency:'content-hash-scan-not-atomic'};
+}
+export function requireFreshIndex(store,project){
+  requireIndex(store,project);
+  const report=inspectIndex(store,project);
+  ensure(report.status==='current','INDEX_STALE','Index differs from the registered worktree. Call context_index and retry; CLI: bbrainx index --project '+project+(store.binding?' --lane '+store.binding.id:'')+'.');
+  return {status:report.status,observedAt:report.observedAt,consistency:report.consistency,
+    root:report.root,lane:report.lane,snapshot:report.observedSnapshot};
+}
+
+// Escrita do índice em lotes curtos: o lock de escrita do banco é segurado só durante os INSERTs de um lote, nunca durante leitura de arquivos.
+const INDEX_BATCH_FILES=250, INDEX_BATCH_BYTES=4*1048576;
+/**
+ * Reconcilia o índice com a worktree. Um arquivo por vez: a memória não cresce com o repositório.
+ * Arquivo inalterado (mesmo hash) mantém seus trechos. Nada é executado; nada sai da máquina.
+ * Duas fases: (1) varredura sem lock de escrita (lê e confere cada arquivo, aplica os tetos; só guarda caminho, hash e tamanho), de modo que
+ * recusas não alteram nada; (2) gravação dos arquivos que mudaram em lotes curtos. Cada lote publica o snapshot calculado sobre o
+ * manifesto realmente indexado, então todo estado confirmado tem snapshot coerente com seus arquivos; os que sumiram saem no primeiro
+ * lote (ou na transação final, se não houver lote), antes de admitir crescimentos. Falha no meio deixa um índice coerente que a próxima chamada completa.
+ */
+export function indexProject(store, project, override) {
+  const limits=resolveLimits(override), {root}=store.project(project);
+  const {entries,skipped,skippedByReason}=scanProject(root,limits);
+  const previous=new Map(store.stmt('SELECT path,hash,bytes FROM files WHERE project=?').all(project).map(x=>[x.path,x]));
+  const present=new Set(entries.map(x=>x.path)), delta=x=>x.bytes-(previous.get(x.path)?.bytes??0);
+  // Reduções antes de crescimentos; entre os demais mantém a ordem de caminhos, inclusive no índice novo.
+  const stale=entries.filter(x=>previous.get(x.path)?.hash!==x.hash).sort((a,b)=>(delta(a)<0?0:1)-(delta(b)<0?0:1)||byPath(a,b));
   const publish=()=>{const snapshot=snapshotOf(store.stmt('SELECT path,hash FROM files WHERE project=?').all(project));store.stmt('UPDATE projects SET snapshot=? WHERE id=?').run(snapshot,project);return snapshot;};
-  let changed=0;
+  let changed=0,removed=0;const withoutText={};
+  const prune=()=>{for(const {path:old} of store.stmt('SELECT path FROM files WHERE project=?').all(project))if(!present.has(old)){removeFile(store,project,old);removed++;}};
   for(let at=0;at<stale.length;){
-    const batch=[];let batchBytes=0;
+    const firstBatch=at===0,batch=[];let batchBytes=0;
     while(at<stale.length&&batch.length<INDEX_BATCH_FILES&&batchBytes<INDEX_BATCH_BYTES){
       const {path:relative}=stale[at++];
       let file=null;
       // O arquivo é lido de novo aqui, fora do lock: vale o conteúdo de agora, mesmo que tenha mudado desde a varredura.
-      try{file=readSafe(root,relative,limits.maxFileBytes);batchBytes+=file.bytes;}catch(e){if(!skippable.has(e.code))throw e;}
+      try{file=readIndexable(root,relative,limits.maxFileBytes);batchBytes+=file.bytes;if(file.withoutText)withoutText[file.withoutText]=(withoutText[file.withoutText]??0)+1;}catch(e){if(!skippable.has(e.code))throw e;}
       batch.push({relative,file});
     }
     store.transaction(()=>{
+      if(firstBatch)prune();
       for(const {relative,file} of batch){
         const known=store.stmt('SELECT hash FROM files WHERE project=? AND path=?').get(project,relative);
         if(!file){if(known)removeFile(store,project,relative);}
         else if(known?.hash!==file.hash){replaceFile(store,project,relative,file);changed++;}
       }
+      // Vale o manifesto do lote realmente lido, inclusive os arquivos reutilizados; recusa reverte também o FTS.
+      const {bytes}=store.stmt('SELECT coalesce(sum(bytes),0) AS bytes FROM files WHERE project=?').get(project);
+      ensure(bytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto indexado passou de '+megabytes(limits.maxBytes)+'.');
       publish();
     });
   }
   return store.transaction(()=>{
-    let removed=0;
-    for(const {path:old} of store.stmt('SELECT path FROM files WHERE project=?').all(project))if(!present.has(old)){removeFile(store,project,old);removed++;}
-    const snapshot=publish(), files=store.stmt('SELECT count(*) AS n FROM files WHERE project=?').get(project).n;
-    const result={project,snapshot,files,changed,reused:entries.length-stale.length,removed,bytes:totalBytes,skipped,skippedByReason,limits,scope:'supported-text-files',automaticWatcher:false};
+    prune();
+    const {files,bytes}=store.stmt('SELECT count(*) AS files,coalesce(sum(bytes),0) AS bytes FROM files WHERE project=?').get(project);
+    ensure(bytes<=limits.maxBytes,'INDEX_BYTE_LIMIT','O texto indexado passou de '+megabytes(limits.maxBytes)+'.');
+    const snapshot=publish();
+    // Documentos sem texto ficam no índice (só o hash) e aparecem aqui com o motivo, junto das recusas da varredura.
+    const reasons={...skippedByReason};for(const [code,n] of Object.entries(withoutText))reasons[code]=(reasons[code]??0)+n;
+    const result={project,snapshot,files,changed,reused:entries.length-stale.length,removed,bytes,skipped,skippedByReason:reasons,documentsWithoutText:withoutText,limits,scope:'supported-text-files',automaticWatcher:false};
     store.event(project,'index.completed',{snapshot,files,changed,reused:result.reused,removed}); return result;
   });
 }
@@ -164,7 +278,7 @@ export function refreshFiles(store, project, paths, override) {
     for(const relative of new Set(paths)){
       const known=store.stmt('SELECT hash FROM files WHERE project=? AND path=?').get(project,relative);
       let file=null;
-      if(included(relative))try{file=readSafe(root,relative,limits.maxFileBytes);}catch(e){if(!skippable.has(e.code))throw e;}
+      if(included(relative))try{file=readIndexable(root,relative,limits.maxFileBytes);}catch(e){if(!skippable.has(e.code))throw e;}
       if(!file){if(known){removeFile(store,project,relative);removed.push(relative);}}
       else if(!known||known.hash!==file.hash){replaceFile(store,project,relative,file);changed.push(relative);}
     }
@@ -185,6 +299,19 @@ const kindWeight={source:1,doc:.5,config:.6,test:.4,generated:.25};
 const asksForTests=/\b(?:tests?|testes?|specs?|fixtures?|mocks?)\b/i;
 // Peso do segundo estágio (radicais e glossário pt → en) em relação ao casamento exato.
 const LOOSE_WEIGHT=.5;
+/**
+ * Trecho de código dominado por texto em strings (prompts, dicionários, tabelas de i18n, dados embutidos) casa as palavras de uma
+ * pergunta sobre comportamento sem implementá-lo. Acima de 30% de literais, o peso cai até a metade. Medido em corpora fixos:
+ * nas perguntas cegas (mem0 e plandex) melhorou 16 casos e piorou 3 (teste do sinal p ≈ 0,004); docs/EVALUATION.md.
+ */
+const PROSE_FLOOR=.3, PROSE_PENALTY=.5, proseCache=new Map();
+function proseFactor(row){
+  if(row.kind!=='source')return 1;
+  // O id do trecho é o hash de projeto, caminho, conteúdo e posição: a fração calculada nunca fica velha.
+  let share=proseCache.get(row.id);
+  if(share===undefined){share=literalShare(row.body,path.extname(row.path).toLowerCase());if(proseCache.size>=200000)proseCache.clear();proseCache.set(row.id,share);}
+  return 1-PROSE_PENALTY*Math.max(0,share-PROSE_FLOOR)/(1-PROSE_FLOOR);
+}
 /**
  * Busca lexical ordenada, em dois estágios somados: (1) termos exatos, com BM25 por coluna; (2) os mesmos termos
  * por radical e pela ponte pt → en, com metade do peso. Depois: reforço quando o termo é um nome DECLARADO no
@@ -214,7 +341,8 @@ export function search(store,project,query,limit=12,{byFile=true}={}){
     for(const term of translate(plain))loose.add(quote(term)+' *');
   }
   const pool=Math.min(400,limit*10), found=new Map();let overflow=false;
-  const select=store.stmt('SELECT c.id,c.project,c.path,c.file_hash,c.start_line,c.end_line,c.kind,c.body,c.defs, bm25(chunk_search,'+columnWeights+') AS rank FROM chunk_search JOIN chunks c ON c.seq=chunk_search.rowid WHERE chunk_search MATCH ? AND c.project=? ORDER BY rank LIMIT ?');
+  // CROSS JOIN fixa o FTS como laço externo: sem estatísticas, o SQLite 3.51 (Node 22) invertia a ordem e ordenava numa B-tree temporária.
+  const select=store.stmt("SELECT c.id,c.project,c.path,c.file_hash,c.start_line,c.end_line,c.kind,c.body,c.defs, chunk_search.rank AS rank FROM chunk_search CROSS JOIN chunks c ON c.seq=chunk_search.rowid WHERE chunk_search MATCH ? AND c.project=? AND chunk_search.rank MATCH 'bm25("+columnWeights+")' ORDER BY chunk_search.rank LIMIT ?");
   for(const [clauses,weight] of [[exact,1],[loose,LOOSE_WEIGHT]]){
     if(!clauses.size)continue;
     const rows=select.all([...clauses].join(' OR '),project,pool+1);if(rows.length>pool)overflow=true;
@@ -224,7 +352,7 @@ export function search(store,project,query,limit=12,{byFile=true}={}){
   const items=[...found.values()].map(({defs,...row})=>{
     // Reforço proporcional à fração dos termos que o trecho DECLARA: um identificador sozinho triplica; uma palavra entre seis quase não pesa.
     const declared=new Set(defs.toLowerCase().split(' ')), share=lowered.filter(x=>declared.has(x)).length/lowered.length;
-    return {...row,declares:share>0,score:-row.rank*(row.kind==='test'&&keepTests?1:kindWeight[row.kind]??1)*(1+2*share)};
+    return {...row,declares:share>0,score:-row.rank*(row.kind==='test'&&keepTests?1:kindWeight[row.kind]??1)*(1+2*share)*proseFactor(row)};
   }).sort((a,b)=>b.score-a.score||byPath(a,b)||a.start_line-b.start_line);
   if(!byFile)return {project,snapshot:meta.snapshot,items:items.slice(0,limit),truncated:overflow||items.length>limit};
   const files=new Map();
@@ -235,7 +363,7 @@ export function search(store,project,query,limit=12,{byFile=true}={}){
 export function verifyChunk(store, project, chunk){
   ensure(chunk.project===project,'FORBIDDEN');
   const {root}=store.project(project);verifyRoot(root);
-  const file=readSafe(root,chunk.path,resolveLimits().maxFileBytes);
+  const file=readSafe(root,chunk.path,resolveLimits().maxFileBytes,{extract:false});
   ensure(file.hash===chunk.file_hash,'STALE_INDEX','Arquivo alterado após indexação. Execute index novamente.');
   return file;
 }

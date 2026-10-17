@@ -6,6 +6,7 @@ import path from 'node:path';
 import { parse as parseToml } from 'smol-toml';
 import { parse as parseJsonc } from 'jsonc-parser';
 import { discoverIntegrations, planIntegrations, applyIntegrationPlan, rollbackIntegration } from '../src/integrations.mjs';
+import { renderConfig } from '../src/integration-config.mjs';
 
 function fixture(t){
   const temp=fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(),'bbrainx-integration-')));
@@ -181,4 +182,67 @@ test('adoption keeps CAS guard and rejects ambiguous legacy TOML without changin
   fs.appendFileSync(target,'\n');assert.throws(()=>applyIntegrationPlan(plan),{code:'INTEGRATION_CONFIG_CHANGED'});
   f.write('.codex/config.toml','[mcp_servers.bbrainx]\ncommand = '+JSON.stringify(f.options.node)+' # user annotation\nargs = '+JSON.stringify(args)+'\n[mcp_servers.bbrainx.env]\nBBRAINX_HOME = '+JSON.stringify(f.home)+'\n');
   assert.equal(planIntegrations({...f.options,clients:['codex'],adoptExisting:true}).files[0].reason,'INTEGRATION_LEGACY_TOML_AMBIGUOUS');
+});
+
+test('managed TOML update and removal refuse blocks containing foreign parsed data',()=>{
+  const server={command:'/node',args:['/bbrainx.mjs','mcp'],env:{BBRAINX_HOME:'/state'}};
+  for(const name of ['bbrainx','ab-s00s']){
+    const marker=name==='bbrainx'?'BBRAINX':'AB-S00S',end='# END '+marker+' INTEGRATION';
+    const clean=renderConfig('codex',null,server,false,false,name).bytes.toString();
+    for(const foreign of ['[mcp_servers.peer]\ncommand = "peer"\n','[provider]\nsecret = "keep"\n']){
+      const bytes=Buffer.from(clean.replace(end,foreign+end));
+      for(const desired of [null,{...server,command:'/new-node'}])assert.throws(
+        ()=>renderConfig('codex',bytes,desired,true,false,name),{code:'INTEGRATION_MANAGED_BLOCK_INVALID'});
+    }
+  }
+});
+
+test('companion receipt cannot authorize deleting a foreign server inside BBRAINX markers',t=>{
+  const f=fixture(t),options={...f.options,clients:['codex']};
+  applyIntegrationPlan(planIntegrations(options));
+  const target=path.join(f.root,'.codex/config.toml'),bin=path.join(f.temp,'ab-s00s.mjs');fs.writeFileSync(bin,'// never executed\n');
+  fs.writeFileSync(target,fs.readFileSync(target,'utf8').replace('# END BBRAINX INTEGRATION','[mcp_servers.peer]\ncommand = "peer"\n# END BBRAINX INTEGRATION'));
+  applyIntegrationPlan(planIntegrations({...options,abS00s:'on',abS00sBin:bin}));
+  const before=fs.readFileSync(target),plan=planIntegrations({...options,entry:path.join(f.temp,'new-entry.mjs')});
+  assert.equal(plan.files[0].reason,'INTEGRATION_MANAGED_BLOCK_INVALID');
+  assert.throws(()=>applyIntegrationPlan(plan),{code:'INTEGRATION_PLAN_BLOCKED'});
+  assert.deepEqual(fs.readFileSync(target),before);assert.equal(parseToml(before.toString()).mcp_servers.peer.command,'peer');
+});
+
+test('recruitment off is persisted in every installed client environment',t=>{
+  const f=fixture(t);applyIntegrationPlan(planIntegrations({...f.options,recruit:false}));
+  const servers=[parseToml(fs.readFileSync(path.join(f.root,'.codex/config.toml'),'utf8')).mcp_servers.bbrainx,
+    parseJsonc(fs.readFileSync(path.join(f.root,'.mcp.json'),'utf8')).mcpServers.bbrainx,
+    parseJsonc(fs.readFileSync(path.join(f.root,'.vscode/mcp.json'),'utf8')).servers.bbrainx,
+    parseJsonc(fs.readFileSync(path.join(f.root,'.kilo/kilo.json'),'utf8')).mcp.bbrainx];
+  for(const server of servers)assert.equal((server.env??server.environment).BBRAINX_RECRUIT,'false');
+});
+
+test('final rendered configuration above MAX_BYTES is blocked before any write',t=>{
+  const f=fixture(t),before='#'+'x'.repeat(1024*1024-2)+'\n',target=f.write('.codex/config.toml',before);
+  const plan=planIntegrations({...f.options,clients:['codex']});
+  assert.equal(Buffer.byteLength(before),1048576);assert.equal(plan.files[0].reason,'INTEGRATION_FILE_TOO_LARGE');
+  assert.throws(()=>applyIntegrationPlan(plan),{code:'INTEGRATION_PLAN_BLOCKED'});
+  assert.equal(fs.readFileSync(target,'utf8'),before);assert.equal(fs.existsSync(f.home),false);
+});
+
+test('exact MAX_BYTES output rolls back and a companion exceeding the final limit is blocked',t=>{
+  const f=fixture(t),options={...f.options,clients:['codex']},server={command:options.node,
+    args:[options.entry,'mcp','--project',options.project,'--workspace',f.root,'--harness','codex'],env:{BBRAINX_HOME:f.home,BBRAINX_RECRUIT:'false'}};
+  const growth=renderConfig('codex',null,server,false,false).bytes.length;
+  const before='#'+'x'.repeat(1024*1024-growth-2)+'\n',target=f.write('.codex/config.toml',before);
+  const applied=applyIntegrationPlan(planIntegrations(options));assert.equal(fs.statSync(target).size,1048576);
+  const bin=path.join(f.temp,'ab-s00s.mjs');fs.writeFileSync(bin,'// never executed\n');
+  const plan=planIntegrations({...options,abS00s:'on',abS00sBin:bin});
+  assert.equal(plan.files[0].reason,'INTEGRATION_FILE_TOO_LARGE');assert.throws(()=>applyIntegrationPlan(plan),{code:'INTEGRATION_PLAN_BLOCKED'});
+  rollbackIntegration({home:f.home,id:applied.id});assert.equal(fs.readFileSync(target,'utf8'),before);
+});
+
+for(const operation of ['replace','rollback'])test(`integration ${operation} preserves recorded permissions under a restrictive umask`,t=>{
+  const f=fixture(t),before='{"trust":false}\n',target=f.write('.mcp.json',before),mask=process.umask(0o022);
+  try{
+    fs.chmodSync(target,0o664);const applied=applyIntegrationPlan(planIntegrations({...f.options,clients:['claude']}));
+    if(operation==='rollback'){rollbackIntegration({home:f.home,id:applied.id});assert.equal(fs.readFileSync(target,'utf8'),before);}
+    assert.equal(fs.statSync(target).mode&0o777,process.platform==='win32'?0o666:0o664);
+  }finally{process.umask(mask);}
 });

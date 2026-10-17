@@ -23,7 +23,7 @@ function fixture(t){
 }
 test('SDD grants precede inspection/creation and opt-in preserves default MCP catalog',async t=>{
   const {store,root,other}=fixture(t),plain=makeEngine(store,['a']),engine=makeEngine(store,['a'],{sdd:alignSdd}),context={principal:{id:'host'}};
-  assert.equal(toolCatalog(plain).tools.length,6);assert.equal(toolCatalog(engine).tools.length,7);
+  assert.equal(toolCatalog(plain).tools.length,9);assert.equal(toolCatalog(engine).tools.length,10);
   await assert.rejects(engine.invoke('sdd.align',{project:'b',mode:'ensure'},context),e=>e.code==='FORBIDDEN');
   await assert.rejects(engine.invoke('sdd.align',{project:'a',mode:'execute'},context),e=>e.code==='INPUT_INVALID');
   assert.equal(fs.existsSync(path.join(other,'SDD.md')),false);assert.equal(fs.existsSync(path.join(root,'SDD.md')),false);
@@ -46,7 +46,7 @@ test('CLI default ensure creates once and MCP opt-in enforces project scope with
   const created=spawnSync(process.execPath,[entry,'sdd','--project','a'],{env,encoding:'utf8',timeout:10000});assert.equal(created.status,0,created.stderr);assert.equal(JSON.parse(created.stdout).data.created,true);
   const transport=new StdioClientTransport({command:process.execPath,args:[entry,'mcp','--project','a','--sdd'],env,stderr:'pipe'}),client=new Client({name:'sdd-contract',version:'1.0.0'});
   try{
-    await client.connect(transport);const tools=(await client.listTools()).tools;assert.equal(tools.length,7);assert.ok(tools.some(tool=>tool.name==='sdd_align'));
+    await client.connect(transport);const tools=(await client.listTools()).tools;assert.equal(tools.length,10);assert.ok(tools.some(tool=>tool.name==='sdd_align'));
     const result=await client.callTool({name:'sdd_align',arguments:{project:'a',mode:'ensure'}});const output=result.structuredContent||JSON.parse(result.content.find(item=>item.type==='text').text);assert.equal(output.ok,true);assert.equal(output.data.created,false);assert.equal(output.data.status,'draft');
     const denied=await client.callTool({name:'sdd_align',arguments:{project:'b',mode:'ensure'}});assert.equal(denied.isError,true);assert.equal(fs.existsSync(path.join(other,'SDD.md')),false);
   }finally{await client.close();await transport.close();}

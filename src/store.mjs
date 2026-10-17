@@ -12,6 +12,7 @@ CREATE TABLE projects(id TEXT PRIMARY KEY, root TEXT NOT NULL UNIQUE, created TE
 CREATE TABLE tasks(project TEXT NOT NULL REFERENCES projects(id), id TEXT NOT NULL, version INTEGER NOT NULL, body TEXT NOT NULL, updated TEXT NOT NULL, PRIMARY KEY(project,id));
 CREATE TABLE task_history(project TEXT NOT NULL, task TEXT NOT NULL, version INTEGER NOT NULL, body TEXT NOT NULL, created TEXT NOT NULL, PRIMARY KEY(project,task,version));
 CREATE TABLE memories(id TEXT PRIMARY KEY, project TEXT NOT NULL REFERENCES projects(id), statement TEXT NOT NULL, source TEXT NOT NULL, status TEXT NOT NULL CHECK(status IN ('proposed','approved','revoked')), version INTEGER NOT NULL, created TEXT NOT NULL, mode TEXT NOT NULL DEFAULT 'always' CHECK(mode IN ('always','relevant')));
+CREATE INDEX memories_by_project_status_id ON memories(project,status,id);
 CREATE TABLE idempotency(project TEXT NOT NULL, operation TEXT NOT NULL, key TEXT NOT NULL, fingerprint TEXT NOT NULL, response TEXT NOT NULL, PRIMARY KEY(project,operation,key));
 CREATE TABLE events(seq INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL UNIQUE, project TEXT NOT NULL, type TEXT NOT NULL, payload TEXT NOT NULL, created TEXT NOT NULL);
 CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -27,13 +28,14 @@ CREATE TRIGGER chunks_after_insert AFTER INSERT ON chunks BEGIN INSERT INTO chun
 CREATE TRIGGER chunks_after_delete AFTER DELETE ON chunks BEGIN INSERT INTO chunk_search(chunk_search,rowid,path,body,defs,symbols) VALUES('delete',old.seq,old.path,old.body,old.defs,old.symbols); END;
 CREATE TRIGGER chunks_after_update AFTER UPDATE ON chunks BEGIN INSERT INTO chunk_search(chunk_search,rowid,path,body,defs,symbols) VALUES('delete',old.seq,old.path,old.body,old.defs,old.symbols); INSERT INTO chunk_search(rowid,path,body,defs,symbols) VALUES(new.seq,new.path,new.body,new.defs,new.symbols); END;
 `;
-const SCHEMA_VERSION = 2, schemaHash = hash(durable + derived);
+const SCHEMA_VERSION = 3, schemaHash = hash(durable + derived);
 export const BRAIN_SCHEMA_VERSION=SCHEMA_VERSION, BRAIN_SCHEMA_HASH=schemaHash;
 const SCHEMA_V1_HASH = '5e4aaf7f64696418b88d9a77f457a74a3c2c82a301f2359800d83c4f1e4b87fc';
-export const V1_BACKUP = 'brain.v1-backup.sqlite';
+const SCHEMA_V2_HASH = '7dcc9080324502f865551922fededa75143c0a4aa56ca71d78ec64c6f1e40493';
+export const V1_BACKUP = 'brain.v1-backup.sqlite', V2_BACKUP = 'brain.v2-backup.sqlite';
 
 const statuses = ['in_progress','paused','blocked','review_needed'];
-const lists = {done:[40,600], decisions:[40,600], blockers:[20,600]};
+const lists = {done:[40,2000], decisions:[40,2000], blockers:[20,2000]};
 const declaredFields = new Set(['objective','nextAction','snapshot','status','done','decisions','blockers','filesTouched','evidence']);
 function relativePath(value) {
   ensure(typeof value === 'string' && value.length > 0 && value.length <= 400 && !value.includes('\0') && !path.isAbsolute(value) && !/^[A-Za-z]:/.test(value), 'INVALID_CHECKPOINT', 'filesTouched aceita só caminhos relativos à raiz do projeto.');
@@ -82,7 +84,8 @@ export class BrainStore {
       ensureWalMode(this.db, 5000);
       this.db.exec('PRAGMA synchronous=FULL;');
       // VACUUM INTO não roda dentro de transação: a cópia de segurança vem antes; a troca de schema, atômica, depois.
-      if (this.#version() === 1) this.#backupV1();
+      const version=this.#version();
+      if (version===1||version===2) this.#backup(version);
       if (this.#version() === SCHEMA_VERSION) {
         // Schema atual: verificar em snapshot de leitura, sem reservar o escritor apenas para conectar.
         this.db.exec('BEGIN DEFERRED');
@@ -92,28 +95,32 @@ export class BrainStore {
     } catch (e) { this.db.close(); throw e; }
   }
   #version() { return this.db.prepare('PRAGMA user_version').get().user_version; }
-  #backupV1() {
-    // Sempre refeita enquanto o banco ainda é v1: uma cópia que sobrou de tentativa anterior pode estar velha.
-    // Só substitui a existente depois de conferir que a cópia nova é mesmo v1 (outro processo pode ter migrado no intervalo).
-    const target = path.join(this.home, V1_BACKUP), temporary = target + '.' + process.pid + '.tmp';
+  #backup(version) {
+    // Sempre refeita enquanto o banco ainda é legado: uma cópia que sobrou de tentativa anterior pode estar velha.
+    // Só substitui a existente depois de conferir que a cópia nova é da mesma versão (outro processo pode ter migrado no intervalo).
+    const target = path.join(this.home, version===1?V1_BACKUP:V2_BACKUP), temporary = target + '.' + process.pid + '.tmp';
     fs.rmSync(temporary, {force:true});
     try {
       this.db.prepare('VACUUM INTO ?').run(temporary);
       if (process.platform !== 'win32') fs.chmodSync(temporary, 0o600);
       const copy = new DatabaseSync(temporary, {readOnly:true});
-      let version; try { version = copy.prepare('PRAGMA user_version').get().user_version; } finally { copy.close(); }
-      if (version === 1) fs.renameSync(temporary, target);
+      let copiedVersion; try { copiedVersion = copy.prepare('PRAGMA user_version').get().user_version; } finally { copy.close(); }
+      if (copiedVersion === version) fs.renameSync(temporary, target);
     } finally { fs.rmSync(temporary, {force:true}); }
   }
   #prepareSchema() {
     const version = this.#version(), recorded = () => this.db.prepare('SELECT value FROM meta WHERE key=?').get('schema')?.value;
     if (version === 0) { this.db.exec(durable + derived + 'PRAGMA user_version=' + SCHEMA_VERSION); this.db.prepare('INSERT INTO meta VALUES(?,?)').run('schema', schemaHash); }
-    else if (version === 1) {
-      ensure(recorded() === SCHEMA_V1_HASH, 'MIGRATION_REQUIRED');
-      ensure(fs.existsSync(path.join(this.home, V1_BACKUP)), 'MIGRATION_REQUIRED', 'Cópia de segurança da versão 1 ausente; a migração não será feita sem ela.');
-      this.db.exec('DROP TABLE chunk_search; DROP TABLE chunks; DROP TABLE files;' + derived + "ALTER TABLE memories ADD COLUMN mode TEXT NOT NULL DEFAULT 'always' CHECK(mode IN ('always','relevant')); UPDATE projects SET snapshot=NULL; PRAGMA user_version=" + SCHEMA_VERSION);
+    else if (version===1||version===2) {
+      ensure(recorded()===(version===1?SCHEMA_V1_HASH:SCHEMA_V2_HASH), 'MIGRATION_REQUIRED');
+      const backup=version===1?V1_BACKUP:V2_BACKUP;
+      ensure(fs.existsSync(path.join(this.home,backup)), 'MIGRATION_REQUIRED', 'Cópia de segurança da versão '+version+' ausente; a migração não será feita sem ela.');
+      // Os termos de declaração antigos não distinguem strings/comentários nem nomes de uma letra. Reindexar é obrigatório.
+      this.db.exec('DROP TABLE chunk_search; DROP TABLE chunks; DROP TABLE files;'+derived);
+      if(version===1)this.db.exec("ALTER TABLE memories ADD COLUMN mode TEXT NOT NULL DEFAULT 'always' CHECK(mode IN ('always','relevant'));");
+      this.db.exec('CREATE INDEX memories_by_project_status_id ON memories(project,status,id); UPDATE projects SET snapshot=NULL; PRAGMA user_version='+SCHEMA_VERSION);
       this.db.prepare('UPDATE meta SET value=? WHERE key=?').run(schemaHash, 'schema');
-      for (const {id} of this.db.prepare('SELECT id FROM projects').all()) this.event(id, 'schema.migrated', {from:1, to:SCHEMA_VERSION, backup:V1_BACKUP, reindexRequired:true});
+      for (const {id} of this.db.prepare('SELECT id FROM projects').all()) this.event(id, 'schema.migrated', {from:version, to:SCHEMA_VERSION, backup, reindexRequired:true});
     }
     else ensure(version === SCHEMA_VERSION && recorded() === schemaHash, 'MIGRATION_REQUIRED');
   }
@@ -250,8 +257,15 @@ export class BrainStore {
   backup(destination) {
     const target=path.resolve(destination); ensure(!fs.existsSync(target),'BACKUP_EXISTS');
     fs.mkdirSync(path.dirname(target),{recursive:true,mode:0o700});
-    this.db.prepare('VACUUM INTO ?').run(target);
-    if(process.platform!=='win32')fs.chmodSync(target,0o600);
+    // VACUUM INTO cria o arquivo com o umask (0644 típico) e o chmod viria depois: a cópia nasce numa pasta 0700 própria
+    // e só é publicada (link exclusivo, nunca sobrescreve) depois de pronta e restrita. Falha não deixa cópia legível.
+    const scratch=fs.mkdtempSync(path.join(path.dirname(target),'.bbrainx-backup-')), temporary=path.join(scratch,'backup.sqlite');
+    try{
+      if(process.platform!=='win32')fs.chmodSync(scratch,0o700);
+      this.db.prepare('VACUUM INTO ?').run(temporary);
+      if(process.platform!=='win32')fs.chmodSync(temporary,0o600);
+      try{fs.linkSync(temporary,target);}catch(e){ensure(e.code!=='EEXIST','BACKUP_EXISTS');throw e;}
+    }finally{fs.rmSync(scratch,{recursive:true,force:true});}
     return {path:target,bytes:fs.statSync(target).size};
   }
 }

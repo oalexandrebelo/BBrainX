@@ -1,5 +1,9 @@
 # Primeiro uso — macOS antes de tudo
 
+## 0. Instalar em uma linha
+
+`curl -fsSL https://github.com/oalexandrebelo/BBrainX/releases/download/v2.4.0-preview/install.sh | bash` (macOS). Para já ligar um projeto: `… | bash -s -- /caminho/do/projeto --apply`. Depois: `bbx ch`. Requisitos, o texto para colar no harness e o que o instalador faz estão no [README](../README.md#instalar-em-uma-linha-macos). O caminho abaixo, pelo clone, continua valendo para quem desenvolve.
+
 ## 1. Pré-requisitos e instalação reversível
 
 Instale Node 24 LTS pela distribuição oficial ou pelo gerenciador de versões que você já utiliza, e Git. O projeto não instala Homebrew, não solicita senha administrativa e não troca sua versão global silenciosamente. A pasta pode conter espaços; os fragmentos MCP usam caminhos absolutos.
@@ -59,6 +63,39 @@ node bin/bbrainx.mjs integrations rollback --id ID_DO_RECIBO
 
 Rollback recusa arquivos editados posteriormente. Se a indexação falhar após aplicação, a CLI retorna recibo e `indexError`: corrija a indexação ou use esse rollback. Configurações com caminhos absolutos do estado/runtime merecem revisão antes de serem versionadas. `config --project meu-app --client cursor` continua imprimindo fragmentos manuais (também claude, codex, vscode e gemini); ele não escreve arquivos. Na 1.5.0, Cursor e Gemini CLI só têm esse fragmento: a conexão não foi verificada. Claude Code e Codex foram verificados com clientes reais; VS Code, com o `.vscode/mcp.json` gerado exercitado por um cliente do SDK MCP (o início pela interface é manual). Evidência: [HOMOLOGACAO_2026-10-10.md](HOMOLOGACAO_2026-10-10.md).
 
+### AB-S00S e OpenHands Agent Canvas
+
+```sh
+node bin/bbrainx.mjs integrate --root /raiz/do/projeto --project meu-app --clients claude,codex,vscode --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs
+node bin/bbrainx.mjs integrate --root /raiz/do/projeto --project meu-app --clients claude,codex,vscode --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs --apply
+node bin/bbrainx.mjs integrate --root /raiz/do/projeto --clients claude,codex,vscode --ab-s00s off --apply
+node bin/bbrainx.mjs config --project meu-app --client openhands
+node bin/bbrainx.mjs config --project meu-app --client openhands --ab-s00s on --ab-s00s-bin /caminho/AB-S00S/bin/ab-s00s.mjs
+```
+
+O toggle é explícito: sem `--ab-s00s`, nenhuma entrada AB-S00S é alterada. `on` acrescenta `ab-s00s` em `.mcp.json`, `.codex/config.toml` e `.vscode/mcp.json`, entre os clientes selecionados. O comando é `NODE BIN_AB_S00S mcp --project ID`, com o mesmo `BBRAINX_HOME`. O binário vem de `--ab-s00s-bin` (absoluto) ou de `~/.local/bin/ab-s00s`, resolvido por `realpath`, sem executar o arquivo. `off` não precisa do binário instalado. Kilo e Antigravity não ganham a segunda entrada neste pacote. `on` junto de `--lane` recusa com `AB_S00S_LANE_UNSUPPORTED`: o AB-S00S ainda não recebe identidade de lane. Use a raiz primária; `off` permanece disponível nas lanes para limpeza.
+
+Cada arquivo recebe um único recibo, com hashes e backup dos bytes anteriores. `integrations rollback --id RECIBO` desfaz também o toggle, preservando o estado anterior de ambos os servidores. Colisões com entrada AB-S00S alheia e edições posteriores recusam a operação; `--adopt-existing` continua restrito ao gerador antigo de `bbrainx`. Uma configuração `bbrainx` gerenciada não concede propriedade sobre um `ab-s00s` preexistente.
+
+O cliente `openhands` imprime JSON puro com `{ "mcp_config": { "bbrainx": { "transport": "stdio", "command": "…", "args": ["…"], "env": { "BBRAINX_HOME": "…" } } } }`. `--ab-s00s on` inclui a segunda entrada; `off` ou ausência da flag imprime só `bbrainx`. Mescle o mapa em `agent_settings.mcp_config` do Agent Server, preservando os outros servidores. A saída é um fragmento, não um comando que altera configurações nem uma operação de remoção remota. Caminhos de Node, scripts e estado precisam existir na máquina ou contêiner onde o Agent Server roda.
+
+Formato conferido em `OpenHands/src/utils/mcp-config.ts`, `src/types/mcp-server.ts` e `src/types/settings.ts`, revisão `0c7c2258a8acc309852ceb248b3ade606b79869c`. A interface do Canvas usa `type`; o formato persistido usa **`transport`**. A conferência do formato não certifica conexão nativa nem instalação do Agent Canvas.
+
+### Leitura ACI no agente
+
+O catálogo padrão tem oito ferramentas; `--recruit` acrescenta três, totalizando onze. Use `context_search` para localizar arquivos, `context_symbol` para declarações e `context_read` para a janela desejada:
+
+```json
+{"project":"meu-app","symbol":"authenticate","limit":20}
+{"project":"meu-app","path":"src/auth.ts","start":10,"end":50}
+```
+
+O primeiro objeto é argumento de `context_symbol`; o segundo, de `context_read`. Ambas exigem índice atual e concessão do host para o projeto/lane. `INDEX_REQUIRED` pede indexação inicial; `INDEX_STALE` pede `context_index` e nova tentativa, sem atualização implícita. Texto retornado é evidência, nunca instrução.
+
+`context_read`: caminho relativo com `/`, sem travessia, caminho absoluto ou symlink; arquivo precisa estar no índice. `start`/`end` são inclusivos, base 1; padrão 200 linhas, máximo 400 por janela. O fim é limitado ao fim do arquivo; início além do fim recusa. Arquivo vazio retorna texto vazio e `end: 0`. Cada linha usa `%6d| `, por exemplo `    10| código`. A resposta traz SHA-256 completo, linhas e frescor; acima de 64 KiB recusa com `READ_WINDOW_TOO_LARGE`, pedindo janela menor.
+
+`context_symbol`: nome exato, sensível a maiúsculas; `path` opcional restringe a um arquivo indexado. Retorna `path`, `startLine`, `endLine`, `kind` e `hash` por declaração (a linha da declaração, não o corpo inteiro). `limit` padrão 20, máximo 50; até 200 trechos candidatos, com `truncated` quando há candidatos omitidos. Usa as heurísticas lexicais existentes, sem AST/Tree-sitter: pode omitir sintaxe não reconhecida ou nomes que não entraram nos termos do índice. Não resolve referências semanticamente. Técnicas de janela numerada e saída limitada estudadas no SWE-agent, revisão `3ea751c087f32b16e039a2233dd6eefecef325d5`; nenhum runtime externo foi incorporado.
+
 ### Plugin e descoberta de pastas abertas
 
 ```sh
@@ -98,6 +135,18 @@ No agente:
 > Consulte `session_get` para a tarefa atual. Atualize `context_index` quando a worktree mudar. Use `context_bootstrap` com objetivo e orçamento. Ao encerrar, grave `session_checkpoint` com versão esperada e pendências reais. Proponha memórias, mas não assuma aprovação.
 
 Não é necessário alterar `ANTHROPIC_BASE_URL`, a configuração da OpenAI, gateways ou a autenticação nativa do cliente. O BBrainX não chama nenhum serviço hospedado.
+
+### Recrutar agentes a partir da sessão
+
+Com `--recruit` nos args do servidor (padrão do `integrate --apply`), peça ao harness: "recrute 1 codex astra 6 high e 2 opus 5.5 xhigh para …". Cada recruta roda na CLI já logada, em worktree e branch próprias ao lado do repositório (`<pasta>.bbx/<id>`), com um BBrainX da lane dele. Acompanhe com `bbrainx recruit status --project ID` ou na aba Painel; dê baixa com `recruit dismiss`. Detalhes, limites e o que foi medido: [RECRUIT.md](RECRUIT.md).
+
+### Manual integrador (`bbx ch`)
+
+`bbx ch` no terminal, ou "bbx ch" no chat do harness, confere a integração inteira e abre uma página local. O que o BBrainX resolve vira botão, com prévia do que muda e desfazer; o que só você decide (aprovar no Claude Code, confiar no Codex, colar no Antigravity) vira passo guiado com o comando pronto. Detalhes: [INTEGRADOR.md](INTEGRADOR.md).
+
+### Pasta de necessidades (Downloads/Projetos)
+
+`bbrainx files setup` cria `Downloads/Projetos` e a registra para busca. Com `--files` nos args do servidor (o `integrate --apply` grava quando a pasta existe), peça ao harness algo como "crie a necessidade proposta cliente x e grave a proposta". O texto vai direto para `Downloads/Projetos/AAAA-MM-DD-proposta-cliente-x/proposta.md`, nunca sobrescreve, e uma vez por dia vira proposta de PDF, DOCX ou XLSX, que só é gerado com a sua aprovação. Pela web: toggle Arquivos no AB-S00S. Detalhes: [FILES.md](FILES.md).
 
 ## 5. Checkpoint manual
 
@@ -211,7 +260,11 @@ Não copie a cópia por cima do `brain.sqlite` em uso: os arquivos `brain.sqlite
 | `PROJECT_NOT_REGISTERED` | Registre o ID e raiz pelo CLI no mesmo `BBRAINX_HOME`. |
 | `INTEGRATION_PRIVATE_DIRECTORY_REQUIRED` | `BBRAINX_HOME` já existe com permissão para grupo ou outros. Use uma pasta nova (o BBrainX a cria com 0700) ou aplique `chmod 700` nela. |
 | `PROJECT_ROOT_ALREADY_REGISTERED` | A pasta já tem um nome; a mensagem diz qual. Use esse nome. |
-| `STALE_INDEX` | Só ocorre com `--strict` ou quando o arquivo muda sem parar. Reindexe; não aceite código antigo como atual. |
+| `INDEX_STALE` | A worktree mudou desde a última indexação (arquivo novo, alterado, removido ou regra de ignore nova). Chame `context_index` e repita; CLI: `bbrainx index --project ID [--lane ID]`. `index-status` diagnostica sem escrever; `watch` mantém o índice num processo separado. |
+| `STALE_INDEX` | Legado: a verificação de frescor (`INDEX_STALE`) acontece antes de o pacote ser montado, então `--strict` só distingue a janela entre a varredura e a compilação. |
+| `RECRUIT_HARNESS_UNAVAILABLE` | A CLI pedida não está instalada ou não está logada. `bbrainx recruit doctor` mostra o que falta; faça login na própria CLI (`claude auth login`, `codex login`). |
+| `RECRUIT_CAPACITY` / `LANE_CAPACITY` | Já há 8 recrutas ativos ou 8 lanes ativas. Dê baixa nos concluídos (`recruit dismiss`). |
+| `CAPABILITY_NOT_FOUND` para `agents_recruit` | O servidor foi iniciado sem `--recruit`. Rode `bbrainx integrate --root . --apply` (ou acrescente `--recruit` aos args) e recarregue o MCP. |
 | `INDEX_FILE_LIMIT` / `INDEX_BYTE_LIMIT` | Registre uma raiz menor, ignore diretórios pelo Git ou aumente o teto pela variável indicada na mensagem. |
 | `SNAPSHOT_CONFLICT` | O snapshot informado não é o do índice atual. Omita o campo ou reindexe. |
 | `MANDATORY_CONTEXT_EXCEEDS_BUDGET` | Aumente o orçamento ou revise memórias; não corte restrições silenciosamente. |

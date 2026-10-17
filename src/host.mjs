@@ -62,7 +62,14 @@ export function stableEntryPath(selfPath, { env = process.env, realpath = native
 export function safeDirectory(directory) {
   assertLocalState(directory);
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
-  ensure(!fs.lstatSync(directory).isSymbolicLink(), 'UNSAFE_STATE_DIRECTORY');
+  const stat = fs.lstatSync(directory);
+  ensure(!stat.isSymbolicLink() && stat.isDirectory(), 'UNSAFE_STATE_DIRECTORY');
+  if (process.platform !== 'win32') {
+    // mkdir recursivo não restringe uma pasta que já existia: dona diferente recusa; permissão aberta de pasta própria fecha
+    // em 0700 (outro usuário poderia trocar banco ou sidecar por nome, mesmo com os arquivos em 0600).
+    ensure(stat.uid === process.getuid(), 'UNSAFE_STATE_DIRECTORY', 'State directory ' + directory + ' belongs to another user.');
+    if ((stat.mode & 0o077) !== 0) fs.chmodSync(directory, 0o700);
+  }
   return fs.realpathSync(directory);
 }
 export function commandVersion(command, args = ['--version']) {
@@ -74,7 +81,9 @@ export function commandVersion(command, args = ['--version']) {
  * Só `rev-parse`: `git status` e `git diff` executam os filtros `clean` configurados no repositório.
  */
 export function gitState(root) {
-  const options = { encoding: 'utf8', timeout: 5000, maxBuffer: 65536, windowsHide: true, shell: false, stdio: ['ignore', 'pipe', 'ignore'] };
+  // GIT_DIR, GIT_WORK_TREE ou GIT_INDEX_FILE herdados apontariam para outro repositório: o carimbo seria de lá.
+  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')));
+  const options = { encoding: 'utf8', timeout: 5000, maxBuffer: 65536, windowsHide: true, shell: false, stdio: ['ignore', 'pipe', 'ignore'], env };
   const head = spawnSync('git', ['-c', 'core.fsmonitor=false', '-c', 'core.hooksPath=/dev/null', '-C', root, 'rev-parse', 'HEAD', '--abbrev-ref', 'HEAD'], options);
   if (head.error || head.status !== 0) return null;
   const [commit, branch] = head.stdout.trim().split('\n');
